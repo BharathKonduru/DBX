@@ -1,0 +1,1734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Architecture Diagrams — PacifiCorp & ELC</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;0,900;1,300&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --bg: #ffffff;
+  --surface: #f8f9fc;
+  --card: #ffffff;
+  --border: #e2e6f0;
+  --text: #1a1d2e;
+  --muted: #6b7280;
+  --accent1: #2563eb; /* blue - Databricks */
+  --accent2: #16a34a; /* green - GCP */
+  --accent3: #d97706; /* amber */
+  --accent4: #db2777; /* pink - ELC */
+  --accent5: #0891b2; /* teal */
+  --glow1: rgba(37,99,235,0.08);
+  --glow2: rgba(22,163,74,0.08);
+  --glow4: rgba(219,39,119,0.08);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Subtle light grid */
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(37,99,235,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37,99,235,0.04) 1px, transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;
+  z-index:0;
+  animation: gridPan 40s linear infinite;
+}
+@keyframes gridPan { 0%{background-position:0 0} 100%{background-position:48px 48px} }
+
+.wrap { position:relative; z-index:1; max-width:1300px; margin:0 auto; padding:0 24px 80px; }
+
+/* ── Header ── */
+header { padding:56px 0 48px; text-align:center; }
+.eyebrow {
+  display:inline-block;
+  font-size:11px; letter-spacing:3px; text-transform:uppercase;
+  color:var(--accent1); border:1px solid var(--accent1);
+  padding:4px 16px; border-radius:2px; margin-bottom:24px;
+  opacity:0; animation: fadeUp .6s .1s forwards;
+}
+h1 {
+  font-family:'Fraunces', serif; font-size:clamp(36px,5vw,64px); font-weight:900;
+  line-height:1.05; color:var(--text);
+  opacity:0; animation: fadeUp .6s .2s forwards;
+}
+h1 span { color:var(--accent1); }
+.subtitle {
+  margin-top:16px; color:var(--muted); font-size:13px; letter-spacing:.5px;
+  opacity:0; animation: fadeUp .6s .3s forwards;
+}
+
+/* ── Tabs ── */
+.tabs {
+  display:flex; gap:8px; flex-wrap:wrap; justify-content:center;
+  margin:48px 0 40px;
+  opacity:0; animation: fadeUp .6s .4s forwards;
+}
+.tab {
+  padding:10px 20px; border-radius:4px; font-family:'DM Mono',monospace;
+  font-size:11px; letter-spacing:1px; text-transform:uppercase; cursor:pointer;
+  border:1px solid var(--border); background:var(--surface); color:var(--muted);
+  transition:all .2s; white-space:nowrap;
+}
+.tab:hover { border-color:var(--accent1); color:var(--accent1); background:var(--glow1); }
+.tab.active { background:var(--accent1); border-color:var(--accent1); color:#fff; }
+.tab.gcp.active { background:var(--accent2); border-color:var(--accent2); }
+.tab.gcp:hover { border-color:var(--accent2); color:var(--accent2); background:var(--glow2); }
+.tab.elc.active { background:var(--accent4); border-color:var(--accent4); }
+.tab.elc:hover { border-color:var(--accent4); color:var(--accent4); background:var(--glow4); }
+
+/* ── Panel ── */
+.panel { display:none; animation: fadeUp .4s forwards; }
+.panel.active { display:block; }
+
+/* ── Use case header ── */
+.uc-header {
+  display:flex; align-items:flex-start; gap:20px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; padding:28px 32px; margin-bottom:32px;
+  position:relative; overflow:hidden;
+}
+.uc-header::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+}
+.db .uc-header::before { background:linear-gradient(90deg,var(--accent1),var(--accent5)); }
+.gc .uc-header::before { background:linear-gradient(90deg,var(--accent2),var(--accent5)); }
+.el .uc-header::before { background:linear-gradient(90deg,var(--accent4),var(--accent3)); }
+
+.uc-num {
+  font-family:'Fraunces',serif; font-size:48px; font-weight:900; line-height:1;
+  opacity:.12; flex-shrink:0; align-self:center;
+}
+.db .uc-num { color:var(--accent1); }
+.gc .uc-num { color:var(--accent2); }
+.el .uc-num { color:var(--accent4); }
+
+.uc-info h2 { font-family:'Fraunces',serif; font-size:22px; font-weight:600; color:var(--text); margin-bottom:8px; }
+.uc-info p { font-size:12px; color:var(--muted); line-height:1.7; max-width:700px; }
+.platform-badge {
+  margin-left:auto; flex-shrink:0; align-self:flex-start;
+  font-size:10px; letter-spacing:2px; text-transform:uppercase;
+  padding:6px 14px; border-radius:2px;
+}
+.db .platform-badge { background:var(--glow1); color:var(--accent1); border:1px solid var(--accent1); }
+.gc .platform-badge { background:var(--glow2); color:var(--accent2); border:1px solid var(--accent2); }
+.el .platform-badge { background:var(--glow4); color:var(--accent4); border:1px solid var(--accent4); }
+
+/* ── Diagram ── */
+.diagram-wrap {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; padding:36px 28px; overflow-x:auto;
+  margin-bottom:24px;
+}
+
+/* Flow stages */
+.flow { display:flex; flex-direction:column; gap:0; }
+
+.stage-row {
+  display:flex; align-items:stretch; gap:0; position:relative;
+}
+
+/* Vertical connector between rows */
+.v-connector {
+  display:flex; justify-content:center; padding:8px 0;
+  position:relative;
+}
+.v-connector::before {
+  content:''; width:2px; background:var(--border);
+  position:absolute; top:0; bottom:0; left:50%;
+}
+.v-connector .arrow-down {
+  width:28px; height:28px; border-radius:50%;
+  background:#fff; border:1px solid var(--border);
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; position:relative; z-index:1; color:var(--muted);
+}
+
+/* Stage label */
+.stage-label {
+  width:110px; flex-shrink:0; display:flex; align-items:center;
+  padding-right:16px;
+}
+.stage-label-inner {
+  font-size:9px; letter-spacing:2px; text-transform:uppercase;
+  color:var(--muted); writing-mode:horizontal-tb;
+  text-align:right; width:100%;
+  padding:8px 0;
+  border-right:2px solid var(--border);
+}
+
+/* Nodes container */
+.nodes {
+  flex:1; display:flex; align-items:center; gap:0;
+  padding:12px 0 12px 24px; flex-wrap:nowrap; overflow-x:auto;
+  min-height: 80px;
+}
+
+/* Node */
+.node {
+  flex-shrink:0; position:relative;
+  display:flex; flex-direction:column; align-items:center;
+  cursor:default;
+}
+
+.node-box {
+  background:#fff; border:1px solid var(--border);
+  border-radius:6px; padding:12px 16px; text-align:center;
+  min-width:120px; max-width:155px;
+  transition:all .25s; position:relative; overflow:hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.node-box::before {
+  content:''; position:absolute; bottom:0; left:0; right:0; height:2px;
+}
+.node-box:hover { transform:translateY(-3px); box-shadow:0 6px 20px rgba(0,0,0,0.1); }
+
+/* Color variants per stage */
+.node.ingest .node-box { border-color:#bfcfef; }
+.node.ingest .node-box::before { background:var(--accent1); }
+.node.ingest .node-box:hover { border-color:var(--accent1); box-shadow:0 8px 24px var(--glow1); }
+
+.node.process .node-box { border-color:#a7d9cf; }
+.node.process .node-box::before { background:var(--accent5); }
+.node.process .node-box:hover { border-color:var(--accent5); box-shadow:0 8px 24px rgba(8,145,178,.1); }
+
+.node.model .node-box { border-color:#f0d9a8; }
+.node.model .node-box::before { background:var(--accent3); }
+.node.model .node-box:hover { border-color:var(--accent3); box-shadow:0 8px 24px rgba(217,119,6,.1); }
+
+.node.serve .node-box { border-color:#f0b8d4; }
+.node.serve .node-box::before { background:var(--accent4); }
+.node.serve .node-box:hover { border-color:var(--accent4); box-shadow:0 8px 24px var(--glow4); }
+
+.node.store .node-box { border-color:#c4b5f0; }
+.node.store .node-box::before { background:#7c3aed; }
+.node.store .node-box:hover { border-color:#7c3aed; box-shadow:0 8px 24px rgba(124,58,237,.1); }
+
+.node.output .node-box { border-color:#a8d5b5; }
+.node.output .node-box::before { background:var(--accent2); }
+.node.output .node-box:hover { border-color:var(--accent2); box-shadow:0 8px 24px var(--glow2); }
+
+.node-icon { font-size:22px; margin-bottom:6px; display:block; }
+.node-name { font-size:10px; font-weight:500; color:var(--text); letter-spacing:.3px; line-height:1.3; }
+.node-sub { font-size:9px; color:var(--muted); margin-top:3px; line-height:1.3; }
+
+/* Arrow between nodes */
+.h-arrow {
+  flex-shrink:0; width:32px; display:flex; align-items:center; justify-content:center;
+  color:var(--muted); font-size:14px; padding-bottom:2px;
+}
+
+/* Legend row */
+.legend {
+  display:flex; gap:24px; flex-wrap:wrap; padding:16px 0 0;
+  border-top:1px solid var(--border); margin-top:4px;
+}
+.legend-item { display:flex; align-items:center; gap:8px; font-size:10px; color:var(--muted); }
+.legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+/* Tech pills row */
+.tech-row {
+  display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;
+}
+.tech-pill {
+  font-size:10px; padding:4px 12px; border-radius:20px;
+  border:1px solid var(--border); color:var(--muted);
+  background:var(--surface); letter-spacing:.5px;
+}
+.tech-pill.highlight { border-color:var(--accent1); color:var(--accent1); background:var(--glow1); }
+.tech-pill.highlight.gcp { border-color:var(--accent2); color:var(--accent2); background:var(--glow2); }
+.tech-pill.highlight.elc { border-color:var(--accent4); color:var(--accent4); background:var(--glow4); }
+
+/* Outcomes */
+.outcomes {
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px;
+  margin-top:0;
+}
+.outcome-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:6px; padding:16px; font-size:11px; color:var(--muted);
+  line-height:1.6; position:relative; padding-left:28px;
+}
+.outcome-card::before {
+  content:'✓'; position:absolute; left:12px; top:16px;
+  font-size:11px; font-weight:700;
+}
+.db .outcome-card::before { color:var(--accent1); }
+.gc .outcome-card::before { color:var(--accent2); }
+.el .outcome-card::before { color:var(--accent4); }
+
+.section-title {
+  font-size:10px; letter-spacing:2px; text-transform:uppercase;
+  color:var(--muted); margin-bottom:12px; margin-top:28px;
+}
+
+/* Legend row */
+.legend {
+  display:flex; gap:24px; flex-wrap:wrap; padding:16px 0 0;
+  border-top:1px solid var(--border); margin-top:4px;
+}
+.legend-item { display:flex; align-items:center; gap:8px; font-size:10px; color:var(--muted); }
+.legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+/* Arrow between nodes */
+.h-arrow {
+  flex-shrink:0; width:32px; display:flex; align-items:center; justify-content:center;
+  color:#9ca3af; font-size:14px; padding-bottom:2px;
+}
+
+/* Tooltip */
+.node-box[data-tip]:hover::after {
+  content: attr(data-tip);
+  position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%);
+  background:#1e293b; border:1px solid #334155; color:#f1f5f9;
+  font-size:10px; padding:8px 12px; border-radius:4px; white-space:nowrap;
+  z-index:100; pointer-events:none; max-width:220px; white-space:normal; text-align:left;
+  line-height:1.5; box-shadow:0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Info box */
+.infobox-table { width:100%; }
+
+@media(max-width:700px){
+  .stage-label { display:none; }
+  .nodes { padding-left:0; }
+  .uc-header { flex-direction:column; }
+  .platform-badge { margin-left:0; }
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Architecture Diagrams</div>
+    <h1>AI Use Case <span>Data Flows</span></h1>
+    <p class="subtitle">PacifiCorp (Databricks) · Estée Lauder Companies (GCP) — 5 Use Cases</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showPanel('p1',this)">1a · Price Signals</button>
+    <button class="tab" onclick="showPanel('p2',this)">1b · Demand Signals</button>
+    <button class="tab" onclick="showPanel('p3',this)">1c · Congestion</button>
+    <button class="tab gcp" onclick="showPanel('p4',this)">ELC · Sentiment AI</button>
+    <button class="tab elc" onclick="showPanel('p5',this)">ELC · Beauty Advisor</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       PANEL 1 — PRICE SIGNALS (PacifiCorp / Databricks)
+  ═══════════════════════════════════════════ -->
+  <div class="panel db active" id="p1">
+    <div class="uc-header">
+      <div class="uc-num">1a</div>
+      <div class="uc-info">
+        <h2>Price Signal Forecasting — LMP Prediction</h2>
+        <p>Predicts Locational Marginal Prices (LMP) at key nodes across PacifiCorp's WECC footprint. Raw ISO, weather, and gas data flows from Databricks Volumes through a multi-layer feature pipeline into parallel per-node ML models. The full forecasting chain is packaged and deployed as a production agent using <strong>Mosaic AI Agent Bricks</strong>, with real-time inference served via Mosaic AI Model Serving endpoints to dispatch and trading teams.</p>
+      </div>
+      <div class="platform-badge">Databricks</div>
+    </div>
+
+    <div class="tech-row">
+      <span class="tech-pill highlight">Databricks Volumes</span>
+      <span class="tech-pill highlight">Auto Loader</span>
+      <span class="tech-pill highlight">Delta Live Tables</span>
+      <span class="tech-pill highlight">MMF</span>
+      <span class="tech-pill highlight">MLflow</span>
+      <span class="tech-pill highlight">Mosaic AI Agent Bricks</span>
+      <span class="tech-pill highlight">Mosaic AI Serving</span>
+      <span class="tech-pill">XGBoost</span>
+      <span class="tech-pill">LightGBM</span>
+      <span class="tech-pill">TimesFM</span>
+      <span class="tech-pill">Lakehouse Monitoring</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="flow">
+
+        <!-- Row 1: Sources -->
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Data Sources</div></div>
+          <div class="nodes">
+            <div class="node ingest">
+              <div class="node-box" data-tip="Historical hourly/5-min DA & RT LMPs per node from CAISO, SPP, NorthernGrid">
+                <span class="node-icon">📡</span>
+                <div class="node-name">ISO Market Data</div>
+                <div class="node-sub">DA/RT LMP by node</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="NOAA NWP weather forecasts: temperature, wind, solar irradiance by station">
+                <span class="node-icon">🌤️</span>
+                <div class="node-name">Weather API</div>
+                <div class="node-sub">NOAA NWP forecasts</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Henry Hub + regional basis natural gas prices from EIA. Sets marginal cost floor.">
+                <span class="node-icon">⛽</span>
+                <div class="node-name">Gas Prices</div>
+                <div class="node-sub">Henry Hub + basis</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="SCADA system load by zone and total system. #1 LMP driver.">
+                <span class="node-icon">⚡</span>
+                <div class="node-name">SCADA Load</div>
+                <div class="node-sub">Zonal system load</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Planned ISO transmission outage schedules — shift congestion patterns significantly">
+                <span class="node-icon">🔧</span>
+                <div class="node-name">Outage Schedules</div>
+                <div class="node-sub">ISO planned outages</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Reservoir levels and river flow data — critical for PacifiCorp's Pacific NW hydro portfolio">
+                <span class="node-icon">💧</span>
+                <div class="node-name">Hydro Data</div>
+                <div class="node-sub">Reservoir & flow</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <!-- Row 2: Ingestion -->
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Bronze Layer</div></div>
+          <div class="nodes">
+            <div class="node store">
+              <div class="node-box" data-tip="Existing raw files in Databricks Volumes: CSVs, Parquets from ISO, EIA, NOAA">
+                <span class="node-icon">🗄️</span>
+                <div class="node-name">Databricks Volumes</div>
+                <div class="node-sub">Raw data (existing)</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="cloudFiles Auto Loader for incremental, exactly-once ingestion from Volumes into Bronze Delta tables">
+                <span class="node-icon">🔄</span>
+                <div class="node-name">Auto Loader</div>
+                <div class="node-sub">Incremental ingestion</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node store">
+              <div class="node-box" data-tip="Append-only Bronze Delta tables with schema enforcement and data quality constraints via Delta Constraints">
+                <span class="node-icon">🥉</span>
+                <div class="node-name">Bronze Delta Tables</div>
+                <div class="node-sub">Raw + schema enforced</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <!-- Row 3: Feature Engineering -->
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Silver Layer</div></div>
+          <div class="nodes">
+            <div class="node process">
+              <div class="node-box" data-tip="Delta Live Tables declarative ETL: join ISO + weather + gas data, apply data quality rules">
+                <span class="node-icon">⚙️</span>
+                <div class="node-name">Delta Live Tables</div>
+                <div class="node-sub">Declarative ETL</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node process">
+              <div class="node-box" data-tip="Distributed feature engineering: lag features (t-1, t-24, t-168), rolling stats (24h/7d/30d mean/std), seasonal decomposition">
+                <span class="node-icon">🔢</span>
+                <div class="node-name">Spark Feature Eng.</div>
+                <div class="node-sub">Lags, rolling, seasonal</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node process">
+              <div class="node-box" data-tip="LMP decomposition: separate energy, losses, congestion components. Gas spark spread calculation.">
+                <span class="node-icon">📊</span>
+                <div class="node-name">LMP Decomposition</div>
+                <div class="node-sub">Energy+Loss+Congestion</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node store">
+              <div class="node-box" data-tip="Shared Databricks Feature Store — features reused across Price, Demand, and Congestion models">
+                <span class="node-icon">🏪</span>
+                <div class="node-name">Feature Store</div>
+                <div class="node-sub">Shared cross-model</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node store">
+              <div class="node-box" data-tip="Silver Delta Tables: clean, joined, feature-enriched hourly datasets per node ready for training">
+                <span class="node-icon">🥈</span>
+                <div class="node-name">Silver Delta Tables</div>
+                <div class="node-sub">Model-ready features</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <!-- Row 4: Training -->
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Model Training</div></div>
+          <div class="nodes">
+            <div class="node model">
+              <div class="node-box" data-tip="Many Models Forecasting (MMF): train one XGBoost/LightGBM model per node in parallel on Spark cluster">
+                <span class="node-icon">🤖</span>
+                <div class="node-name">MMF (per-node)</div>
+                <div class="node-sub">XGBoost / LightGBM</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node model">
+              <div class="node-box" data-tip="TimesFM 2.0 foundation model for zero-shot forecasting at nodes with limited history">
+                <span class="node-icon">🌐</span>
+                <div class="node-name">TimesFM</div>
+                <div class="node-sub">Foundation model</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node model">
+              <div class="node-box" data-tip="Quantile regression: P10/P50/P90 bands to capture LMP spike uncertainty for risk-adjusted bidding">
+                <span class="node-icon">📈</span>
+                <div class="node-name">Probabilistic Forecast</div>
+                <div class="node-sub">P10 / P50 / P90</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node model">
+              <div class="node-box" data-tip="Hyperopt distributed hyperparameter tuning. All experiments logged in MLflow: params, metrics (MAE/RMSE/MAPE), artifacts">
+                <span class="node-icon">🧪</span>
+                <div class="node-name">MLflow Tracking</div>
+                <div class="node-sub">Experiments + registry</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node store">
+              <div class="node-box" data-tip="Champion model registered in Unity Catalog: models.pacificorp.lmp_forecast with full lineage">
+                <span class="node-icon">🏆</span>
+                <div class="node-name">Unity Catalog</div>
+                <div class="node-sub">Model registry</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <!-- Row 5: Serving -->
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Serving</div></div>
+          <div class="nodes">
+            <div class="node serve">
+              <div class="node-box" data-tip="Mosaic AI Agent Bricks: pre-built production-ready agent framework wrapping the LMP forecast chain — handles retries, logging, tool execution, and deployment as a versioned agent endpoint">
+                <span class="node-icon">🧱</span>
+                <div class="node-name">Mosaic AI Agent Bricks</div>
+                <div class="node-sub">Agent deployment</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node serve">
+              <div class="node-box" data-tip="Mosaic AI Model Serving: real-time REST API for DA LMP forecasts. Auto-scales, <100ms latency, A/B testing.">
+                <span class="node-icon">🚀</span>
+                <div class="node-name">Mosaic AI Serving</div>
+                <div class="node-sub">Real-time endpoint</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node serve">
+              <div class="node-box" data-tip="Nightly Databricks Workflow: batch score next 48h across all nodes, write to Gold Delta table by 01:00">
+                <span class="node-icon">⏰</span>
+                <div class="node-name">Batch Pipeline</div>
+                <div class="node-sub">Nightly 48h forecast</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node output">
+              <div class="node-box" data-tip="Dispatch optimization engine consumes LMP forecasts to determine optimal unit commitment">
+                <span class="node-icon">⚙️</span>
+                <div class="node-name">Dispatch Engine</div>
+                <div class="node-sub">Unit commitment</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node output">
+              <div class="node-box" data-tip="Trading desk dashboard: real-time node LMP forecasts, price spread maps, spike alerts">
+                <span class="node-icon">📉</span>
+                <div class="node-name">Trading Dashboard</div>
+                <div class="node-sub">Bidding strategy</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node output">
+              <div class="node-box" data-tip="Lakehouse Monitoring: feature drift, prediction drift, data freshness alerts. Auto-retraining trigger.">
+                <span class="node-icon">🔍</span>
+                <div class="node-name">Lakehouse Monitor</div>
+                <div class="node-sub">Drift + retraining</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent1)"></div>Ingestion</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent5)"></div>Processing</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent3)"></div>ML Training</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent4)"></div>Serving</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#8b5cf6"></div>Storage / Governance</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div>Output / Consumer</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="section-title">Business Outcomes</p>
+    <div class="outcomes">
+      <div class="outcome-card">Reduce real-time market purchases during LMP spike events (>$200/MWh)</div>
+      <div class="outcome-card">Improve day-ahead bidding accuracy by 15–25% vs. manual forecasting</div>
+      <div class="outcome-card">Probabilistic P10/P90 bands enable risk-adjusted dispatch decisions</div>
+      <div class="outcome-card">Full MLflow lineage: audit exactly which model and data version produced each forecast</div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════
+       PANEL 2 — DEMAND SIGNALS
+  ═══════════════════════════════════════════ -->
+  <div class="panel db" id="p2">
+    <div class="uc-header">
+      <div class="uc-num">1b</div>
+      <div class="uc-info">
+        <h2>Demand Signal Forecasting — Load Prediction</h2>
+        <p>Predicts hourly electrical load (MW) across PacifiCorp's 6-state service territory at multiple horizons. AMI smart meter interval data in Databricks Volumes feeds a hierarchical Many Models Forecasting pipeline (feeder → zone → system) incorporating EV charging profiles, behind-the-meter solar, and weather drivers. The demand forecasting agent is deployed via <strong>Mosaic AI Agent Bricks</strong> (Knowledge Assistant) as a versioned endpoint consumed by dispatch and the Price/Congestion models.</p>
+      </div>
+      <div class="platform-badge">Databricks</div>
+    </div>
+
+    <div class="tech-row">
+      <span class="tech-pill highlight">AMI Interval Data</span>
+      <span class="tech-pill highlight">Structured Streaming</span>
+      <span class="tech-pill highlight">Delta Live Tables</span>
+      <span class="tech-pill highlight">MMF</span>
+      <span class="tech-pill highlight">Prophet + XGBoost</span>
+      <span class="tech-pill highlight">Mosaic AI Agent Bricks</span>
+      <span class="tech-pill highlight">Mosaic AI Serving</span>
+      <span class="tech-pill">Hierarchical Reconciliation</span>
+      <span class="tech-pill">EV Clustering</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="flow">
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Data Sources</div></div>
+          <div class="nodes">
+            <div class="node ingest">
+              <div class="node-box" data-tip="15-min AMI smart meter interval data for all metered customers — primary demand signal already in Volumes">
+                <span class="node-icon">🔌</span>
+                <div class="node-name">AMI Smart Meters</div>
+                <div class="node-sub">15-min intervals</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="SCADA historical system and zonal load — training target for bulk zone-level forecasting">
+                <span class="node-icon">📡</span>
+                <div class="node-name">SCADA System Load</div>
+                <div class="node-sub">Hourly zonal MW</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Temperature forecasts and actuals — #1 residential load predictor. Both NWP forecast and observed.">
+                <span class="node-icon">🌡️</span>
+                <div class="node-name">Weather (Temp+Wind)</div>
+                <div class="node-sub">NWP + observed</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="EV charging session data: start time, kWh, location. Growing share of evening peak load in PacifiCorp territory.">
+                <span class="node-icon">🚗</span>
+                <div class="node-name">EV Charging Data</div>
+                <div class="node-sub">Session + location</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Installed rooftop solar by feeder from interconnection database + satellite irradiance data">
+                <span class="node-icon">☀️</span>
+                <div class="node-name">BTM Solar</div>
+                <div class="node-sub">DER generation</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="DR program enrollment, activated capacity, and response history — modifies net demand">
+                <span class="node-icon">📋</span>
+                <div class="node-name">Demand Response</div>
+                <div class="node-sub">Program status</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Bronze Layer</div></div>
+          <div class="nodes">
+            <div class="node store">
+              <div class="node-box" data-tip="Raw AMI, SCADA, weather, EV data already present in Databricks Volumes">
+                <span class="node-icon">🗄️</span>
+                <div class="node-name">Databricks Volumes</div>
+                <div class="node-sub">Raw data (existing)</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Spark Structured Streaming for real-time AMI meter events; Auto Loader for batch historical files">
+                <span class="node-icon">🌊</span>
+                <div class="node-name">Structured Streaming</div>
+                <div class="node-sub">Real-time + batch</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node store">
+              <div class="node-box" data-tip="Bronze Delta tables: raw meter reads, SCADA load, weather station data with quality constraints">
+                <span class="node-icon">🥉</span>
+                <div class="node-name">Bronze Delta Tables</div>
+                <div class="node-sub">Raw ingested data</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Silver Layer</div></div>
+          <div class="nodes">
+            <div class="node process">
+              <div class="node-box" data-tip="Net load = gross load - BTM solar. Satellite irradiance + installed capacity per feeder.">
+                <span class="node-icon">➕</span>
+                <div class="node-name">Net Load Calc</div>
+                <div class="node-sub">Gross - BTM solar</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node process">
+              <div class="node-box" data-tip="K-Means clustering on AMI evening load shape to identify EV vs non-EV customers. Add EV load as synthetic feature.">
+                <span class="node-icon">🔍</span>
+                <div class="node-name">EV Segmentation</div>
+                <div class="node-sub">K-Means on load shape</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node process">
+              <div class="node-box" data-tip="HDD/CDD encoding, extreme temp flags, lag features (t-1, t-24, t-168), rolling statistics by zone">
+                <span class="node-icon">🌡️</span>
+                <div class="node-name">Weather Features</div>
+                <div class="node-sub">HDD/CDD + lags</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node store">
+              <div class="node-box" data-tip="Shared Feature Store: weather, calendar, EV features reused by Price and Congestion models too">
+                <span class="node-icon">🏪</span>
+                <div class="node-name">Feature Store</div>
+                <div class="node-sub">Shared features</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node store">
+              <div class="node-box" data-tip="Silver tables: feeder-level and zone-level net load with all features, ready for hierarchical MMF training">
+                <span class="node-icon">🥈</span>
+                <div class="node-name">Silver Delta Tables</div>
+                <div class="node-sub">Zone + feeder features</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Model Training</div></div>
+          <div class="nodes">
+            <div class="node model">
+              <div class="node-box" data-tip="Short-term (4–48h): per-zone XGBoost + Prophet ensemble with weather exogenous regressors via MMF">
+                <span class="node-icon">⚡</span>
+                <div class="node-name">Short-Term MMF</div>
+                <div class="node-sub">4–48h XGBoost+Prophet</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node model">
+              <div class="node-box" data-tip="Medium-term (2–14 days): Temporal Fusion Transformer trained on GPU cluster for multi-horizon probabilistic bands">
+                <span class="node-icon">🧠</span>
+                <div class="node-name">Medium-Term TFT</div>
+                <div class="node-sub">2–14 days horizon</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node model">
+              <div class="node-box" data-tip="Hierarchical reconciliation: feeder → substation → zone → system using MinT/BU method to ensure coherent sum">
+                <span class="node-icon">🌲</span>
+                <div class="node-name">Hierarchical Recon.</div>
+                <div class="node-sub">Feeder→Zone→System</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node model">
+              <div class="node-box" data-tip="MLflow auto-logs all experiments: MAPE, RMSE per zone, training data version, hyperparameters">
+                <span class="node-icon">🧪</span>
+                <div class="node-name">MLflow Tracking</div>
+                <div class="node-sub">MAPE target <2%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Outputs</div></div>
+          <div class="nodes">
+            <div class="node serve">
+              <div class="node-box" data-tip="Mosaic AI Agent Bricks: Knowledge Assistant pre-built agent wrapping the demand forecast chain — deployed as a versioned REST endpoint with built-in logging and retries">
+                <span class="node-icon">🧱</span>
+                <div class="node-name">Mosaic AI Agent Bricks</div>
+                <div class="node-sub">Agent deployment</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node serve">
+              <div class="node-box" data-tip="Real-time Mosaic AI endpoint for dispatch team: call with zone + weather forecast → get hourly load MW">
+                <span class="node-icon">🚀</span>
+                <div class="node-name">Mosaic AI Endpoint</div>
+                <div class="node-sub">Real-time load API</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node output">
+              <div class="node-box" data-tip="Unit commitment system: which generators to start/stop for next 48h based on demand forecast">
+                <span class="node-icon">🏭</span>
+                <div class="node-name">Unit Commitment</div>
+                <div class="node-sub">Gen scheduling</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node output">
+              <div class="node-box" data-tip="Demand response activation: pre-position DR programs when forecast shows peak exceeding threshold">
+                <span class="node-icon">📲</span>
+                <div class="node-name">DR Activation</div>
+                <div class="node-sub">Peak management</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node output">
+              <div class="node-box" data-tip="Demand forecast output also feeds Price and Congestion models as the #1 input feature">
+                <span class="node-icon">🔗</span>
+                <div class="node-name">→ Price & Congestion</div>
+                <div class="node-sub">Cross-model input</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent1)"></div>Ingestion</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent5)"></div>Processing</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent3)"></div>ML Training</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent4)"></div>Serving</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#8b5cf6"></div>Storage / Governance</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div>Output / Consumer</div>
+        </div>
+      </div>
+    </div>
+    <p class="section-title">Business Outcomes</p>
+    <div class="outcomes">
+      <div class="outcome-card">Zone-level MAPE target &lt;2% for 24h ahead forecasts — replacing manual spreadsheet estimates</div>
+      <div class="outcome-card">EV and BTM solar integration gives accurate net load despite growing DER penetration</div>
+      <div class="outcome-card">Hierarchical coherence ensures feeder forecasts sum to credible system total for ISO reporting</div>
+      <div class="outcome-card">Demand forecast output directly feeds Price and Congestion models as their top feature</div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════
+       PANEL 3 — CONGESTION SIGNALS
+  ═══════════════════════════════════════════ -->
+  <div class="panel db" id="p3">
+    <div class="uc-header">
+      <div class="uc-num">1c</div>
+      <div class="uc-info">
+        <h2>Congestion & Transmission Signal Forecasting</h2>
+        <p>Three-stage pipeline predicting which transmission constraints will bind, their shadow prices, and node-level LMP congestion components. Uses shift factor matrix, outage schedules, and demand forecasts. The full congestion pipeline is orchestrated and deployed as a production agent using <strong>Mosaic AI Agent Bricks</strong>, with outputs feeding FTR valuation, dispatch optimization, and PSPS wildfire planning.</p>
+      </div>
+      <div class="platform-badge">Databricks</div>
+    </div>
+
+    <div class="tech-row">
+      <span class="tech-pill highlight">Shift Factor Matrix</span>
+      <span class="tech-pill highlight">XGBoost Classifier</span>
+      <span class="tech-pill highlight">Quantile Regression</span>
+      <span class="tech-pill highlight">Spark UDF</span>
+      <span class="tech-pill highlight">MLflow</span>
+      <span class="tech-pill highlight">Mosaic AI Agent Bricks</span>
+      <span class="tech-pill highlight">Mosaic AI Serving</span>
+      <span class="tech-pill">PTDF Matrix</span>
+      <span class="tech-pill">FTR Valuation</span>
+      <span class="tech-pill">PSPS Risk</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="flow">
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Data Sources</div></div>
+          <div class="nodes">
+            <div class="node ingest">
+              <div class="node-box" data-tip="ISO-published hourly binding constraint list with shadow prices — primary training target for Stage 1 & 2">
+                <span class="node-icon">🔒</span>
+                <div class="node-name">Binding Constraints</div>
+                <div class="node-sub">ISO shadow prices</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Planned ISO transmission outages — strongest predictor of congestion shifts. Daily ingestion via Workflow.">
+                <span class="node-icon">🔧</span>
+                <div class="node-name">Outage Schedules</div>
+                <div class="node-sub">Line maintenance</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Real-time MW flow on each transmission segment from SCADA — directly indicates proximity to thermal limits">
+                <span class="node-icon">⚡</span>
+                <div class="node-name">SCADA Line Flows</div>
+                <div class="node-sub">% of thermal limit</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Power Transfer Distribution Factors — coefficients linking generation changes to specific line flows">
+                <span class="node-icon">📐</span>
+                <div class="node-name">PTDF / Shift Factors</div>
+                <div class="node-sub">Network topology</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Generation dispatch by unit and fuel type — which generators are online determines power flows across network">
+                <span class="node-icon">🏭</span>
+                <div class="node-name">Gen Dispatch Data</div>
+                <div class="node-sub">Online capacity by unit</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Red Flag warnings trigger PSPS de-energizations, cascading congestion onto adjacent paths">
+                <span class="node-icon">🔥</span>
+                <div class="node-name">Wildfire Risk Index</div>
+                <div class="node-sub">PSPS trigger signals</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Feature Eng.</div></div>
+          <div class="nodes">
+            <div class="node store">
+              <div class="node-box" data-tip="All raw data from Databricks Volumes: ISO constraints, SCADA flows, outage schedules, PTDF files">
+                <span class="node-icon">🗄️</span>
+                <div class="node-name">Databricks Volumes</div>
+                <div class="node-sub">Existing raw data</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node process">
+              <div class="node-box" data-tip="Convert outage start/end datetimes to binary hourly time series per line. Add 24h/48h/72h lookahead flags.">
+                <span class="node-icon">📅</span>
+                <div class="node-name">Outage Encoding</div>
+                <div class="node-sub">Binary hourly flags</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node process">
+              <div class="node-box" data-tip="For each outage, look up electrically coupled lines using PTDF — a single outage shifts flows onto 10+ lines">
+                <span class="node-icon">🔗</span>
+                <div class="node-name">Shift Factor Lookup</div>
+                <div class="node-sub">Coupled line mapping</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node process">
+              <div class="node-box" data-tip="Demand forecast output from Use Case 1b used as input feature — load drives power flows">
+                <span class="node-icon">🔌</span>
+                <div class="node-name">Load Forecast Input</div>
+                <div class="node-sub">From UC 1b</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node store">
+              <div class="node-box" data-tip="Silver Delta Tables: per-constraint feature matrix with outage flags, load forecast, SCADA flows, gas prices">
+                <span class="node-icon">🥈</span>
+                <div class="node-name">Silver Feature Matrix</div>
+                <div class="node-sub">Per-constraint features</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Stage 1: Classify</div></div>
+          <div class="nodes">
+            <div class="node model">
+              <div class="node-box" data-tip="Binary XGBoost classifier per constraint: will this transmission line/interface bind in the next 24-48h? Target AUC >0.85">
+                <span class="node-icon">🎯</span>
+                <div class="node-name">Constraint Classifier</div>
+                <div class="node-sub">XGBoost per constraint</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node model">
+              <div class="node-box" data-tip="Output: probability score 0-1 per constraint per hour. e.g. 'Path 26 binds at 14:00 with 78% probability'">
+                <span class="node-icon">📊</span>
+                <div class="node-name">Binding Probability</div>
+                <div class="node-sub">P(bind) per hour</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Stage 2: Regress</div></div>
+          <div class="nodes">
+            <div class="node model">
+              <div class="node-box" data-tip="LightGBM quantile regressor: given constraint is binding, forecast shadow price distribution ($/MWh). P10/P50/P90.">
+                <span class="node-icon">💰</span>
+                <div class="node-name">Shadow Price Model</div>
+                <div class="node-sub">LightGBM quantile</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node model">
+              <div class="node-box" data-tip="Gas price drives re-dispatch cost — the marginal generator that relieves congestion sets the shadow price">
+                <span class="node-icon">⛽</span>
+                <div class="node-name">Gas Price Feature</div>
+                <div class="node-sub">Re-dispatch cost driver</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node model">
+              <div class="node-box" data-tip="Output: P10/P50/P90 shadow price distribution per binding constraint per hour. MAE target <5 $/MWh.">
+                <span class="node-icon">📈</span>
+                <div class="node-name">Shadow Price Dist.</div>
+                <div class="node-sub">P10/P50/P90 $/MWh</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Stage 3: Compute</div></div>
+          <div class="nodes">
+            <div class="node process">
+              <div class="node-box" data-tip="Spark UDF: LMP_congestion = Σ(shadow_price_k × shift_factor_k) for all binding constraints k at each node">
+                <span class="node-icon">✖️</span>
+                <div class="node-name">PTDF Matrix Multiply</div>
+                <div class="node-sub">Spark UDF at scale</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node store">
+              <div class="node-box" data-tip="Gold Delta Table: expected LMP congestion component by node for next 48h. Used by dispatch and trading.">
+                <span class="node-icon">🥇</span>
+                <div class="node-name">Congestion Gold Table</div>
+                <div class="node-sub">Node-level, 48h ahead</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Outputs</div></div>
+          <div class="nodes">
+            <div class="node serve">
+              <div class="node-box" data-tip="Mosaic AI Agent Bricks: wraps the 3-stage congestion pipeline as a production agent — handles state, retries, and tool execution. Deployed as versioned agent endpoint in Unity Catalog.">
+                <span class="node-icon">🧱</span>
+                <div class="node-name">Mosaic AI Agent Bricks</div>
+                <div class="node-sub">Agent deployment</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node serve">
+              <div class="node-box" data-tip="Mosaic AI endpoint: real-time congestion forecast API for dispatch optimization engine">
+                <span class="node-icon">🚀</span>
+                <div class="node-name">Mosaic AI Endpoint</div>
+                <div class="node-sub">Real-time API</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node output">
+              <div class="node-box" data-tip="FTR valuation: Expected payoff = Σ P(bind) × shadow_price × FTR_MW. Identify underpriced FTR opportunities.">
+                <span class="node-icon">💹</span>
+                <div class="node-name">FTR Valuation</div>
+                <div class="node-sub">Hedging decisions</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node output">
+              <div class="node-box" data-tip="Dispatch optimization: route generation to minimize congestion-adjusted total cost across PacifiCorp footprint">
+                <span class="node-icon">⚙️</span>
+                <div class="node-name">Dispatch Optimization</div>
+                <div class="node-sub">Congestion-aware</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node output">
+              <div class="node-box" data-tip="PSPS planning: when Red Flag conditions trigger de-energizations, forecast cascading congestion on adjacent paths">
+                <span class="node-icon">🔥</span>
+                <div class="node-name">PSPS Congestion</div>
+                <div class="node-sub">Wildfire impact</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent1)"></div>Ingestion</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent5)"></div>Processing</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent3)"></div>ML (3-Stage Pipeline)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent4)"></div>Serving</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#8b5cf6"></div>Storage / Governance</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div>Output / Consumer</div>
+        </div>
+      </div>
+    </div>
+    <p class="section-title">Business Outcomes</p>
+    <div class="outcomes">
+      <div class="outcome-card">3-stage pipeline achieves AUC &gt;0.85 for constraint activation, MAE &lt;5 $/MWh for shadow prices</div>
+      <div class="outcome-card">FTR valuation model identifies underpriced congestion hedging opportunities in ISO auctions</div>
+      <div class="outcome-card">PSPS wildfire de-energization impact modeled on adjacent paths before events occur</div>
+      <div class="outcome-card">Full model dependency chain: Demand (1b) → Price (1a) → Congestion (1c) run sequentially each night</div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════
+       PANEL 4 — ELC SENTIMENT AI (GCP)
+  ═══════════════════════════════════════════ -->
+  <div class="panel gc" id="p4">
+    <div class="uc-header">
+      <div class="uc-num">4</div>
+      <div class="uc-info">
+        <h2>ELC — Consumer Sentiment Intelligence (GCP)</h2>
+        <p>Real-time AI system monitoring consumer feedback across 20+ prestige brands (Estée Lauder, Clinique, MAC, La Mer, Tom Ford Beauty) in 40+ countries. Social media, call center transcripts, and product reviews are streamed into BigQuery. A <strong>LangGraph multi-agent pipeline</strong> orchestrates sentiment analysis, theme extraction, and competitive benchmarking — each as a dedicated LangChain agent powered by Gemini — with results surfaced to brand and R&D teams via Looker dashboards.</p>
+      </div>
+      <div class="platform-badge">GCP</div>
+    </div>
+
+    <div class="tech-row">
+      <span class="tech-pill highlight gcp">Pub/Sub</span>
+      <span class="tech-pill highlight gcp">Dataflow</span>
+      <span class="tech-pill highlight gcp">BigQuery</span>
+      <span class="tech-pill highlight gcp">Vertex AI + Gemini</span>
+      <span class="tech-pill highlight gcp">LangChain</span>
+      <span class="tech-pill highlight gcp">LangGraph</span>
+      <span class="tech-pill highlight gcp">Looker</span>
+      <span class="tech-pill highlight gcp">Cloud Functions</span>
+      <span class="tech-pill">Social Media APIs</span>
+      <span class="tech-pill">NLP / NER</span>
+      <span class="tech-pill">Multi-language</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="flow">
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Data Sources</div></div>
+          <div class="nodes">
+            <div class="node ingest">
+              <div class="node-box" data-tip="Instagram, TikTok, X/Twitter, YouTube — brand mentions, product reviews, beauty influencer content across 40+ markets">
+                <span class="node-icon">📱</span>
+                <div class="node-name">Social Media</div>
+                <div class="node-sub">Instagram, TikTok, X</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Customer service call recordings and chat transcripts — rich unstructured feedback on product issues and preferences">
+                <span class="node-icon">📞</span>
+                <div class="node-name">Call Center</div>
+                <div class="node-sub">Transcripts + chat</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Product reviews from brand DTC sites, Sephora, Ulta, Amazon, Douglas, Tmall across 40+ countries">
+                <span class="node-icon">⭐</span>
+                <div class="node-name">Product Reviews</div>
+                <div class="node-sub">DTC + retailer sites</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Post-purchase NPS surveys and brand loyalty program feedback — structured satisfaction scores with verbatim comments">
+                <span class="node-icon">📝</span>
+                <div class="node-name">NPS Surveys</div>
+                <div class="node-sub">Post-purchase feedback</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Beauty publications, press coverage, ingredient trend articles — external signals for R&D pipeline decisions">
+                <span class="node-icon">📰</span>
+                <div class="node-name">Beauty Press</div>
+                <div class="node-sub">Publications + blogs</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Ingestion</div></div>
+          <div class="nodes">
+            <div class="node ingest">
+              <div class="node-box" data-tip="Google Cloud Pub/Sub: real-time event streaming from social APIs, call center webhooks, review platforms">
+                <span class="node-icon">📡</span>
+                <div class="node-name">Cloud Pub/Sub</div>
+                <div class="node-sub">Real-time streaming</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node process">
+              <div class="node-box" data-tip="Dataflow (Apache Beam): language detection, deduplication, PII scrubbing, brand/product entity tagging at scale">
+                <span class="node-icon">🌊</span>
+                <div class="node-name">Cloud Dataflow</div>
+                <div class="node-sub">Stream processing</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node store">
+              <div class="node-box" data-tip="Cloud Storage: raw text archive for compliance. BigQuery: structured sentiment events with brand/product/market dimensions">
+                <span class="node-icon">🗄️</span>
+                <div class="node-name">Cloud Storage + BQ</div>
+                <div class="node-sub">Raw archive + events</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Orchestration</div></div>
+          <div class="nodes">
+            <div class="node model">
+              <div class="node-box" data-tip="LangGraph StateGraph: defines the multi-agent workflow as a directed graph. Each node is a LangChain agent. State carries brand, market, sentiment data between nodes.">
+                <span class="node-icon">🕸️</span>
+                <div class="node-name">LangGraph StateGraph</div>
+                <div class="node-sub">Multi-agent workflow</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node model">
+              <div class="node-box" data-tip="LangChain Agent 1: Gemini 1.5 Pro via Vertex AI for multi-language sentiment classification and emotion detection across 40+ languages">
+                <span class="node-icon">🤖</span>
+                <div class="node-name">Sentiment Agent</div>
+                <div class="node-sub">LangChain + Gemini</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node model">
+              <div class="node-box" data-tip="LangChain Agent 2: topic modeling agent extracts emerging themes — ingredient concerns, texture feedback, shade gaps — using Gemini with structured output parsing">
+                <span class="node-icon">🏷️</span>
+                <div class="node-name">Theme Agent</div>
+                <div class="node-sub">LangChain + topic model</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node model">
+              <div class="node-box" data-tip="LangChain Agent 3: trend detection agent runs time-series anomaly detection on aggregated sentiment scores. Triggers alert tool when spike detected.">
+                <span class="node-icon">📈</span>
+                <div class="node-name">Trend Agent</div>
+                <div class="node-sub">LangChain + anomaly</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node model">
+              <div class="node-box" data-tip="LangChain Agent 4: competitive benchmarking agent compares ELC brand sentiment vs LVMH, L'Oréal, Coty using shared BigQuery tool call">
+                <span class="node-icon">🆚</span>
+                <div class="node-name">Competitor Agent</div>
+                <div class="node-sub">LangChain + BQ tool</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">LangGraph State</div></div>
+          <div class="nodes">
+            <div class="node process">
+              <div class="node-box" data-tip="LangGraph shared state object passed between agents: brand_id, market, raw_text, sentiment_score, themes[], competitor_delta, alert_flag">
+                <span class="node-icon">🔄</span>
+                <div class="node-name">Shared State Object</div>
+                <div class="node-sub">brand × market × scores</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node process">
+              <div class="node-box" data-tip="LangGraph conditional edge: if alert_flag=True route to Alert node; if new_theme detected route to R&D feed node; else route to BigQuery write">
+                <span class="node-icon">🔀</span>
+                <div class="node-name">Conditional Router</div>
+                <div class="node-sub">LangGraph edge logic</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node process">
+              <div class="node-box" data-tip="LangChain Tools registered with agents: BigQuery read/write, Pub/Sub publish, Looker API, Slack alert webhook — agents call tools via function calling">
+                <span class="node-icon">🔧</span>
+                <div class="node-name">LangChain Tools</div>
+                <div class="node-sub">BQ · Pub/Sub · Looker</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Storage</div></div>
+          <div class="nodes">
+            <div class="node store">
+              <div class="node-box" data-tip="BigQuery: unified sentiment dataset across all brands, markets, channels. Partitioned by brand × country × date for fast queries.">
+                <span class="node-icon">🗃️</span>
+                <div class="node-name">BigQuery</div>
+                <div class="node-sub">Unified sentiment DW</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node store">
+              <div class="node-box" data-tip="Vertex AI Feature Store: consumer preference vectors, brand affinity scores — reused by personalization models">
+                <span class="node-icon">🏪</span>
+                <div class="node-name">Vertex Feature Store</div>
+                <div class="node-sub">Consumer profiles</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Outputs</div></div>
+          <div class="nodes">
+            <div class="node output">
+              <div class="node-box" data-tip="Looker dashboards: brand sentiment heatmap by market, theme trend charts, weekly brand health reports for CMOs">
+                <span class="node-icon">📊</span>
+                <div class="node-name">Looker Dashboards</div>
+                <div class="node-sub">Brand health reports</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node output">
+              <div class="node-box" data-tip="Cloud Functions + Pub/Sub: real-time alert when negative sentiment spike detected on any brand-product-market combo">
+                <span class="node-icon">🚨</span>
+                <div class="node-name">Real-Time Alerts</div>
+                <div class="node-sub">Sentiment spike notify</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node output">
+              <div class="node-box" data-tip="R&D signal feed: ingredient concern trends, efficacy feedback, texture/shade gaps → inform new product development pipeline">
+                <span class="node-icon">🧪</span>
+                <div class="node-name">R&D Signal Feed</div>
+                <div class="node-sub">Product dev insights</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node output">
+              <div class="node-box" data-tip="Gemini-powered suggested responses for call center agents based on sentiment classification and brand guidelines">
+                <span class="node-icon">💬</span>
+                <div class="node-name">Call Center Assist</div>
+                <div class="node-sub">Gemini response gen</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent1)"></div>Ingestion</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent5)"></div>Processing</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent3)"></div>AI / ML</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#8b5cf6"></div>Storage</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div>Output / Consumer</div>
+        </div>
+      </div>
+    </div>
+    <p class="section-title">Business Outcomes</p>
+    <div class="outcomes">
+      <div class="outcome-card">LangGraph multi-agent pipeline runs 4 specialized agents (Sentiment, Theme, Trend, Competitor) in parallel — faster than sequential LLM calls</div>
+      <div class="outcome-card">LangGraph conditional routing triggers real-time alerts only when anomaly detected — avoids alert fatigue from false positives</div>
+      <div class="outcome-card">R&D teams get early ingredient concern signals before they escalate into product recalls or PR issues</div>
+      <div class="outcome-card">LangChain tool calling connects BigQuery, Pub/Sub, and Looker APIs — agents act on insights not just analyze them</div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════
+       PANEL 5 — ELC BEAUTY ADVISOR (GCP)
+  ═══════════════════════════════════════════ -->
+  <div class="panel el" id="p5">
+    <div class="uc-header">
+      <div class="uc-num">5</div>
+      <div class="uc-info">
+        <h2>ELC — AI-Powered Personalized Beauty Advisor (GCP)</h2>
+        <p>Conversational AI system replicating the luxury in-store consultant experience digitally — deployed across ELC brand websites. A <strong>LangGraph stateful conversation graph</strong> orchestrates a multi-turn dialogue: an Intent Parser node extracts preferences, a RAG Retriever node calls Vertex RAG Engine + Retail Search as LangChain tools, and a Response Generator node produces on-brand Gemini responses. Loop edges handle follow-ups naturally. Live as Jo Malone London AI Scent Advisor.</p>
+      </div>
+      <div class="platform-badge">GCP</div>
+    </div>
+
+    <div class="tech-row">
+      <span class="tech-pill highlight elc">Vertex AI + Gemini</span>
+      <span class="tech-pill highlight elc">Vertex AI + Gemini</span>
+      <span class="tech-pill highlight elc">LangChain</span>
+      <span class="tech-pill highlight elc">LangGraph</span>
+      <span class="tech-pill highlight elc">Retail Search API</span>
+      <span class="tech-pill highlight elc">Recommendations AI</span>
+      <span class="tech-pill highlight elc">Vertex RAG Engine</span>
+      <span class="tech-pill highlight elc">Cloud Run</span>
+      <span class="tech-pill highlight elc">BigQuery</span>
+      <span class="tech-pill">Vertex Feature Store</span>
+      <span class="tech-pill">Jo Malone Scent Advisor</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="flow">
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Knowledge Base</div></div>
+          <div class="nodes">
+            <div class="node ingest">
+              <div class="node-box" data-tip="Full product catalog: ingredients, shades, textures, skin type compatibility, formulation details for all ELC brands">
+                <span class="node-icon">💄</span>
+                <div class="node-name">Product Catalog</div>
+                <div class="node-sub">Ingredients + shades</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Verified product reviews from DTC sites + retailer platforms — real consumer experience data for RAG grounding">
+                <span class="node-icon">⭐</span>
+                <div class="node-name">Consumer Reviews</div>
+                <div class="node-sub">Verified purchases</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Brand artistry guides, how-to application tutorials, beauty tips — brand voice and expertise documents">
+                <span class="node-icon">🎨</span>
+                <div class="node-name">Brand Expertise Docs</div>
+                <div class="node-sub">Artistry guides</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Fragrance families, scent notes, pairing recommendations — proprietary Jo Malone scent taxonomy for advisor">
+                <span class="node-icon">🌸</span>
+                <div class="node-name">Fragrance Taxonomy</div>
+                <div class="node-sub">Scent families + notes</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node ingest">
+              <div class="node-box" data-tip="Historical purchase patterns, loyalty program data, skin quiz responses — consumer preference profiles">
+                <span class="node-icon">👤</span>
+                <div class="node-name">Consumer Profiles</div>
+                <div class="node-sub">Purchase + preference</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">RAG Pipeline</div></div>
+          <div class="nodes">
+            <div class="node process">
+              <div class="node-box" data-tip="Document AI: parse and structure product spec sheets, artistry PDFs, ingredient glossaries into standardized format">
+                <span class="node-icon">📄</span>
+                <div class="node-name">Document AI</div>
+                <div class="node-sub">PDF + doc parsing</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node process">
+              <div class="node-box" data-tip="Vertex AI Embeddings API: generate semantic embeddings for all product descriptions, reviews, and brand content">
+                <span class="node-icon">🔢</span>
+                <div class="node-name">Vertex Embeddings</div>
+                <div class="node-sub">Semantic vectorization</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node store">
+              <div class="node-box" data-tip="Vertex AI Vector Search: ANN index over all product + content embeddings. Enables semantic 'find products similar to this description'">
+                <span class="node-icon">🔍</span>
+                <div class="node-name">Vertex Vector Search</div>
+                <div class="node-sub">ANN product index</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node store">
+              <div class="node-box" data-tip="Vertex AI RAG Engine: manages full RAG lifecycle — ingestion, chunking, embedding, retrieval — for brand knowledge base">
+                <span class="node-icon">🧠</span>
+                <div class="node-name">Vertex RAG Engine</div>
+                <div class="node-sub">Knowledge retrieval</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Consumer Data</div></div>
+          <div class="nodes">
+            <div class="node store">
+              <div class="node-box" data-tip="BigQuery: unified consumer data platform — purchase history, loyalty tiers, skin quiz responses, browsing behavior across all brand touchpoints">
+                <span class="node-icon">🗃️</span>
+                <div class="node-name">BigQuery CDP</div>
+                <div class="node-sub">360° consumer view</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node store">
+              <div class="node-box" data-tip="Vertex AI Feature Store: real-time consumer preference vectors, brand affinity scores, skin type classification">
+                <span class="node-icon">🏪</span>
+                <div class="node-name">Vertex Feature Store</div>
+                <div class="node-sub">Consumer vectors</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node model">
+              <div class="node-box" data-tip="Recommendations AI: trained on ELC purchase graph. Generates personalized cross-sell (e.g. 'pair this foundation with this primer')">
+                <span class="node-icon">🎯</span>
+                <div class="node-name">Recommendations AI</div>
+                <div class="node-sub">Cross-sell + upsell</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">LangGraph Chain</div></div>
+          <div class="nodes">
+            <div class="node model">
+              <div class="node-box" data-tip="LangGraph ConversationGraph: stateful multi-turn conversation graph. Tracks consumer preferences, dialogue history, and recommended products across turns.">
+                <span class="node-icon">🕸️</span>
+                <div class="node-name">LangGraph Conv. Graph</div>
+                <div class="node-sub">Stateful multi-turn</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node model">
+              <div class="node-box" data-tip="LangChain intent parser: extract consumer preferences from natural language. e.g. 'warm floral for evening' → {family: floral, mood: warm, occasion: evening}">
+                <span class="node-icon">💬</span>
+                <div class="node-name">Intent Parser</div>
+                <div class="node-sub">LangChain + Gemini</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node model">
+              <div class="node-box" data-tip="LangChain RAG retriever: calls Vertex RAG Engine + Retail Search API as LangChain tools. Returns top-k matched products with grounded knowledge context.">
+                <span class="node-icon">🔎</span>
+                <div class="node-name">RAG Retriever Node</div>
+                <div class="node-sub">LangChain + Vertex RAG</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node model">
+              <div class="node-box" data-tip="LangChain response generator: Gemini 1.5 Pro generates on-brand personalized advisor response using retrieved context + consumer profile + conversation history">
+                <span class="node-icon">✨</span>
+                <div class="node-name">Response Generator</div>
+                <div class="node-sub">LangChain + Gemini</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node model">
+              <div class="node-box" data-tip="LangGraph conditional: if user asks follow-up → loop back to Intent Parser. If satisfied → route to Recommendations node. If off-topic → guardrail node.">
+                <span class="node-icon">🔀</span>
+                <div class="node-name">LangGraph Router</div>
+                <div class="node-sub">Loop · Recommend · End</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">LangChain Tools</div></div>
+          <div class="nodes">
+            <div class="node process">
+              <div class="node-box" data-tip="LangChain Tool: Retail Search API wrapper — semantic product search across full ELC catalog by preference vector">
+                <span class="node-icon">🛍️</span>
+                <div class="node-name">Retail Search Tool</div>
+                <div class="node-sub">Product matching</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node process">
+              <div class="node-box" data-tip="LangChain Tool: Vertex RAG Engine retriever — fetch ingredient facts, artistry tips, brand expertise docs grounded in ELC knowledge base">
+                <span class="node-icon">📚</span>
+                <div class="node-name">RAG Knowledge Tool</div>
+                <div class="node-sub">Brand expertise</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node process">
+              <div class="node-box" data-tip="LangChain Tool: Recommendations AI API — append cross-sell items based on consumer profile + selected products">
+                <span class="node-icon">🎯</span>
+                <div class="node-name">Reco AI Tool</div>
+                <div class="node-sub">Cross-sell append</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node process">
+              <div class="node-box" data-tip="LangChain Tool: BigQuery consumer profile lookup — fetch loyalty tier, past purchases, skin quiz answers to personalise response">
+                <span class="node-icon">👤</span>
+                <div class="node-name">Consumer Profile Tool</div>
+                <div class="node-sub">BigQuery lookup</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-connector"><div class="arrow-down">↓</div></div>
+
+        <div class="stage-row">
+          <div class="stage-label"><div class="stage-label-inner">Deployment</div></div>
+          <div class="nodes">
+            <div class="node serve">
+              <div class="node-box" data-tip="Cloud Run: serverless container deployment. Auto-scales to handle global traffic spikes (holiday season, new launches). No infrastructure management.">
+                <span class="node-icon">☁️</span>
+                <div class="node-name">Cloud Run</div>
+                <div class="node-sub">Serverless global deploy</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node output">
+              <div class="node-box" data-tip="Jo Malone London AI Scent Advisor — live since Dec 2024. Conversational fragrance discovery widget on brand site.">
+                <span class="node-icon">🌸</span>
+                <div class="node-name">Jo Malone Advisor</div>
+                <div class="node-sub">Live scent discovery</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node output">
+              <div class="node-box" data-tip="Clinique, MAC, Estée Lauder brand sites — same advisor framework deployed with brand-specific knowledge bases">
+                <span class="node-icon">💄</span>
+                <div class="node-name">Multi-Brand Sites</div>
+                <div class="node-sub">Clinique, MAC, EL</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node output">
+              <div class="node-box" data-tip="Gemini powers ad copy generation and language translation across 40+ countries — reducing content production cost">
+                <span class="node-icon">🌍</span>
+                <div class="node-name">Content Generation</div>
+                <div class="node-sub">Ad copy + translation</div>
+              </div>
+            </div>
+            <div class="h-arrow">→</div>
+            <div class="node output">
+              <div class="node-box" data-tip="Vertex AI Model Monitoring: track advisor quality (CTR, add-to-cart rate, session length), detect response quality drift">
+                <span class="node-icon">📊</span>
+                <div class="node-name">Vertex Monitoring</div>
+                <div class="node-sub">Quality + CTR tracking</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent1)"></div>Ingestion / Knowledge</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent5)"></div>Processing / RAG</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent3)"></div>AI / Gemini</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent4)"></div>Serving</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#8b5cf6"></div>Storage</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div>Output / Consumer</div>
+        </div>
+      </div>
+    </div>
+    <p class="section-title">Business Outcomes</p>
+    <div class="outcomes">
+      <div class="outcome-card">LangGraph stateful graph enables natural multi-turn conversations — consumer can refine preferences across multiple exchanges</div>
+      <div class="outcome-card">LangChain tool calling connects Retail Search, RAG Engine, Recommendations AI, and BigQuery in one coherent chain</div>
+      <div class="outcome-card">Same LangGraph advisor framework deployed across all 20+ brands with brand-specific RAG knowledge bases and tool configs</div>
+      <div class="outcome-card">LangGraph conditional routing adds guardrails — off-topic queries and out-of-stock items handled gracefully without breaking conversation</div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+function showPanel(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
