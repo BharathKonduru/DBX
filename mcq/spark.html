@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apache Spark — Master Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --card: #16161f;
+    --border: #2a2a3a;
+    --accent: #ff5722;
+    --accent2: #ff9800;
+    --accent3: #00e5ff;
+    --text: #e8e8f0;
+    --muted: #888899;
+    --correct: #00c853;
+    --wrong: #ff1744;
+    --radius: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(255,87,34,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(0,229,255,0.06) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative;
+    z-index: 10;
+    padding: 60px 24px 40px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-tag {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    background: rgba(255,87,34,0.1);
+    border: 1px solid rgba(255,87,34,0.3);
+    padding: 6px 16px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+
+  header h1 {
+    font-size: clamp(2.4rem, 6vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -2px;
+  }
+
+  header h1 span {
+    background: linear-gradient(120deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  header p {
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 1rem;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1px;
+  }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,15,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 32px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .stat-val {
+    font-size: 1.4rem;
+    font-weight: 800;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .stat-val.accent { color: var(--accent); }
+  .stat-val.green  { color: var(--correct); }
+  .stat-val.red    { color: var(--wrong); }
+  .stat-val.cyan   { color: var(--accent3); }
+
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .progress-wrap {
+    flex: 1;
+    min-width: 180px;
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 99px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  /* ── MAIN CONTAINER ── */
+  .container {
+    position: relative;
+    z-index: 5;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* ── CATEGORY BADGE ── */
+  .category-section {
+    margin-bottom: 8px;
+    margin-top: 40px;
+  }
+
+  .category-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent3);
+    background: rgba(0,229,255,0.07);
+    border: 1px solid rgba(0,229,255,0.2);
+    padding: 5px 14px;
+    border-radius: 20px;
+  }
+
+  /* ── QUESTION CARD ── */
+  .q-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 28px 24px;
+    margin-bottom: 16px;
+    transition: border-color 0.25s, transform 0.2s;
+    animation: slideIn 0.3s ease both;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .q-card:hover { border-color: #3a3a4a; }
+  .q-card.answered-correct { border-color: var(--correct); background: rgba(0,200,83,0.04); }
+  .q-card.answered-wrong   { border-color: var(--wrong);   background: rgba(255,23,68,0.04); }
+
+  .q-header {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+
+  .q-num {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,87,34,0.12);
+    border: 1px solid rgba(255,87,34,0.3);
+    border-radius: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .q-text {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.55;
+    padding-top: 4px;
+  }
+
+  /* ── OPTIONS ── */
+  .options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  @media (max-width: 560px) { .options { grid-template-columns: 1fr; } }
+
+  .opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: background 0.18s, border-color 0.18s, transform 0.15s;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    text-align: left;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+  }
+
+  .opt:hover:not(:disabled) {
+    background: rgba(255,87,34,0.08);
+    border-color: rgba(255,87,34,0.4);
+    transform: translateY(-1px);
+  }
+
+  .opt:disabled { cursor: not-allowed; }
+
+  .opt.correct {
+    background: rgba(0,200,83,0.12);
+    border-color: var(--correct);
+    color: #a5f3bf;
+  }
+
+  .opt.wrong {
+    background: rgba(255,23,68,0.12);
+    border-color: var(--wrong);
+    color: #fca5a5;
+  }
+
+  .opt-key {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    background: var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    margin-top: 1px;
+  }
+
+  .opt.correct .opt-key { background: var(--correct); color: #000; }
+  .opt.wrong   .opt-key { background: var(--wrong);   color: #fff; }
+
+  /* ── EXPLANATION ── */
+  .explanation {
+    display: none;
+    margin-top: 14px;
+    padding: 14px 16px;
+    background: rgba(0,229,255,0.05);
+    border-left: 3px solid var(--accent3);
+    border-radius: 0 8px 8px 0;
+    font-size: 0.85rem;
+    color: #b0c4de;
+    line-height: 1.6;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .explanation.visible { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .explanation strong { color: var(--accent3); }
+
+  /* ── RESULT PANEL ── */
+  #result-panel {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(5,5,10,0.95);
+    backdrop-filter: blur(16px);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 24px;
+    text-align: center;
+    padding: 24px;
+  }
+
+  #result-panel.visible { display: flex; animation: fadeIn 0.4s ease; }
+
+  .result-ring {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: conic-gradient(var(--accent) 0%, var(--accent2) var(--pct, 0%), var(--border) var(--pct, 0%));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .result-ring::after {
+    content: '';
+    position: absolute;
+    inset: 14px;
+    border-radius: 50%;
+    background: var(--bg);
+  }
+
+  .result-score {
+    position: relative;
+    z-index: 2;
+    font-size: 2.6rem;
+    font-weight: 800;
+    font-family: 'Space Mono', monospace;
+    color: var(--accent);
+  }
+
+  .result-title {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+  }
+
+  .result-sub {
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    max-width: 420px;
+  }
+
+  .result-grid {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .result-stat { text-align: center; }
+  .result-stat-val { font-size: 2rem; font-weight: 800; font-family: 'Space Mono', monospace; }
+  .result-stat-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 32px;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s, opacity 0.15s;
+    letter-spacing: 0.5px;
+  }
+
+  .btn:hover { transform: translateY(-2px); opacity: 0.9; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+  }
+
+  .btn-ghost {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  /* ── SUBMIT BTN ── */
+  .submit-wrap {
+    text-align: center;
+    margin-top: 48px;
+  }
+
+  .btn-submit {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    font-size: 1.1rem;
+    padding: 18px 56px;
+    border-radius: 10px;
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 8px 32px rgba(255,87,34,0.3);
+    letter-spacing: 1px;
+  }
+
+  .btn-submit:hover { transform: translateY(-3px); box-shadow: 0 14px 40px rgba(255,87,34,0.4); }
+
+  /* ── FLOATING SPARK DOTS ── */
+  .sparks {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  .spark {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0;
+    animation: sparkFloat linear infinite;
+  }
+
+  @keyframes sparkFloat {
+    0%   { opacity: 0; transform: translateY(0) scale(1); }
+    10%  { opacity: 0.7; }
+    90%  { opacity: 0.3; }
+    100% { opacity: 0; transform: translateY(-100vh) scale(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Floating sparks -->
+<div class="sparks" id="sparks"></div>
+
+<!-- Header -->
+<header>
+  <div class="logo-tag">⚡ Apache Spark</div>
+  <h1>Master <span>Quiz</span></h1>
+  <p>71 Questions · Tricky Options · Instant Feedback</p>
+</header>
+
+<!-- Sticky stats -->
+<div class="stats-bar">
+  <div class="stat">
+    <span class="stat-val accent" id="s-total">71</span>
+    <span class="stat-label">Total</span>
+  </div>
+  <div class="stat">
+    <span class="stat-val green" id="s-correct">0</span>
+    <span class="stat-label">Correct</span>
+  </div>
+  <div class="stat">
+    <span class="stat-val red" id="s-wrong">0</span>
+    <span class="stat-label">Wrong</span>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-fill" id="progress-fill"></div>
+  </div>
+  <div class="stat">
+    <span class="stat-val cyan" id="s-pct">0%</span>
+    <span class="stat-label">Score</span>
+  </div>
+</div>
+
+<div class="container" id="quiz-container"></div>
+
+<div class="submit-wrap">
+  <button class="btn-submit" onclick="showResult()">⚡ Submit Quiz &amp; See Results</button>
+</div>
+
+<!-- Result panel -->
+<div id="result-panel">
+  <div class="result-ring" id="result-ring">
+    <span class="result-score" id="result-pct-text">0%</span>
+  </div>
+  <div class="result-title" id="result-title">Quiz Complete!</div>
+  <div class="result-grid">
+    <div class="result-stat">
+      <div class="result-stat-val" style="color:var(--correct)" id="r-correct">0</div>
+      <div class="result-stat-label">Correct</div>
+    </div>
+    <div class="result-stat">
+      <div class="result-stat-val" style="color:var(--wrong)" id="r-wrong">0</div>
+      <div class="result-stat-label">Wrong</div>
+    </div>
+    <div class="result-stat">
+      <div class="result-stat-val" style="color:var(--muted)" id="r-skip">0</div>
+      <div class="result-stat-label">Skipped</div>
+    </div>
+  </div>
+  <p class="result-sub" id="result-msg"></p>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+    <button class="btn btn-primary" onclick="retryQuiz()">↺ Try Again</button>
+    <button class="btn btn-ghost" onclick="document.getElementById('result-panel').classList.remove('visible')">✕ Review Answers</button>
+  </div>
+</div>
+
+<script>
+const QUESTIONS = [
+  // 1
+  { q: "What is Apache Spark?", opts: ["A distributed SQL database engine built on top of Hadoop HDFS", "A unified analytics engine for large-scale data processing that supports in-memory computation", "A real-time streaming framework exclusively designed to replace Kafka", "A MapReduce replacement that stores intermediate results only on disk"], ans: 1, exp: "Apache Spark is a unified, open-source analytics engine designed for large-scale distributed data processing. Unlike Hadoop MapReduce, which writes intermediate data to disk between each phase, Spark keeps data in-memory across operations using its RDD (Resilient Distributed Dataset) abstraction. This makes Spark up to 100x faster for iterative workloads like machine learning. Spark supports batch processing, real-time streaming (Structured Streaming), SQL queries (Spark SQL), machine learning (MLlib), and graph processing (GraphX) — all on a single unified engine, so teams don't need separate systems for each use case." },
+  // 2
+  { q: "Which year was Apache Spark initially developed at UC Berkeley's AMPLab?", opts: ["2012", "2014", "2009", "2007"], ans: 2, exp: "Apache Spark was created in 2009 by Matei Zaharia as a research project at UC Berkeley's AMPLab (Algorithms, Machines, and People Lab). The initial motivation was to overcome MapReduce's limitations for iterative algorithms used in machine learning. It was open-sourced in 2010 under a BSD license. In 2013, it was donated to the Apache Software Foundation, and in February 2014 it became an Apache top-level project. Spark 1.0 was released in May 2014. Matei Zaharia co-founded Databricks in 2013 to commercialize Spark." },
+  // 3
+  { q: "Which component is NOT part of the Apache Spark ecosystem?", opts: ["Spark SQL", "Spark Streaming", "Spark Flume", "MLlib"], ans: 2, exp: "The Apache Spark ecosystem consists of: (1) Spark Core — the base engine providing RDDs, scheduling, and fault tolerance; (2) Spark SQL — structured data processing with DataFrames/Datasets and SQL; (3) Spark Streaming / Structured Streaming — real-time stream processing; (4) MLlib — distributed machine learning; (5) GraphX — graph computation; (6) SparkR — R language bindings. Apache Flume is a completely separate Hadoop ecosystem project used for collecting, aggregating, and moving log data into HDFS. It has no integration with Spark's internal architecture." },
+  // 4
+  { q: "Which language does Spark natively NOT support for writing Spark applications?", opts: ["Scala", "Python", "Go", "R"], ans: 2, exp: "Spark natively supports four languages: Scala (the primary language Spark is written in, offering the richest API), Java (full API support but more verbose), Python via PySpark (most popular for data science), and R via SparkR/sparklyr. SQL is also supported through Spark SQL. Go does not have an official Spark API or native support. Some community projects attempt Go bindings but they are not part of the official Spark distribution. When choosing a language, Scala/Java offer the best performance as they run natively on the JVM, while PySpark serializes data between Python and JVM processes." },
+  // 5
+  { q: "Which service does Spark NOT use internally for cluster resource management?", opts: ["YARN", "Mesos", "Kubernetes", "ZooKeeper"], ans: 3, exp: "Spark supports three external cluster resource managers: YARN (Hadoop's resource manager — most common in enterprise), Apache Mesos (general-purpose cluster manager), and Kubernetes (container orchestration — increasingly popular). Spark also has a built-in Standalone cluster manager for simple deployments. ZooKeeper is a distributed coordination service used for configuration management, leader election, and distributed synchronization. While ZooKeeper is used by HDFS NameNode HA and other Hadoop services, it is NOT a cluster resource manager for Spark — Spark does not use ZooKeeper to schedule or allocate resources." },
+  // 6
+  { q: "What is the primary responsibility of the Driver node in Spark?", opts: ["Executing individual task computations on partitions", "Running the main() function and creating SparkContext to coordinate job execution", "Storing persistent RDD data across stages", "Managing HDFS block replication"], ans: 1, exp: "The Driver is the brain of a Spark application. It runs the user's main() function, creates the SparkContext (or SparkSession in Spark 2.0+), and is responsible for: (1) Parsing user code and building the logical DAG (Directed Acyclic Graph) of transformations; (2) Dividing the DAG into stages (separated by shuffle boundaries); (3) Creating tasks for each partition in each stage; (4) Negotiating resources with the Cluster Manager; (5) Scheduling tasks on executors; (6) Collecting results (e.g., from collect() actions); (7) Tracking the status of all running tasks and handling failures. The driver itself does NOT execute data transformations — that is the executor's job." },
+  // 7
+  { q: "An Executor in Spark is best described as:", opts: ["A JVM process on a worker node that runs tasks and stores data for RDDs", "The process that schedules DAG stages in the cluster manager", "A logical partition of an RDD distributed across nodes", "A dedicated heap memory region on the driver node"], ans: 0, exp: "An Executor is a JVM process launched on a Worker node by the Cluster Manager at the start of a Spark application. Each executor is dedicated to one application for its lifetime. Executors do two things: (1) Execute tasks sent by the driver — each task processes one partition of data; (2) Store (cache) RDD/DataFrame partitions in memory or disk for fast reuse. Executors report task status and results back to the driver via heartbeats. If an executor fails, the driver can request a replacement and re-schedule the failed tasks. The number of executors and their memory/core allocation is configurable via spark.executor.instances, spark.executor.memory, and spark.executor.cores." },
+  // 8
+  { q: "A Worker node in Spark is:", opts: ["Identical to an executor process", "A physical/virtual machine in the cluster that hosts one or more executors", "The master node responsible for job scheduling", "A dedicated HDFS DataNode process"], ans: 1, exp: "A Worker Node is the physical or virtual machine in the cluster. It is managed by the Cluster Manager (YARN NodeManager, Kubernetes kubelet, etc.). A single Worker node can host multiple Executor JVM processes. For example, a node with 32GB RAM and 16 cores might run 2 executors each with 14GB RAM and 7 cores. Workers are different from executors: the Worker is the machine, the Executor is the JVM process running ON that machine. One Worker can have multiple Executors if resources allow, and each Executor is dedicated to one Spark application. Workers do not coordinate tasks — the Driver does that." },
+  // 9
+  { q: "Which statement correctly differentiates Driver, Executor, and Worker?", opts: ["Driver runs tasks; Executor schedules stages; Worker manages memory", "Worker is a machine; Executor is a JVM process on that machine; Driver is the program coordinator", "Worker and Executor are the same; Driver is a subset of Executor", "Driver runs on every worker node; Executor only on the master"], ans: 1, exp: "The three-tier Spark architecture is: (1) Worker Node = the physical/virtual machine providing CPU, RAM, and disk; (2) Executor = a JVM process running on that Worker, handling task execution and data caching for one application; (3) Driver = the separate coordinator process running the user's main() function, building the DAG, scheduling tasks, and collecting results. Analogy: Worker = factory building, Executor = a team of workers inside the factory, Driver = the manager giving orders from the office. A Worker hosts Executors; an Executor runs Tasks; the Driver orchestrates all Executors across all Workers." },
+  // 10
+  { q: "In Spark, a 'Slot' refers to:", opts: ["A unit of CPU+memory allocated to run one task at a time in an executor", "The total memory available in the cluster", "A partition boundary in an RDD", "A unit of HDFS storage block"], ans: 0, exp: "A Slot in Spark represents the capacity to run one task concurrently within an executor. The number of slots equals the number of cores allocated to the executor (spark.executor.cores). For example, an executor with 4 cores has 4 slots and can run 4 tasks simultaneously. A Task is the smallest unit of work — it processes exactly one partition of data and runs a stage's computation. A Stage is a set of tasks that can run in parallel (no shuffle needed within a stage). A Job is the top-level unit triggered by an action, composed of one or more stages. Understanding slots is critical for parallelism tuning: total cluster parallelism = executors × cores per executor." },
+  // 11
+  { q: "In cluster configuration, which setting controls the maximum number of tasks an executor can run simultaneously?", opts: ["spark.executor.memory", "spark.executor.cores", "spark.driver.maxResultSize", "spark.default.parallelism"], ans: 1, exp: "spark.executor.cores defines how many CPU cores (and thus concurrent task slots) each executor JVM gets. If set to 4, that executor can run 4 tasks in parallel. spark.executor.memory controls heap memory per executor. spark.driver.maxResultSize limits how much data can be collected to the driver (e.g., from collect()). spark.default.parallelism sets the default number of partitions for RDD operations like reduceByKey and join when no partition count is specified. For maximizing parallelism, you want enough cores per executor to keep all slots busy, but not so many that GC pressure from shared heap memory hurts throughput — typically 4-5 cores per executor is recommended." },
+  // 12
+  { q: "What is the Cluster Manager's role in Spark?", opts: ["It runs the actual computation tasks on partitions", "It allocates resources (CPU, memory) across applications and manages executor lifecycle", "It stores the broadcast variables and accumulators", "It translates SQL queries into physical execution plans"], ans: 1, exp: "The Cluster Manager is the external system responsible for resource allocation across the entire cluster. Its roles are: (1) Accepting resource requests from the Spark Driver (e.g., 'I need 10 executors with 4 cores and 8GB each'); (2) Allocating those resources from available Worker nodes; (3) Launching Executor JVM processes on the allocated nodes; (4) Monitoring node health and reclaiming resources when executors finish or fail. The Cluster Manager does NOT run tasks or understand Spark's DAG — that is the Driver's job. Spark supports YARN (Hadoop), Kubernetes, Apache Mesos, and its own Standalone Cluster Manager." },
+  // 13
+  { q: "In Databricks, a notebook cell that reads a Delta table and runs a groupBy().count() constitutes:", opts: ["A Stage", "A Task", "A Job triggered by the action count()", "A DAG node"], ans: 2, exp: "In Spark's execution hierarchy: a Job is triggered every time an action (count(), show(), collect(), save()) is called. A single notebook cell with groupBy().count() triggers one Job. Each Job is divided into Stages — separated by shuffle boundaries (wide transformations like groupBy, join, repartition require shuffling data across partitions, creating a new stage). Each Stage consists of multiple Tasks running in parallel — one task per partition. In Databricks, you can view this hierarchy in the Spark UI: Jobs tab → stages → tasks. The groupBy() creates a shuffle stage (Stage 0: map-side aggregation) and a reduce stage (Stage 1: final aggregation)." },
+  // 14
+  { q: "Which deployment mode runs the Spark driver inside the cluster (on a worker node)?", opts: ["Client mode", "Local mode", "Cluster mode", "Standalone mode"], ans: 2, exp: "Spark has two deployment modes for the Driver: (1) Client Mode — the Driver runs on the machine submitting the job (your laptop, edge node, or CI server). The driver communicates with the cluster over the network. This is convenient for interactive development (Jupyter notebooks, spark-shell) but means if your client machine disconnects, the job dies. Logs appear on your terminal. (2) Cluster Mode — the Driver JVM runs inside the cluster on a Worker node, managed by the Cluster Manager. The submitting machine can disconnect after submission without killing the job. Preferred for production batch jobs. Local Mode runs both driver and executors in a single JVM on one machine — for testing only." },
+  // 15
+  { q: "Hadoop MapReduce processes data by:", opts: ["Keeping all intermediate data in RAM across all nodes", "Writing intermediate data to disk between Map and Reduce phases", "Using in-memory DAG execution similar to Spark", "Distributing tasks via a reactive streaming pipeline"], ans: 1, exp: "MapReduce's data flow is entirely disk-centric: (1) Map tasks read input from HDFS and write output to local disk; (2) The Shuffle & Sort phase reads Map output from disk, sorts by key, transfers over the network to the appropriate Reduce node, and writes again to disk; (3) Reduce tasks read from local disk, compute, and write final output to HDFS. This means for every MapReduce job, data is read from disk and written to disk at least twice (often 3-4 times including HDFS replication writes). Spark eliminates most of these intermediate disk writes by keeping data in memory across transformation steps in the DAG." },
+  // 16
+  { q: "A distributed cluster is best defined as:", opts: ["A single powerful server with multiple CPU cores and high RAM", "A collection of interconnected computers working together as a unified system", "A network of GPUs for parallel matrix operations", "A Kubernetes pod with multiple container replicas"], ans: 1, exp: "A distributed cluster is a group of independent computers (called nodes) connected via a high-speed network, coordinated by software to appear and function as a single unified system. Key properties: (1) Horizontal scalability — add more nodes to increase capacity; (2) Fault tolerance — if one node fails, the cluster continues operating; (3) Distributed data storage — data is partitioned and spread across nodes; (4) Parallel computation — tasks run simultaneously on multiple nodes. A single powerful server (even with 128 cores) is not a distributed cluster — it's a scale-up approach. Clusters scale OUT (more machines) rather than UP (bigger machine), which is why they're essential for petabyte-scale workloads." },
+  // 17
+  { q: "In the context of a distributed computing node, a CPU is:", opts: ["The main network interface card managing packet routing", "The processing unit that executes instructions and runs computational tasks", "The persistent storage component managing HDFS blocks", "The RAM controller that manages cache eviction policies"], ans: 1, exp: "The CPU (Central Processing Unit) is the compute brain of a node. In a Spark executor, the CPU: (1) Executes JVM bytecode for Spark transformation logic (map, filter, groupBy aggregation functions); (2) Runs Tungsten's whole-stage code-generated native code for SQL operations; (3) Manages memory operations (object allocation, GC coordination); (4) Handles serialization/deserialization of data for shuffle and network transfer. Modern CPUs have multiple physical cores, each capable of executing one thread (task) simultaneously. Spark maps one task to one CPU core, so a 16-core executor can run 16 tasks in parallel. CPU-bound tasks (complex transformations) benefit most from more cores." },
+  // 18
+  { q: "Why do we need multiple CPUs/cores in a Spark worker node?", opts: ["To store multiple RDD partitions simultaneously", "To allow parallel task execution — each core handles one task slot", "To replicate data across HDFS blocks", "To manage network shuffles between executors"], ans: 1, exp: "Spark achieves parallelism through multiple CPU cores: each core handles exactly one task at a time, and each task processes one partition of data. If you have a DataFrame with 200 partitions and 50 total executor cores (e.g., 10 executors × 5 cores), Spark runs 50 tasks simultaneously — processing 50 partitions in parallel. Without multiple cores, even distributing data across many nodes would result in serial execution on each node. A single-core executor with 200 partitions would process them one by one. Multiple cores also benefit JVM's GC (each core helps with GC), shuffle I/O (parallel reads/writes), and pipeline stages (cores can process different stages concurrently with pipelining)." },
+  // 19
+  { q: "More CPU cores in a Spark node are most critical when:", opts: ["You have very large in-memory datasets but simple transformations", "You have many independent parallel tasks from wide transformations like groupBy", "Your data fits in a single partition and requires no shuffle", "You are streaming data at very low volume"], ans: 1, exp: "Wide transformations (groupBy, join, repartition, distinct) trigger a shuffle — data must be redistributed across partitions by key, requiring all-to-all network communication and creating many independent tasks. If you have 1000 shuffle partitions (spark.sql.shuffle.partitions default is 200), Spark creates up to 1000 concurrent tasks — one per output partition. More cores = more tasks run simultaneously = faster completion. Contrast with narrow transformations (map, filter) where each task processes only its local partition with no cross-partition communication — these are less CPU-constrained and more memory/I/O bound. Wide transformations with large datasets are where CPU parallelism matters most." },
+  // 20
+  { q: "How does a CPU process a Spark task?", opts: ["It fetches an RDD partition from HDFS, applies transformation logic, and writes results back to HDFS", "It fetches task bytecode from the driver, operates on a data partition in memory/disk, and returns results to the executor", "It delegates computation to the GPU and collects results", "It coordinates between Spark Context and cluster manager for resource allocation"], ans: 1, exp: "When Spark schedules a task: (1) The Driver serializes the task (transformation closure + partition metadata) and sends it to the executor's task queue; (2) An available CPU core picks up the task; (3) The CPU reads its assigned data partition — from memory (if cached) or from disk/HDFS/S3; (4) The CPU executes the transformation bytecode (or Tungsten-generated native code) on the partition data; (5) For narrow transformations, output stays in executor memory for the next stage; (6) For wide transformations, the CPU writes shuffle output to local disk, partitioned by key, for downstream tasks to fetch; (7) The task result (or a reference to it) is reported back to the driver." },
+  // 21
+  { q: "Memory (RAM) in a Spark node is:", opts: ["A permanent storage layer for Spark checkpoint data", "A volatile, high-speed storage area holding active computation data and cached RDDs", "The execution context that manages task scheduling", "The off-heap area exclusively used by Tungsten engine"], ans: 1, exp: "RAM (Random Access Memory) in a Spark node serves multiple purposes: (1) Execution Memory — used for in-flight computation: hash maps for joins, sort buffers for orderBy, shuffle write buffers; (2) Storage Memory — used to cache RDD/DataFrame partitions when you call cache() or persist(); (3) User Memory — for user-defined data structures and UDFs; (4) Reserved Memory — a fixed 300MB reserved for Spark's internal objects. RAM is volatile — it is lost when the node restarts, which is why Spark has lineage-based fault tolerance. The Unified Memory Model (since Spark 1.6) allows execution and storage memory to dynamically share the available pool." },
+  // 22
+  { q: "Why is memory critical in Spark nodes?", opts: ["Spark requires memory to store YARN container metadata", "Spark's performance advantage comes from in-memory processing, avoiding costly disk I/O", "Memory manages the DAG scheduler's task queue", "Memory is only needed to buffer network packets between nodes"], ans: 1, exp: "Spark's performance edge over MapReduce is almost entirely due to in-memory processing. Consider an iterative ML algorithm (e.g., k-means clustering with 100 iterations): MapReduce reads data from HDFS and writes to HDFS each iteration = 100 HDFS read + 100 HDFS write operations. Spark caches the dataset in memory after the first read and iterates over it 100 times without touching disk = 1 HDFS read + 99 in-memory iterations. Since RAM is 100-1000x faster than disk I/O, this translates directly to speedup. Insufficient memory causes spilling to disk (similar to MapReduce) and eliminates Spark's key advantage. Memory sizing is therefore the most critical tuning parameter." },
+  // 23
+  { q: "How does Spark memory management work within an executor?", opts: ["All memory is statically split between storage and execution at startup and cannot be changed", "Memory is split into Execution (shuffle, joins) and Storage (caching), with dynamic sharing between them via Unified Memory Model", "The driver allocates memory for each task individually before execution", "Memory management is entirely handled by the OS — Spark has no control over it"], ans: 1, exp: "Spark's Unified Memory Model (introduced in Spark 1.6, replacing the static model) divides executor memory as follows: Total Executor Memory = Reserved Memory (300MB fixed) + User Memory (25% of remaining) + Spark Memory Pool (75% of remaining). The Spark Memory Pool is further shared between: Execution Memory (used for shuffles, joins, sorts, aggregations) and Storage Memory (used for caching RDDs/DataFrames). The key innovation: Execution and Storage memory dynamically borrow from each other. If execution needs more memory and storage has idle cached data, execution can evict cached partitions. If storage needs space and execution isn't using all its memory, storage can expand. This prevents static waste from over-allocated but unused memory regions." },
+  // 24
+  { q: "Storage in distributed computing refers to:", opts: ["The RAM available across all executor nodes", "The persistent data layer (HDFS, S3, GCS, etc.) that retains data even after node failures", "The shuffle spill buffer used during wide transformations", "The broadcast variable cache on each worker"], ans: 1, exp: "Distributed storage is the persistent, fault-tolerant data layer in a Spark architecture. Unlike RAM (volatile, lost on crash), distributed storage retains data permanently. Common options: HDFS (Hadoop Distributed File System) — splits files into blocks (128MB default), replicates each block 3x across DataNodes, uses NameNode for metadata; Amazon S3 / Azure Data Lake Storage / GCS — object stores used extensively in cloud deployments (Databricks Delta Lake, EMR, etc.); Apache Hudi, Delta Lake, Apache Iceberg — transactional table formats on top of cloud storage. Spark reads from and writes to distributed storage, but processes data in memory. Storage is the source and sink; RAM is the compute workspace." },
+  // 25
+  { q: "Why is distributed storage necessary in a Spark architecture?", opts: ["Because Spark executors cannot hold more than 2GB of data in memory", "To provide fault-tolerant, scalable data persistence across nodes that survives hardware failures", "To enable the driver to read data without network calls", "Because YARN requires all data to be on HDFS for scheduling"], ans: 1, exp: "Distributed storage is necessary for three reasons: (1) Fault Tolerance — HDFS replicates each block 3x across different DataNodes and racks. If one node fails, the NameNode serves the data from a replica on another node. Without replication, a single disk failure would lose data permanently. (2) Scalability — distributed storage grows horizontally by adding DataNodes. A single server's storage is bounded; a 10,000-node HDFS cluster can store exabytes. (3) Data Locality — Spark's scheduler tries to run tasks on nodes that already hold the required data block (data locality optimization), reducing network transfer. Without distributed storage, all data would need to transfer from a central server to all compute nodes." },
+  // 26
+  { q: "Cache in a Spark node refers to:", opts: ["The persistent HDFS copy of processed data for reuse", "The in-memory (or disk) storage of computed RDD/DataFrame results to avoid recomputation", "A hardware CPU cache (L1/L2/L3) managed by the OS", "The shuffle write buffer that stores partial sort results"], ans: 1, exp: "Spark's cache/persist system stores computed RDD or DataFrame results so they don't need to be recomputed. Use case: if you load a large dataset, clean it, and then run 5 different analyses, without caching, Spark re-reads from HDFS and re-applies all transformations for each analysis. With df.cache(), the cleaned DataFrame is stored in memory after the first action, and all subsequent actions use the cached version. cache() = persist(StorageLevel.MEMORY_AND_DISK) — stores in memory first; spills to disk if memory is insufficient. Other storage levels: MEMORY_ONLY, DISK_ONLY, MEMORY_ONLY_SER (serialized = less RAM, more CPU), OFF_HEAP (Tungsten off-heap memory). Use unpersist() to release cached data." },
+  // 27
+  { q: "When you call .cache() on an RDD in Spark, what actually happens?", opts: ["The RDD is immediately computed and stored in memory", "The RDD is marked for caching; it is actually cached when an action triggers computation", "The RDD is serialized and stored in HDFS as a checkpoint", "The driver stores the RDD data in its own JVM heap"], ans: 1, exp: "Spark uses lazy evaluation — transformations (map, filter, groupBy, cache) do NOT execute immediately; they just build up a logical plan (DAG). Only when an action (count(), show(), collect(), write()) is called does Spark actually compute. So rdd.cache() marks the RDD with the intent to cache, but no data is stored yet because the RDD hasn't been computed. When you call rdd.count() (an action), Spark: (1) Computes the RDD for the first time; (2) Stores each partition in memory as it computes; (3) Returns the count. On the second action (e.g., rdd.max()), Spark reads directly from the cache. If cache() were eager, Spark would waste time computing and storing data you might never use." },
+  // 28
+  { q: "Why are nodes essential in distributed computing?", opts: ["Nodes allow a single machine to simulate parallel processing via threads", "Nodes provide the distributed compute and storage capacity needed to process data beyond what a single machine can handle", "Nodes are only needed for fault tolerance — a single powerful server can handle all computation", "Nodes store YARN container metadata required for scheduling"], ans: 1, exp: "Nodes are the fundamental building blocks of distributed computing for several reasons: (1) Memory ceiling — a single machine has a physical RAM limit (even 10TB RAM servers are expensive and rare). Distributed clusters pool RAM from hundreds of nodes. (2) CPU parallelism — 1000 nodes with 16 cores each = 16,000 parallel CPU cores for a single Spark job. (3) Network isolation — distributing data across nodes allows each node to read its local data without competing for a single I/O bus. (4) Fault tolerance — if one node fails, the others continue. A single-server failure = total outage. (5) Cost efficiency — commodity servers (e.g., AWS EC2) are far cheaper per compute unit than mainframes." },
+  // 29
+  { q: "How do nodes collaborate in a distributed Spark computation?", opts: ["Each node independently computes the full dataset and compares results for consistency", "The driver partitions work into tasks, executors on nodes process their partitions, and shuffle data between nodes when needed", "YARN broadcasts the entire dataset to every node and each node filters its portion", "Nodes communicate only through HDFS; no direct node-to-node communication occurs"], ans: 1, exp: "Spark node collaboration works in two phases: Narrow Phase (no data movement between nodes) — the driver assigns each task to a node based on data locality; each node processes its local partitions independently in parallel (e.g., filter rows, apply a map function). Wide Phase (shuffle — data crosses node boundaries) — for operations like groupBy, join, distinct: (1) Each node writes its shuffle output to local disk, partitioned by key hash; (2) Downstream tasks on potentially different nodes fetch their assigned key partitions from all upstream nodes via HTTP shuffle service; (3) Tasks then process the fetched data. This network transfer (shuffle) is the most expensive operation in Spark and should be minimized." },
+  // 30
+  { q: "The main components of Hadoop MapReduce are:", opts: ["JobTracker, TaskTracker, NameNode, DataNode", "Driver, Executor, Worker, Cluster Manager", "Map, Shuffle, Sort, Reduce — orchestrated by ResourceManager and NodeManager in YARN", "Input Reader, Combiner, Partitioner, Output Writer"], ans: 2, exp: "MapReduce (Hadoop 2.x with YARN) has these key components: (1) Map Phase — Mapper tasks read HDFS splits, apply the map() function, and produce key-value pairs written to local disk; (2) Shuffle and Sort — MapReduce framework sorts Map output by key and transfers it to the appropriate Reduce nodes (most expensive step); (3) Reduce Phase — Reducer tasks receive sorted key-value groups and apply the reduce() function, writing final output to HDFS. YARN components: ResourceManager (master, manages cluster resources), NodeManager (agent on each node, manages containers), ApplicationMaster (per-job coordinator that negotiates resources and tracks task progress). Note: JobTracker/TaskTracker are the older Hadoop 1.x components, replaced by YARN in Hadoop 2.x." },
+  // 31
+  { q: "HDFS (Hadoop Distributed File System) stores data by:", opts: ["Keeping one full copy of each file on the NameNode", "Splitting files into fixed-size blocks (default 128MB) and distributing replicated blocks across DataNodes", "Storing data as column-oriented Parquet files with metadata on ZooKeeper", "Keeping all data in RAM across DataNodes with disk as a cold backup"], ans: 1, exp: "HDFS stores data using a master-worker architecture: The NameNode (master) stores the filesystem namespace — the tree of directories and files, and the mapping of each file to its list of blocks. DataNodes (workers) store the actual block bytes. When storing a 1GB file with 128MB blocks: HDFS creates 8 blocks (1GB / 128MB), replicates each block 3 times, and distributes the 24 total block copies across different DataNodes (on different racks for rack-awareness). When Spark reads this file, the HDFS client contacts the NameNode for block locations, then reads directly from the closest DataNode for each block. The NameNode is a single point of failure — that's why HDFS HA uses standby NameNodes with ZooKeeper." },
+  // 32
+  { q: "Why was HDFS designed rather than using a standard distributed file system?", opts: ["HDFS supports random read/write access which standard filesystems lack", "HDFS is optimized for streaming reads of large files, hardware failure tolerance, and write-once-read-many workloads at commodity hardware scale", "HDFS provides POSIX compliance that NFS and GFS cannot offer", "HDFS was created to support real-time low-latency access to small files"], ans: 1, exp: "HDFS was specifically designed for the Google File System (GFS) use case: (1) Large files — HDFS uses 128MB blocks (vs. 4KB in ext4) because large blocks reduce NameNode metadata and enable high streaming bandwidth; (2) Write-once-read-many — HDFS doesn't support efficient random writes or updates (no edit-in-place). Files are written once and read many times — perfect for ETL pipelines; (3) Commodity hardware fault tolerance — DataNode failures are expected, so replication provides redundancy without expensive RAID; (4) High throughput over low latency — HDFS optimizes for bandwidth (streaming large files) not IOPS (random access). It is NOT suitable for: lots of small files (wastes NameNode memory), low-latency random reads, or frequent updates (use HBase or Delta Lake instead)." },
+  // 33
+  { q: "In HDFS, if a DataNode fails while Spark is reading data:", opts: ["The entire job fails and must be restarted from scratch", "The NameNode detects the failure and Spark reads the replica of that block from another DataNode", "The HDFS client retries indefinitely until the failed DataNode recovers", "Spark checkpoints the last successful stage and re-reads from HDFS"], ans: 1, exp: "HDFS fault tolerance works via block replication: when a DataNode fails, the NameNode detects it through missed heartbeats (after ~10 minutes by default). Until then, the HDFS client already has the block location list from the initial NameNode call, and it simply picks the next replica location from the list. Spark's FileInputFormat detects the read failure and similarly retries with the next replica. The NameNode also triggers re-replication — it instructs another DataNode to copy the now-under-replicated blocks from existing replicas to a new node, restoring the replication factor to 3. The job continues without interruption or data loss. This is why HDFS is considered fault-tolerant for batch workloads." },
+  // 34
+  { q: "MapReduce is defined as:", opts: ["A real-time stream processing framework using micro-batches", "A programming model that processes data in parallel by applying a Map function to produce key-value pairs, then a Reduce function to aggregate them", "A distributed SQL engine that runs ANSI SQL on HDFS data", "An in-memory DAG execution engine similar to Spark's RDD model"], ans: 1, exp: "MapReduce is a parallel batch processing programming model. The model: (1) Map — developer provides a map() function that takes each input record and emits zero or more (key, value) pairs. E.g., for word count: map('hello world') → [('hello', 1), ('world', 1)]; (2) Shuffle and Sort — the framework automatically groups all values by key. E.g., [('hello', [1,1,1]), ('world', [1,1])]; (3) Reduce — developer provides a reduce() function that receives a key and its list of values. E.g., reduce('hello', [1,1,1]) → ('hello', 3). The framework handles parallelization, fault tolerance, and sorting automatically. MapReduce is best for simple one-pass batch ETL, but poor for iterative algorithms." },
+  // 35
+  { q: "MapReduce is most appropriate when:", opts: ["You need sub-second interactive query latency on large datasets", "You have simple batch ETL workloads with no need for iterative computation or real-time results", "You need to cache intermediate results for machine learning iterations", "You need stream processing with windowing and watermarks"], ans: 1, exp: "MapReduce excels at simple, single-pass batch workloads: ETL pipelines (extract from HDFS, transform, load to another HDFS location), log analysis (count events, sum metrics), simple aggregations with no iteration. It is poorly suited for: (1) Iterative algorithms — ML training (k-means, gradient descent) needs 10-1000 passes over the same data. Each MapReduce iteration reads/writes HDFS → massive I/O overhead. Spark caches data in memory between iterations, making it 10-100x faster; (2) Interactive queries — MapReduce startup latency (JVM launch, HDFS reads) is too slow for sub-second query response; (3) Streaming — MapReduce processes only bounded, static datasets." },
+  // 36
+  { q: "YARN (Yet Another Resource Negotiator) primarily provides:", opts: ["A distributed file system that replaces HDFS for Spark workloads", "Resource management and job scheduling for Hadoop cluster applications", "An in-memory key-value store for Spark broadcast variables", "A DAG execution engine for Spark SQL query optimization"], ans: 1, exp: "YARN (Yet Another Resource Negotiator), introduced in Hadoop 2.0, decoupled resource management from the MapReduce programming model. Hadoop 1.x had a monolithic JobTracker handling both scheduling and resource management — limiting it to MapReduce only. YARN's architecture: (1) ResourceManager (master) — global resource arbiter; accepts resource requests from ApplicationMasters, allocates containers (CPU + memory chunks) on NodeManagers; (2) NodeManager (per-node agent) — launches and monitors containers on each worker node, reports health to ResourceManager; (3) ApplicationMaster (per-application) — requests resources from ResourceManager, works with NodeManagers to run tasks, monitors progress. This architecture allows YARN to run any distributed application — Spark, MapReduce, Flink, etc." },
+  // 37
+  { q: "A key limitation of MapReduce that Spark addresses is:", opts: ["MapReduce cannot handle files larger than 128MB", "MapReduce writes all intermediate data to disk between phases, causing high latency for iterative workloads", "MapReduce does not support Java, requiring Scala for all jobs", "MapReduce cannot run on YARN and requires its own cluster manager"], ans: 1, exp: "MapReduce's fatal flaw for iterative workloads is its mandatory disk I/O between every phase. For a machine learning model trained over 100 iterations: MapReduce = 100 × (HDFS read + Map computation + local disk write + network shuffle + local disk read + Reduce computation + HDFS write) = hundreds of disk I/O operations on terabytes of data. Spark's solution: after reading data from HDFS once, each RDD transformation applies its function to in-memory data. With rdd.cache(), the dataset stays in executor RAM across all 100 iterations. Only the final output is written to disk. This eliminates ~99% of the disk I/O, achieving 10-100x speedup on iterative ML workloads." },
+  // 38
+  { q: "Compared to MapReduce, Spark is generally faster because:", opts: ["Spark uses a proprietary columnar file format that compresses data more efficiently", "Spark processes data in-memory using a DAG execution model, avoiding repeated disk I/O between stages", "Spark replaces shuffle with broadcast joins, eliminating all network transfers", "Spark uses GPU acceleration by default for all transformations"], ans: 1, exp: "Spark's speed advantage has multiple dimensions: (1) In-memory DAG execution — transformations chain together in memory without writing to disk between steps; (2) Lazy evaluation — Spark builds an optimized execution plan before running, combining operations (e.g., filter pushdown before groupBy); (3) Tungsten physical execution — whole-stage code generation compiles plans into optimized JVM bytecode, approaching hand-written Java performance; (4) Catalyst optimizer — cost-based query optimization rewrites inefficient plans; (5) Columnar processing — vectorized reading of Parquet/ORC files processes entire columns at once using CPU SIMD instructions. Benchmark studies show Spark is 10-100x faster than MapReduce on iterative workloads and 2-5x faster on single-pass batch jobs." },
+  // 39
+  { q: "MapReduce supports only batch processing because:", opts: ["It was designed before streaming APIs existed in Java", "Its architecture requires all data to be available upfront; Map and Reduce phases are sequential disk-based operations with no support for incremental streaming input", "YARN does not allocate resources for streaming workloads", "HDFS blocks cannot be read until the entire file is written"], ans: 1, exp: "MapReduce's architecture is fundamentally batch-oriented: (1) Input must be fully available before Map tasks can start — you can't process records as they arrive; (2) The framework reads a static HDFS dataset, which is bounded and complete by definition; (3) The sequential Map→Shuffle→Reduce pipeline has no mechanism to handle records arriving continuously; (4) Each MapReduce job has significant startup overhead (JVM launches, HDFS reads) making per-record or sub-second processing impractical. For streaming, Apache Storm and Apache Flink offer true record-at-a-time processing. Spark Streaming bridges the gap with micro-batching, but even that requires data to be buffered into time intervals before processing." },
+  // 40
+  { q: "Micro-batching in Spark Streaming means:", opts: ["Processing one record at a time to achieve near-real-time latency", "Accumulating streaming data into small, fixed time-interval batches and processing each batch as a mini-Spark job", "Splitting large RDDs into smaller micro-partitions for parallel execution", "Running multiple concurrent MapReduce jobs on the same dataset"], ans: 1, exp: "Spark Streaming (the original DStream API) uses micro-batching: continuous input streams (Kafka, Kinesis, TCP sockets) are divided into small time-based batches (e.g., every 1 second). Each micro-batch is processed as a regular Spark RDD job — full Spark execution engine, fault tolerance via lineage, and all transformations available. The batch interval is configurable (100ms to minutes). Tradeoff: latency = at least one batch interval, so true millisecond latency is impossible with DStream API. Structured Streaming (Spark 2.x+) improved this with a continuous processing mode and watermark-based event-time handling. Apache Flink offers true record-at-a-time streaming with lower latency than micro-batching." },
+  // 41
+  { q: "High latency in MapReduce is primarily caused by:", opts: ["The slow JVM startup time when launching mapper tasks", "Mandatory HDFS disk writes between Map and Reduce phases, plus full data sort-and-shuffle across the network", "YARN's resource negotiation overhead for every task", "NameNode single-point bottleneck during block metadata lookups"], ans: 1, exp: "MapReduce's latency breakdown for a typical job: (1) HDFS input read — all Map tasks read their input splits from HDFS DataNodes (disk I/O); (2) Map computation — CPU applies the map function; (3) Local disk write — Map output (intermediate key-value pairs) written to local disk; (4) Sort and Spill — Map output is sorted by key in memory with spills to disk when memory is full; (5) Network shuffle — sorted Map output transferred over the network to Reduce nodes; (6) Merge sort — Reduce node merges multiple Map output files, reading from disk; (7) Reduce computation; (8) HDFS write — final output written to HDFS. Steps 3-6 alone add 30-60 seconds of pure I/O overhead for large jobs. Spark eliminates most intermediate disk I/O." },
+  // 42
+  { q: "SparkContext is:", opts: ["A configuration object that defines Spark SQL query execution parameters", "The entry point of a Spark application that establishes connection to a cluster and coordinates resource allocation", "The in-memory storage layer that manages RDD partition caching", "A DAG scheduler component responsible for stage-level fault tolerance"], ans: 1, exp: "SparkContext is the original entry point (pre-Spark 2.0) for interacting with the Spark cluster. When you create a SparkContext with a SparkConf, it: (1) Connects to the Cluster Manager (YARN, Mesos, Standalone) and requests executor resources; (2) Provides methods to create RDDs (sc.textFile(), sc.parallelize()); (3) Contains the DAGScheduler (converts RDD lineage into stages), TaskScheduler (assigns tasks to executors), and BlockManager (manages RDD data blocks in memory/disk); (4) Manages accumulators and broadcast variables; (5) Tracks and displays job progress. Only one SparkContext should be active per JVM (though Spark 2.x+ allows multiple with SparkContext.getOrCreate()). In Spark 2.0+, SparkSession wraps SparkContext." },
+  // 43
+  { q: "When processing a 100-row table in Spark, which statement is correct?", opts: ["All 100 rows always reside in one partition regardless of configuration", "The table is split into partitions based on spark.default.parallelism or file splits; each partition is processed by one task", "Each row is assigned to a separate executor task", "The driver processes all rows directly without involving executors"], ans: 1, exp: "Spark does not process all rows in one place. When reading a 100-row table: (1) If from a Parquet file with multiple row groups, Spark creates one partition per row group or HDFS block; (2) If from a JDBC source, Spark uses predicateFilters or numPartitions to split the read; (3) For small datasets, spark.default.parallelism determines the default partition count. If the 100-row table becomes 4 partitions (e.g., 25 rows each), Spark creates 4 tasks, each processing 25 rows in parallel on separate executor slots. The number of partitions (and thus tasks) is critical: too few = under-utilized cores; too many = scheduling overhead per tiny task exceeds actual computation time." },
+  // 44
+  { q: "The key difference between an Executor and a Cluster in Spark is:", opts: ["An executor is a JVM process on one node; a cluster is the entire collection of nodes and resources managed by the cluster manager", "An executor manages the cluster's resource allocation; the cluster runs tasks", "They are interchangeable terms in Spark documentation", "A cluster is a single-node Spark deployment; an executor is a multi-node deployment"], ans: 0, exp: "The distinction: Cluster = the entire distributed system of machines (nodes) and their networking infrastructure, managed by a Cluster Manager (YARN, Kubernetes). It includes all Workers, their CPUs, memory, disks, and the network between them. Executor = a single JVM process running on one Worker node in that cluster, dedicated to one Spark application. A 100-node cluster might run 100 executors (one per node), or 200 executors (two per node), or even 50 executors (one per node, leaving 50 nodes idle). The cluster is the infrastructure; the executor is the runtime process. Multiple Spark applications share the cluster's resources via the Cluster Manager." },
+  // 45
+  { q: "The Logical Plan in Spark SQL represents:", opts: ["The actual physical operations (scans, sorts, shuffles) with chosen algorithms", "An abstract, optimizer-agnostic representation of the query's intended transformations without specifying how to execute them", "The final byte-code generated by Tungsten for JVM execution", "The DAG of RDD operations generated by the Catalyst optimizer"], ans: 1, exp: "Spark SQL's query optimization uses the Catalyst optimizer which processes plans in four phases: (1) Logical Plan — an abstract tree of relational operations (Filter, Project, Aggregate, Join) that represents WHAT the query does, not HOW. This is optimizer-agnostic. Example: SELECT name FROM users WHERE age > 18 becomes Filter(age > 18) → Project(name) → Scan(users); (2) Optimized Logical Plan — Catalyst applies rule-based optimizations (predicate pushdown, constant folding, column pruning); (3) Physical Plans — multiple candidate execution strategies (sort-merge join vs. broadcast join); (4) Selected Physical Plan — cost model picks the best plan, then Tungsten generates bytecode. The Logical Plan is the starting point — it captures intent without committing to execution strategy." },
+  // 46
+  { q: "How does Spark differ from MapReduce when processing a 100 GB file?", opts: ["Both read from HDFS and write intermediate results to disk after every phase", "Spark reads the file into memory-resident RDD partitions and pipelines transformations in a DAG; MapReduce writes intermediate data to HDFS between Map and Reduce phases", "Spark processes the entire 100GB in a single executor; MapReduce splits it across nodes", "Spark requires the file to fit entirely in RAM; MapReduce has no memory requirement"], ans: 1, exp: "Processing a 100GB file — comparison: MapReduce: (1) Reads 100GB from HDFS into Mapper JVMs; (2) Map output written to local disk (~100GB, depending on selectivity); (3) Network shuffle — data transferred to Reduce nodes and written to disk again (~100GB); (4) Reduce reads from disk and writes 100GB output to HDFS. Total I/O: ~400-500GB of disk/network I/O. Spark: (1) Reads 100GB from HDFS into RDD partitions (split across executor memory); (2) Transformations apply in memory, pipelining filter→map→groupBy without intermediate writes; (3) Shuffle writes to local disk ONLY if needed (wide transformations); (4) Final output written once. Total I/O for narrow transformations: ~200GB (read + write). For wide: ~300GB. Spark avoids the MapReduce write-shuffle-write-read cycle." },
+  // 47
+  { q: "For a 100GB file, Spark executor memory is typically configured to:", opts: ["Match the full 100GB so the entire dataset fits in one executor", "Provide enough memory for each partition's active processing, shuffle buffers, and caching, with spillover to disk if needed", "Be set to exactly 1GB regardless of dataset size to ensure consistent performance", "Equal the HDFS block size (128MB) per executor"], ans: 1, exp: "Executor memory doesn't need to match total data size because Spark processes data in partitions, not all at once. For a 100GB file with 800 partitions (128MB each): each executor core processes one partition at a time = 128MB of active data per slot. With 5 cores per executor, that's 640MB of concurrent active partition data. But executor memory also covers: shuffle buffers (~20-30% of total partition size), aggregation hash maps (can be large for high-cardinality groupBy), sort buffers, JVM overhead (GC, class metadata, internal objects), and optionally cached partitions. Rule of thumb: executor memory = (cores × partition_size × 2) + shuffle_buffer + caching_overhead. For 128MB partitions with 5 cores: ~2-4GB minimum per executor." },
+  // 48
+  { q: "A common thumb rule for Spark executor memory sizing is:", opts: ["1 GB per executor core, with no upper limit", "Allocate 4-8 cores per executor, 4-8x the per-core memory in GB, leaving 7% for YARN overhead (off-heap)", "Always use 100% of available node RAM for executors to maximize throughput", "Set executor memory equal to the total dataset size divided by number of executors"], ans: 1, exp: "Industry thumb rule for executor sizing: Cores per executor: 4-5 (higher cores per executor increase GC pressure as all cores share the same JVM heap; HDFS prefers 5 concurrent threads per executor for best throughput). Memory per core: 4-5GB per core. So 5 cores → ~20-25GB per executor. YARN overhead: subtract 7% (default spark.yarn.executor.memoryOverhead) for off-heap — so request 21-27GB from YARN to get 20-25GB heap. Number of executors: (total node cores - 1 for OS/NodeManager) / cores_per_executor. Example: 10 nodes × 32 cores each, 128GB RAM each → 10 × (32-1)/5 = 62 executors, each with 5 cores and ~20GB heap (leaving ~8GB per node for OS + YARN overhead)." },
+  // 49
+  { q: "Spark handles memory spillover by:", opts: ["Failing the task and re-attempting with a larger memory allocation", "Writing excess shuffle/sort data from execution memory to local disk when memory is exhausted, then reading it back as needed", "Broadcasting the spilled partition to other executors to free local memory", "Triggering a full garbage collection cycle and retrying the operation in-memory"], ans: 1, exp: "Spark's spill mechanism: During shuffle write or sort, Spark uses execution memory to build an in-memory sort buffer or hash map. When this fills up (controlled by spark.memory.fraction), Spark spills the in-memory data to local disk as a sorted spill file. After all data is processed, Spark merges the spill files and in-memory data with a merge-sort. This is transparent to the user but significantly impacts performance: disk I/O is 100-1000x slower than memory. Signs of spilling: Spark UI shows 'Spill (Memory)' and 'Spill (Disk)' columns in stage details. To reduce spills: increase executor memory, reduce partition size (repartition to more partitions), or use partial aggregation (reduceByKey instead of groupByKey)." },
+  // 50
+  { q: "Spark's fault tolerance via DAG differs from MapReduce's because:", opts: ["Spark checkpoints every stage to HDFS like MapReduce, but reads from memory", "Spark tracks RDD lineage in the DAG and recomputes only the lost partitions from the last checkpoint or source; MapReduce must restart the full job", "Both systems re-run from the beginning on any failure", "Spark uses ZooKeeper to recover executor state; MapReduce uses HDFS journaling"], ans: 1, exp: "Spark fault tolerance via RDD lineage: Every RDD knows its parent RDD(s) and the transformation that produced it (the lineage graph = DAG). If a partition is lost (executor crash), Spark recomputes ONLY that partition by replaying its lineage from the nearest available parent — either the source data (HDFS) or a checkpointed RDD. MapReduce comparison: MapReduce can restart failed Reduce tasks from Map output files (already on disk), but if a Map task fails mid-shuffle, the reduce stage may need to restart too. For long lineage chains, Spark checkpointing (rdd.checkpoint()) persists intermediate RDDs to HDFS, truncating the lineage and speeding up recovery. Checkpointing is essential for iterative streaming jobs." },
+  // 51
+  { q: "RAM's purpose in a MapReduce node is:", opts: ["To store HDFS blocks that the TaskTracker reads during Map phase", "To hold the active Map/Reduce task's working data, JVM heap, and OS buffers — not for persistent intermediate storage between phases", "To cache the entire dataset before Map tasks begin processing", "MapReduce does not use RAM; it exclusively uses disk I/O"], ans: 1, exp: "In a MapReduce node, RAM serves the running JVM processes: (1) Mapper task JVMs hold input split data, the output key-value buffer (circular buffer, default 100MB, controlled by mapreduce.task.io.sort.mb), sort/spill operations, and application-level data structures; (2) Reducer task JVMs hold the merged shuffle data before reduction and the output data. Critical point: MapReduce intermediate results between Map and Reduce phases are NOT stored in RAM — they go to local disk. RAM is only the working space for the currently executing Map or Reduce function. This is unlike Spark where RAM persists data across transformation steps via RDD caching." },
+  // 52
+  { q: "HDD's role in MapReduce is:", opts: ["Temporary buffer for network shuffles between nodes", "Primary intermediate storage — Map output is written to local HDD, shuffled across the network, written to HDD again before Reduce reads it", "Exclusively for final output storage after the Reduce phase", "HDD is not used in MapReduce; all storage is on SSDs"], ans: 1, exp: "HDD is the backbone of MapReduce's data pipeline: (1) HDFS input blocks are stored on DataNode HDDs; Map tasks read from local/remote HDDs; (2) Map output (intermediate key-value pairs) is written to the TaskTracker node's local HDD (even for tiny Map outputs); (3) Shuffle: Map output is read from HDD, sent over network, and written to Reduce node's local HDD; (4) Reduce input merge: multiple Map output files on HDD are merge-sorted (external merge sort) back through HDD; (5) Reduce output: written to HDFS (across multiple DataNode HDDs). This HDD-centric design means a single 100GB MapReduce job might perform 400-500GB of HDD I/O. HDDs with 100-200MB/s throughput make this the dominant bottleneck." },
+  // 53
+  { q: "If the Spark driver node fails during job execution:", opts: ["Executors detect the failure via heartbeat and elect a new driver automatically", "The entire Spark application fails; executors are released. Recovery requires resubmitting the application (or using checkpointing for streaming)", "The cluster manager promotes one executor to become the new driver", "YARN automatically restarts the driver on a different node with full state recovery"], ans: 1, exp: "The Spark Driver is a Single Point of Failure (SPOF). When the Driver process dies: (1) All executors receive a disconnect signal and terminate, releasing cluster resources; (2) All in-progress tasks are lost; (3) All cached RDD data in executor memory is lost; (4) The application must be completely resubmitted. Unlike worker/executor failures (which Spark recovers from via lineage), Driver failure is fatal. High availability options: YARN HA with spark.yarn.maxAppAttempts > 1 (YARN restarts the Driver on a new node, but application state is lost unless checkpointed); Spark Standalone with --supervise flag (restarts the Driver on failure); Structured Streaming with checkpointing to recover stream processing state across Driver restarts." },
+  // 54
+  { q: "Does Hadoop HDFS have a built-in caching system similar to Spark's RDD caching?", opts: ["Yes — HDFS DataNodes cache frequently accessed blocks in RAM automatically", "HDFS added Centralized Cache Management in Hadoop 2.3, but it is explicit and coarse-grained — not transparent like Spark's in-memory cache", "No — HDFS has no caching mechanism whatsoever and always reads from disk", "Yes — HDFS uses a Redis-backed distributed cache layer"], ans: 1, exp: "Hadoop 2.3 introduced HDFS Centralized Cache Management. Administrators can designate specific HDFS paths as 'cache directives' and assign them to 'cache pools'. DataNodes then load the designated files into RAM (off-heap memory via mmap) and keep them there. Key differences from Spark caching: (1) Explicit admin configuration required (hdfs cacheadmin commands) vs. Spark's programmatic df.cache(); (2) File-level granularity vs. Spark's partition-level; (3) Persists across application restarts vs. Spark cache lost when application ends; (4) No eviction policy beyond admin-set TTL vs. Spark's LRU eviction; (5) Read-through cache for any HDFS reader vs. Spark-only. Useful for frequently accessed lookup tables or reference data." },
+  // 55
+  { q: "JVM On-Heap memory in Spark is:", opts: ["Memory allocated outside the JVM by Spark's Tungsten engine using sun.misc.Unsafe", "Memory managed by the JVM garbage collector within the heap space, used for Java objects including RDD data in deserialized form", "The OS-level page cache used by Spark for HDFS reads", "Memory dedicated to JVM metaspace for class loading"], ans: 1, exp: "JVM On-Heap memory in Spark: all standard Java/Scala objects are allocated in the JVM heap. For Spark, this includes: (1) Deserialized RDD partitions (when using StorageLevel.MEMORY_ONLY or MEMORY_AND_DISK without _SER suffix); (2) User-created objects in UDFs and transformations; (3) Spark's internal data structures (BlockManager, DAGScheduler state, etc.); (4) Row objects, arrays, and maps for DataFrame operations without Tungsten optimization. Problem: as heap size grows beyond 4-8GB, JVM garbage collection (GC) pauses become frequent and long (stop-the-world GC). Spark's Tungsten off-heap memory (sun.misc.Unsafe) bypasses GC entirely for binary data, improving performance for large datasets. The off-heap approach is used for serialized DataFrames (MEMORY_ONLY_SER storage level)." },
+  // 56
+  { q: "SparkContext and SparkSession are related how?", opts: ["They are completely independent entry points with no relationship", "SparkSession (Spark 2.0+) encapsulates SparkContext along with SQLContext and HiveContext, providing a unified entry point", "SparkContext replaced SparkSession in Spark 3.0 for better performance", "SparkSession is created per executor; SparkContext is created per driver"], ans: 1, exp: "SparkSession (introduced in Spark 2.0) is a unified entry point that consolidates the previously fragmented entry points: SparkContext (for RDDs), SQLContext (for DataFrame/SQL), and HiveContext (for Hive-compatible operations). Internally, SparkSession creates and wraps a SparkContext. You can access it via spark.sparkContext. SparkSession also provides: (1) A unified API for creating DataFrames, running SQL, and interacting with the Hive metastore; (2) Built-in support for reading/writing JSON, Parquet, CSV, ORC, Delta, etc.; (3) A shared catalog (spark.catalog) for managing tables; (4) Configuration access (spark.conf). In practice, modern Spark code always uses SparkSession, never creates SparkContext directly." },
+  // 57
+  { q: "SparkSession is best described as:", opts: ["A connection pool manager for JDBC data sources in Spark SQL", "A unified entry point (Spark 2.0+) for DataFrame/Dataset API, Spark SQL, and streaming, encapsulating SparkContext", "A separate process that manages Hive metastore connections", "The replacement for the DAG Scheduler in Spark 3.x"], ans: 1, exp: "SparkSession is the single entry point for all Spark functionality in modern applications. Creating one: val spark = SparkSession.builder().appName('MyApp').config('spark.sql.shuffle.partitions', '200').getOrCreate(). Through SparkSession you can: read data (spark.read.parquet('/path')), run SQL (spark.sql('SELECT * FROM table')), create DataFrames (spark.createDataFrame(data, schema)), access the catalog (spark.catalog.listTables()), and get the underlying SparkContext (spark.sparkContext). The getOrCreate() pattern ensures only one SparkSession exists per JVM, which is important for notebooks and testing. In Databricks, SparkSession is pre-created as the 'spark' variable in every notebook." },
+  // 58
+  { q: "The key difference between SparkContext and SparkSession is:", opts: ["SparkContext supports DataFrames; SparkSession only supports RDDs", "SparkContext is the low-level entry point for RDD operations; SparkSession is the higher-level entry point that includes SparkContext plus DataFrame/SQL support", "SparkSession runs on the executor; SparkContext runs on the driver", "They are identical — SparkSession is just an alias for SparkContext"], ans: 1, exp: "SparkContext vs SparkSession detailed comparison: SparkContext — low-level, works with RDDs, was the original API (Spark 1.x), directly manages cluster connection and resource negotiation, created via new SparkContext(conf). Methods: sc.textFile(), sc.parallelize(), sc.broadcast(), sc.accumulator(). SparkSession — high-level, works with DataFrames/Datasets/SQL, introduced in Spark 2.0 to unify the API surface, wraps SparkContext internally, created via SparkSession.builder().getOrCreate(). Methods: spark.read, spark.sql(), spark.createDataFrame(). Access SparkContext from SparkSession: spark.sparkContext. In modern code, 95% of the time you only need SparkSession. You need SparkContext directly only for low-level RDD operations or specific Spark Streaming code." },
+  // 59
+  { q: "Tungsten optimization in Spark focuses on:", opts: ["SQL query plan optimization using rule-based and cost-based optimizers", "Low-level CPU and memory efficiency improvements: off-heap memory management, cache-aware computation, and whole-stage code generation", "Optimizing shuffle by reducing network bytes transferred between executors", "Columnar storage format optimizations for Parquet file reads"], ans: 1, exp: "Tungsten (introduced in Spark 1.4) is Spark's physical execution engine overhaul targeting CPU and memory efficiency: (1) Off-heap binary memory management — stores data as raw bytes using sun.misc.Unsafe, bypassing JVM object overhead (~16 bytes per Java object) and GC pressure. Tungsten's binary format uses ~2-5x less memory than deserialized Java objects; (2) Cache-aware computation — algorithms designed to maximize CPU L1/L2 cache hits by accessing data sequentially rather than randomly (e.g., cache-friendly sort algorithms); (3) Whole-stage code generation — Tungsten compiles entire query stage plans (previously a series of virtual function calls) into a single Java function using Janino, enabling the JIT compiler to optimize the entire stage as one unit, approaching hand-written Java performance." },
+  // 60
+  { q: "Catalyst optimizer in Spark SQL works by:", opts: ["Profiling actual query execution and adjusting plans based on runtime statistics only", "Transforming logical plans through rule-based analysis, logical optimization, physical planning, and code generation phases", "Replacing SQL with DataFrame operations at compile time for better JVM optimization", "Running all possible physical plans in parallel and selecting the fastest one"], ans: 1, exp: "Catalyst optimizer phases in detail: (1) Analysis — resolves attribute names against the catalog, validates types, checks table/column existence. Output: Analyzed Logical Plan; (2) Logical Optimization — applies rule-based transformations: predicate pushdown (move filters closer to data source to reduce rows early), constant folding (evaluate '1+1' at plan time), projection pruning (drop unused columns), null propagation, boolean simplification. Output: Optimized Logical Plan; (3) Physical Planning — generates multiple candidate physical plans using different join strategies (broadcast hash join if small table, sort-merge join otherwise, shuffle hash join). Uses cost model with statistics; (4) Code Generation (Tungsten) — Janino compiles the selected physical plan into JVM bytecode for fast execution. This pipeline runs automatically on every DataFrame operation." },
+  // 61
+  { q: "The Salting technique in Spark is used to:", opts: ["Encrypt sensitive columns before writing to HDFS", "Mitigate data skew by adding a random prefix/suffix to skewed keys, distributing hot-key partitions across multiple tasks", "Compress shuffle data to reduce network transfer between executors", "Cache frequently used DataFrames in serialized form to reduce GC pressure"], ans: 1, exp: "Data skew occurs when certain keys have vastly more records than others (e.g., join on customer_id where one customer has 80% of all orders). This creates one enormous partition while others are tiny — the job hangs on the one 'straggler' task. Salting solution: (1) Add a random integer suffix (0 to N-1) to skewed keys in the large table: '1' → '1_0', '1_1', '1_2' (if N=3); (2) Explode the small table to have N copies of the skewed key: row with key '1' becomes rows with keys '1_0', '1_1', '1_2'; (3) Join on the salted key. Now the skewed key's data is distributed across N partitions instead of 1. Trade-off: small table size increases N-fold. Choose N based on skew factor. Alternative: AQE (Adaptive Query Execution) in Spark 3.x automatically handles skew by splitting large partitions." },
+  // 62
+  { q: "SBT (Simple Build Tool) and Maven are:", opts: ["Spark cluster deployment tools for managing executor configurations", "Build tools used to compile, test, and package Scala/Java Spark applications and manage their dependencies", "Spark SQL query plan visualization tools", "Distributed version control systems for Spark job code"], ans: 1, exp: "SBT (Simple Build Tool) and Maven are JVM build tools essential for Spark application development: SBT — the standard build tool for Scala projects. Uses a Scala-based DSL for build configuration (build.sbt). Key features: incremental compilation (only recompiles changed files), interactive shell (sbt console), test runner integration (ScalaTest, Specs2), assembly plugin for creating fat JARs (uber JARs) with all dependencies included. Maven — the standard for Java projects, also supports Scala via scala-maven-plugin. Uses XML pom.xml for configuration. Both tools: manage dependencies from Maven Central/Artifactory, handle transitive dependency resolution, and create deployable JAR artifacts. For Spark, the typical deliverable is a fat JAR submitted via spark-submit --class MyClass --master yarn myapp-assembly-1.0.jar." },
+  // 63
+  { q: "The collect() action in Spark:", opts: ["Applies a transformation to each partition and returns a new RDD", "Brings all RDD/DataFrame data from executors to the driver's memory as a local collection — risky for large datasets", "Collects metadata (schema, count) without moving actual data to the driver", "Triggers caching of the RDD on all executor nodes"], ans: 1, exp: "collect() is an action that pulls ALL data from all partitions across all executors into the Driver's JVM memory as a local Scala/Java/Python list. This is extremely dangerous for large datasets: a 100GB RDD collect() would attempt to load 100GB into the Driver's heap, almost certainly causing OutOfMemoryError. When to use collect(): only on small DataFrames/RDDs that you KNOW are small (e.g., after aggressive filtering, or aggregated results). Safer alternatives: take(n) — fetches only n rows; show(n) — displays n rows without returning all data; write() — saves to disk without collecting; foreach/foreachPartition — processes data on executors without moving it to driver. Always check dataset size before using collect()." },
+  // 64
+  { q: "The take(n) action in Spark:", opts: ["Returns the first n rows from the first partition only, always in deterministic order", "Returns n rows from the RDD/DataFrame, scanning as few partitions as needed — order is not guaranteed without explicit sort", "Triggers a full dataset scan and then samples n rows randomly", "Is equivalent to limit(n).collect() and always scans the entire dataset"], ans: 1, exp: "take(n) is an optimized action that returns exactly n elements from the RDD/DataFrame. Implementation: Spark starts scanning from the first partition. If the first partition has enough elements (≥ n), it returns them immediately without scanning other partitions. If not, it scans additional partitions incrementally. This means take(10) on a 1TB dataset is very fast — it only reads the first partition(s). Key caveat: without an explicit sort, the order of results is determined by partition ordering and internal storage, NOT guaranteed to be deterministic (results may differ between runs if partitions change). Use df.orderBy('column').take(n) for consistent results. take(n) vs limit(n): limit() is a transformation creating a new DataFrame; take() is an action returning local data." },
+  // 65
+  { q: "The show() action in Spark:", opts: ["Prints the full DataFrame to the driver console — equivalent to collect() for display purposes", "Displays a default of 20 rows of the DataFrame in a formatted table on the driver — it does NOT bring all data to the driver", "Triggers full computation and caches the result for subsequent show() calls", "Is a transformation that formats data as a string RDD for logging"], ans: 1, exp: "show() is a commonly used action for inspecting DataFrames. Default behavior: df.show() displays 20 rows in a formatted ASCII table on the console/notebook output. Configurable: df.show(50) shows 50 rows; df.show(20, truncate=False) shows full column content without truncation; df.show(20, vertical=True) shows each row as a vertical key-value list (useful for wide tables). Under the hood, show() calls df.take(numRows) which collects only those rows to the Driver — NOT the full dataset. This makes show() safe for large DataFrames. Important: show() does trigger computation (it's an action), so it will compute the entire lineage up to the point of show, but only returns numRows rows. In production, use write() instead of show() to save results." },
+  // 66
+  { q: "Calling cache() on a Spark DataFrame:", opts: ["Immediately computes and stores the DataFrame in memory across all executors", "Marks the DataFrame for caching at the default storage level (MEMORY_AND_DISK); actual caching occurs on the first action", "Forces the DataFrame to be stored only in RAM, failing if memory is insufficient", "Stores the DataFrame in the driver's local memory for fast access"], ans: 1, exp: "cache() behavior details: When you call df.cache(), Spark registers the DataFrame in the BlockManager with StorageLevel.MEMORY_AND_DISK. No computation happens yet — this is lazy. The first action on this DataFrame (e.g., df.count()) triggers computation AND caching: each partition is computed, stored in the BlockManager's memory (as JVM objects for MEMORY_AND_DISK in deserialized form, or as Tungsten binary for MEMORY_AND_DISK_SER), and the action result returned. Subsequent actions read from cache, skipping recomputation. MEMORY_AND_DISK means: try memory first; if a partition doesn't fit, write it to local disk. To explicitly release: df.unpersist(). In Spark 2+, DataFrame caching uses serialized Tungsten format by default (more compact than deserialized Java objects)." },
+  // 67
+  { q: "persist() differs from cache() in Spark because:", opts: ["persist() is eager (immediate computation); cache() is lazy", "persist() allows you to specify a StorageLevel (MEMORY_ONLY, DISK_ONLY, OFF_HEAP, etc.); cache() always uses the default level", "persist() is only available for RDDs; cache() works on DataFrames", "cache() supports off-heap storage; persist() only uses on-heap memory"], ans: 1, exp: "persist(storageLevel) gives you explicit control over where and how data is stored. Available StorageLevels: MEMORY_ONLY — store only in JVM heap (deserialized); evicts partitions that don't fit, recomputes them on access. MEMORY_ONLY_SER — serialize partitions to bytes before storing in heap; uses less memory but more CPU. MEMORY_AND_DISK — store in memory; overflow to local disk (default for cache()). MEMORY_AND_DISK_SER — serialized in memory, overflow to disk. DISK_ONLY — always write to local disk; useful for very large datasets accessed rarely. OFF_HEAP — store in Tungsten off-heap memory (requires spark.memory.offHeap.enabled=true); avoids GC. MEMORY_AND_DISK_2, etc. — replicate cached data across 2 nodes for fault tolerance. Choose based on: available memory, access frequency, recomputation cost, and GC sensitivity." },
+  // 68
+  { q: "Auto-scaling of nodes in a Spark cluster on YARN/cloud refers to:", opts: ["Spark automatically rebalances RDD partitions when new nodes join the cluster", "Dynamic allocation — Spark requests additional executors from the cluster manager during peaks and releases them during idle periods based on workload", "The cluster manager automatically upgrades node hardware when CPU usage exceeds 80%", "Spark duplicates executors on new nodes and replicates all cached RDDs automatically"], ans: 1, exp: "Spark Dynamic Resource Allocation (DRA) — enabled via spark.dynamicAllocation.enabled=true — allows Spark to automatically request and release executors based on workload: Scale-up: when tasks are queued waiting for executor slots longer than spark.dynamicAllocation.schedulerBacklogTimeout (default 1s), Spark requests additional executors from YARN/Kubernetes up to spark.dynamicAllocation.maxExecutors. Scale-down: when an executor has been idle (no tasks) for spark.dynamicAllocation.executorIdleTimeout (default 60s), Spark requests its removal. Requires External Shuffle Service (spark.shuffle.service.enabled=true) so shuffle files persist on NodeManager even after the executor is removed. DRA is essential for shared clusters where multiple jobs compete for resources — idle executors are released for other jobs." },
+  // 69
+  { q: "Having MORE partitions than tasks (over-partitioning) for a fixed data size:", opts: ["Always improves parallelism and should be maximized", "Creates many small tasks with high scheduling overhead, wastes slots on empty partitions, and can degrade performance despite apparent parallelism", "Reduces memory pressure since each partition is smaller", "Has no impact — Spark automatically merges small partitions"], ans: 1, exp: "Partition count tuning is critical for performance. Over-partitioning symptoms: many tasks complete in milliseconds (task scheduling overhead ~10-100ms per task dominates); executor cores sit idle waiting for scheduler; Spark UI shows hundreds of 'tiny' tasks per stage. Under-partitioning symptoms: a few tasks take minutes while other cores sit completely idle; out-of-memory errors (partitions too large); no parallelism. Rule of thumb: target 100-200MB per partition. For a 10GB dataset: 10,000 / 128MB ≈ 78 partitions (good). For shuffle partitions (groupBy, join): spark.sql.shuffle.partitions default is 200 — often too high for small data (use 2-4x the number of CPU cores) and too low for huge data. AQE (Adaptive Query Execution) in Spark 3.x can automatically coalesce small shuffle partitions." },
+  // 70
+  { q: "A Fog Node in distributed computing is:", opts: ["A failed master node that has been isolated from the cluster", "An edge computing node that extends cloud capabilities closer to data sources, reducing latency for IoT and real-time workloads", "A Spark worker node that exclusively handles shuffle and sort operations", "A virtual node in Kubernetes that aggregates container metrics"], ans: 1, exp: "Fog computing extends the cloud computing paradigm to the network edge, closer to where data is generated (IoT sensors, edge devices, factory floor systems). Architecture: Cloud (central, high-latency, high-throughput) → Fog Nodes (intermediate, local processing, lower latency) → IoT Devices (data source). Fog Node characteristics: limited compute/memory compared to cloud, deployed geographically close to data sources, performs pre-processing (filtering, aggregation, anomaly detection) locally to reduce bandwidth to cloud, enables real-time responses without cloud round-trip latency. Example: autonomous vehicle sensor fusion, smart factory defect detection, oil rig monitoring. Fog vs Edge: Fog nodes are more capable intermediaries; Edge is the device itself (e.g., the sensor). This contrasts with Spark worker nodes which are pure computation nodes in a centralized cluster." },
+  // 71
+  { q: "How does Spark Core enable higher-level libraries like MLlib and Spark SQL?", opts: ["MLlib and Spark SQL are independent frameworks that share only the cluster manager with Spark Core", "Spark Core provides the foundational RDD abstraction, distributed task scheduling, fault tolerance, and memory management that all higher-level APIs build on top of", "Spark SQL compiles to MapReduce; MLlib compiles to native code — neither uses Spark Core at runtime", "Higher-level libraries bypass Spark Core and communicate directly with YARN for better performance"], ans: 1, exp: "Spark Core is the foundation of the entire Spark ecosystem. It provides: (1) RDD abstraction — the fundamental distributed data structure with lineage tracking, transformations, and actions; (2) DAG Scheduler — converts RDD lineage into a DAG of stages, optimizes stage boundaries at shuffle points; (3) Task Scheduler — assigns stage tasks to available executor slots based on locality preference; (4) BlockManager — distributed key-value store managing RDD blocks in memory/disk across all nodes; (5) Network communication (Netty-based) — handles shuffle data transfer, RPC between driver and executors; (6) Fault tolerance — detects failed tasks via heartbeats, re-schedules on different executors using lineage. Higher-level libraries: Spark SQL's DataFrame API compiles to RDD operations; MLlib Pipelines use RDDs internally; Structured Streaming represents streams as micro-batch DataFrames — all ultimately execute through Spark Core's scheduler and executor infrastructure." },
+];
+
+let answered = 0, correct = 0, wrong = 0;
+
+const CATEGORIES = [
+  { label: "Spark Fundamentals & Ecosystem", range: [0, 10] },
+  { label: "Cluster Architecture", range: [10, 20] },
+  { label: "Distributed Computing Concepts", range: [20, 29] },
+  { label: "Hadoop & MapReduce", range: [29, 41] },
+  { label: "Spark Internals & Memory", range: [41, 55] },
+  { label: "APIs, Optimization & Advanced Topics", range: [55, 71] }
+];
+
+function getCategoryFor(idx) {
+  for (const cat of CATEGORIES) {
+    if (idx >= cat.range[0] && idx < cat.range[1]) return cat.label;
+  }
+  return "";
+}
+
+function buildQuiz() {
+  const container = document.getElementById('quiz-container');
+  let html = '';
+  let lastCat = '';
+
+  QUESTIONS.forEach((q, i) => {
+    const cat = getCategoryFor(i);
+    if (cat !== lastCat) {
+      html += `<div class="category-section"><div class="category-label">📂 ${cat}</div></div>`;
+      lastCat = cat;
+    }
+
+    const keys = ['A', 'B', 'C', 'D'];
+    let optsHtml = q.opts.map((opt, oi) => `
+      <button class="opt" id="opt-${i}-${oi}" onclick="selectOpt(${i},${oi})">
+        <span class="opt-key">${keys[oi]}</span>
+        <span>${opt}</span>
+      </button>`).join('');
+
+    html += `
+      <div class="q-card" id="qcard-${i}">
+        <div class="q-header">
+          <span class="q-num">Q${i+1}</span>
+          <span class="q-text">${q.q}</span>
+        </div>
+        <div class="options">${optsHtml}</div>
+        <div class="explanation" id="exp-${i}">💡 <strong>Explanation:</strong> ${q.exp}</div>
+      </div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+function selectOpt(qi, oi) {
+  const q = QUESTIONS[qi];
+  const card = document.getElementById(`qcard-${qi}`);
+  const exp = document.getElementById(`exp-${qi}`);
+
+  // Already answered?
+  if (card.classList.contains('answered-correct') || card.classList.contains('answered-wrong')) return;
+
+  answered++;
+  const isCorrect = oi === q.ans;
+  if (isCorrect) correct++;
+  else wrong++;
+
+  // Style all options
+  for (let j = 0; j < q.opts.length; j++) {
+    const btn = document.getElementById(`opt-${qi}-${j}`);
+    btn.disabled = true;
+    if (j === q.ans) btn.classList.add('correct');
+    else if (j === oi && !isCorrect) btn.classList.add('wrong');
+  }
+
+  card.classList.add(isCorrect ? 'answered-correct' : 'answered-wrong');
+  exp.classList.add('visible');
+
+  updateStats();
+}
+
+function updateStats() {
+  const total = QUESTIONS.length;
+  const pct = answered === 0 ? 0 : Math.round((correct / answered) * 100);
+  document.getElementById('s-correct').textContent = correct;
+  document.getElementById('s-wrong').textContent = wrong;
+  document.getElementById('s-pct').textContent = pct + '%';
+  document.getElementById('progress-fill').style.width = (answered / total * 100) + '%';
+}
+
+function showResult() {
+  const total = QUESTIONS.length;
+  const skipped = total - answered;
+  const pct = total === 0 ? 0 : Math.round((correct / total) * 100);
+
+  document.getElementById('r-correct').textContent = correct;
+  document.getElementById('r-wrong').textContent = wrong;
+  document.getElementById('r-skip').textContent = skipped;
+  document.getElementById('result-pct-text').textContent = pct + '%';
+
+  const ring = document.getElementById('result-ring');
+  ring.style.setProperty('--pct', pct + '%');
+
+  const titles = ['Keep Practicing! 🔥', 'Getting There! ⚡', 'Solid Work! 💪', 'Almost Expert! 🚀', 'Spark Master! 🏆'];
+  const msgs = [
+    'Review the explanations and try again. Every expert was once a beginner!',
+    'Good progress! Focus on the architecture and memory sections.',
+    'Well done! You have strong Spark fundamentals.',
+    'Impressive knowledge! Just a few gaps to fill in.',
+    'Outstanding! You have mastered Apache Spark concepts.'
+  ];
+  const tier = Math.min(4, Math.floor(pct / 20));
+  document.getElementById('result-title').textContent = titles[tier];
+  document.getElementById('result-msg').textContent = msgs[tier];
+
+  document.getElementById('result-panel').classList.add('visible');
+}
+
+function retryQuiz() {
+  answered = 0; correct = 0; wrong = 0;
+  document.getElementById('result-panel').classList.remove('visible');
+  buildQuiz();
+  updateStats();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Floating sparks
+function createSparks() {
+  const container = document.getElementById('sparks');
+  for (let i = 0; i < 18; i++) {
+    const s = document.createElement('div');
+    s.className = 'spark';
+    s.style.left = Math.random() * 100 + 'vw';
+    s.style.top = Math.random() * 100 + 'vh';
+    s.style.animationDuration = (8 + Math.random() * 14) + 's';
+    s.style.animationDelay = (Math.random() * 12) + 's';
+    s.style.background = Math.random() > 0.5 ? 'var(--accent)' : 'var(--accent3)';
+    s.style.width = s.style.height = (2 + Math.random() * 3) + 'px';
+    container.appendChild(s);
+  }
+}
+
+buildQuiz();
+createSparks();
+</script>
+</body>
+</html>
