@@ -1,0 +1,2152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PySpark Mastery Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --card: #161d2e;
+    --border: #1e2d45;
+    --accent: #f97316;
+    --accent2: #38bdf8;
+    --accent3: #a78bfa;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --correct: #22c55e;
+    --wrong: #ef4444;
+    --glow: rgba(249,115,22,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 20% 20%, rgba(249,115,22,0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(56,189,248,0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .hero {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 60px 20px 40px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(249,115,22,0.06) 0%, transparent 100%);
+  }
+
+  .hero-tag {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 4px 14px;
+    border-radius: 2px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+  }
+
+  .hero h1 {
+    font-size: clamp(2rem, 6vw, 4rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+  }
+
+  .hero p {
+    color: var(--muted);
+    font-size: 1rem;
+    font-weight: 400;
+    max-width: 500px;
+    margin: 0 auto 30px;
+  }
+
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .stat-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .score-board {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,14,26,0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .score-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .score-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .score-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .progress-wrap {
+    flex: 1;
+    min-width: 120px;
+    max-width: 300px;
+  }
+
+  .progress-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+
+  .progress-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 4px;
+    text-align: right;
+  }
+
+  .reset-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .reset-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .quiz-container {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 30px 16px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .category-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    margin-bottom: -8px;
+  }
+
+  .category-divider span {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent3);
+    white-space: nowrap;
+  }
+
+  .category-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--accent3), transparent);
+    opacity: 0.4;
+  }
+
+  .question-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .question-card:hover {
+    border-color: rgba(249,115,22,0.3);
+  }
+
+  .question-card.answered-correct {
+    border-color: rgba(34,197,94,0.4);
+    box-shadow: 0 0 20px rgba(34,197,94,0.08);
+  }
+
+  .question-card.answered-wrong {
+    border-color: rgba(239,68,68,0.4);
+    box-shadow: 0 0 20px rgba(239,68,68,0.08);
+  }
+
+  .q-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .q-number {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    background: rgba(249,115,22,0.1);
+    border: 1px solid rgba(249,115,22,0.2);
+    border-radius: 4px;
+    padding: 3px 8px;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+
+  .q-text {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
+  .options-grid {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface);
+    text-align: left;
+    width: 100%;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    -webkit-appearance: none;
+  }
+
+  .option:hover:not(:disabled) {
+    border-color: var(--accent2);
+    background: rgba(56,189,248,0.05);
+  }
+
+  .option-letter {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--muted);
+    background: var(--border);
+    border-radius: 4px;
+    min-width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.2s;
+  }
+
+  .option.correct {
+    border-color: var(--correct);
+    background: rgba(34,197,94,0.08);
+  }
+
+  .option.correct .option-letter {
+    background: var(--correct);
+    color: #fff;
+  }
+
+  .option.wrong {
+    border-color: var(--wrong);
+    background: rgba(239,68,68,0.08);
+  }
+
+  .option.wrong .option-letter {
+    background: var(--wrong);
+    color: #fff;
+  }
+
+  .option.missed {
+    border-color: rgba(34,197,94,0.3);
+    background: rgba(34,197,94,0.04);
+  }
+
+  .option:disabled {
+    cursor: default;
+  }
+
+  .explanation {
+    margin: 0 20px 18px;
+    padding: 14px;
+    background: rgba(56,189,248,0.05);
+    border: 1px solid rgba(56,189,248,0.2);
+    border-radius: 8px;
+    font-size: 0.83rem;
+    line-height: 1.6;
+    color: #94a3b8;
+    display: none;
+  }
+
+  .explanation.visible {
+    display: block;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .explanation strong {
+    color: var(--accent2);
+    font-weight: 600;
+  }
+
+  .explanation code {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--accent);
+  }
+
+  .result-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 20px 4px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    display: none;
+  }
+
+  .result-badge.show { display: inline-flex; }
+  .result-badge.correct-badge { color: var(--correct); background: rgba(34,197,94,0.1); }
+  .result-badge.wrong-badge { color: var(--wrong); background: rgba(239,68,68,0.1); }
+
+  .final-result {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px 30px;
+    text-align: center;
+    display: none;
+    animation: fadeUp 0.6s ease;
+  }
+
+  .final-result.show { display: block; }
+
+  .final-score-ring {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 4px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    position: relative;
+    background: conic-gradient(var(--accent) calc(var(--pct) * 1%), var(--border) 0%);
+  }
+
+  .final-score-inner {
+    width: 100px;
+    height: 100px;
+    background: var(--card);
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .final-pct {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .final-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .final-grade {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+
+  .final-msg {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 24px;
+  }
+
+  .retry-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--bg);
+    background: var(--accent);
+    border: none;
+    padding: 12px 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 700;
+  }
+
+  .retry-btn:hover {
+    background: #ea6c0a;
+    transform: translateY(-1px);
+  }
+
+  @media (max-width: 600px) {
+    .hero { padding: 40px 16px 30px; }
+    .q-header { padding: 16px 14px 12px; gap: 10px; }
+    .q-text { font-size: 0.875rem; }
+    .options-grid { padding: 12px 14px; }
+    .option { padding: 10px 12px; font-size: 0.825rem; }
+    .explanation { margin: 0 14px 14px; }
+    .result-badge { margin: 0 14px 4px; }
+    .score-board { padding: 10px 14px; gap: 8px; }
+    .stats-bar { gap: 20px; }
+    .stat-num { font-size: 1.4rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-tag">⚡ Technical Assessment</div>
+  <h1>PySpark Mastery Quiz</h1>
+  <p>49 tricky MCQ questions covering core concepts, optimization, streaming, and advanced patterns.</p>
+  <div class="stats-bar">
+    <div class="stat"><span class="stat-num">49</span><span class="stat-label">Questions</span></div>
+    <div class="stat"><span class="stat-num">8</span><span class="stat-label">Topics</span></div>
+    <div class="stat"><span class="stat-num">∞</span><span class="stat-label">Retries</span></div>
+  </div>
+</div>
+
+<div class="score-board">
+  <div class="score-info">
+    <div>
+      <div class="score-label">SCORE</div>
+      <div class="score-value" id="scoreDisplay">0 / 0</div>
+    </div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-text" id="progressText">0 of 49 answered</div>
+  </div>
+  <button class="reset-btn" onclick="resetQuiz()">↺ RESET</button>
+</div>
+
+<div class="quiz-container" id="quizContainer">
+
+  <div class="category-divider"><span>Core Fundamentals</span></div>
+
+  <!-- Q1 -->
+  <div class="question-card" id="q1">
+    <div class="q-header">
+      <span class="q-number">Q 01</span>
+      <div class="q-text">What is the primary difference between RDD, DataFrame, and Dataset in PySpark?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,1,'A')"><span class="option-letter">A</span>RDD is schema-aware while DataFrame is schema-less, and Dataset exists only in Scala</button>
+      <button class="option" onclick="answer(this,1,'B')"><span class="option-letter">B</span>RDD is the lowest-level abstraction with no schema; DataFrame adds schema but loses type safety; Dataset provides both schema and compile-time type safety</button>
+      <button class="option" onclick="answer(this,1,'C')"><span class="option-letter">C</span>All three are identical in performance but differ only in their API surface</button>
+      <button class="option" onclick="answer(this,1,'D')"><span class="option-letter">D</span>DataFrame is faster than Dataset because it skips serialization entirely</button>
+    </div>
+    <span class="result-badge" id="badge1"></span>
+    <div class="explanation" id="exp1">
+      <strong>Answer: B</strong><br><br>
+      <strong>RDD (Resilient Distributed Dataset)</strong> is the foundational abstraction — a distributed collection of JVM objects with no schema, no optimization, and full control over execution. It's type-safe but verbose.<br><br>
+      <strong>DataFrame</strong> adds a schema (column names + types) on top of RDD, enabling the Catalyst Optimizer to generate optimized query plans. However, it sacrifices compile-time type safety — errors surface at runtime, not compile time. In Python, everything is a DataFrame (there is no Python Dataset).<br><br>
+      <strong>Dataset</strong> (Scala/Java only) combines the best of both: schema-aware like DataFrame + compile-time type safety like RDD. Under the hood, Dataset[Row] is literally a DataFrame.<br><br>
+      Key insight: DataFrame/Dataset use the Tungsten binary format which is much more memory-efficient than Java object serialization in RDDs.
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="question-card" id="q2">
+    <div class="q-header">
+      <span class="q-number">Q 02</span>
+      <div class="q-text">How does PySpark achieve parallel processing across a cluster?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,2,'A')"><span class="option-letter">A</span>By running multiple Python threads on the driver node simultaneously</button>
+      <button class="option" onclick="answer(this,2,'B')"><span class="option-letter">B</span>By distributing data partitions across worker nodes and executing tasks in parallel via the JVM Spark engine, communicating with Python through Py4J</button>
+      <button class="option" onclick="answer(this,2,'C')"><span class="option-letter">C</span>PySpark uses asyncio event loops for non-blocking parallel I/O operations</button>
+      <button class="option" onclick="answer(this,2,'D')"><span class="option-letter">D</span>Each executor runs a separate Python process that directly manages distributed memory</button>
+    </div>
+    <span class="result-badge" id="badge2"></span>
+    <div class="explanation" id="exp2">
+      <strong>Answer: B</strong><br><br>
+      PySpark's parallelism model works as follows:<br><br>
+      1. <strong>Driver</strong> runs your Python code and communicates with the JVM Spark engine via <code>Py4J</code> — a bridge that translates Python calls to JVM calls.<br><br>
+      2. Data is split into <strong>partitions</strong>. Each partition is a logical chunk of data that can be processed independently.<br><br>
+      3. The <strong>Spark Scheduler</strong> breaks jobs into stages and tasks. Each task processes one partition on one executor core.<br><br>
+      4. <strong>Executors</strong> (JVM processes on worker nodes) run tasks in parallel. For Python UDFs, a separate Python worker process is spawned per executor, and data is serialized/deserialized via pickle (which is why Python UDFs are slower than native Spark functions).<br><br>
+      The key takeaway: parallelism comes from data partitioning + distributed executors, NOT Python-level threading.
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="question-card" id="q3">
+    <div class="q-header">
+      <span class="q-number">Q 03</span>
+      <div class="q-text">Which real-world analogy BEST describes lazy evaluation in PySpark?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,3,'A')"><span class="option-letter">A</span>A chef who preps each ingredient the moment it's requested, cooking one dish at a time</button>
+      <button class="option" onclick="answer(this,3,'B')"><span class="option-letter">B</span>A GPS that calculates the entire optimal route before you start driving, only recalculating if conditions change</button>
+      <button class="option" onclick="answer(this,3,'C')"><span class="option-letter">C</span>A factory assembly line where each station processes items as fast as possible without waiting</button>
+      <button class="option" onclick="answer(this,3,'D')"><span class="option-letter">D</span>A vending machine that dispenses items immediately when a button is pressed</button>
+    </div>
+    <span class="result-badge" id="badge3"></span>
+    <div class="explanation" id="exp3">
+      <strong>Answer: B</strong><br><br>
+      <strong>Lazy evaluation</strong> means transformations (<code>filter</code>, <code>map</code>, <code>select</code>) build a logical plan (DAG) but do NOT execute until an action (<code>collect</code>, <code>count</code>, <code>write</code>) is called.<br><br>
+      The <strong>GPS analogy</strong> fits perfectly: You enter a destination (define transformations) and the GPS plans the full route (builds a DAG + optimizes it via Catalyst). The car only moves when you press Go (action is called). If traffic changes (data changes), it recalculates.<br><br>
+      <strong>Benefits of lazy evaluation:</strong><br>
+      • Catalyst Optimizer sees the complete plan and can reorder, push down filters, eliminate redundant steps<br>
+      • Avoids unnecessary computation — if you <code>filter</code> then <code>limit(10)</code>, Spark won't process all records<br>
+      • Pipeline fusion: multiple transformations can be combined into a single stage<br><br>
+      <strong>SparkContext</strong> is the entry point to Spark functionality, representing the connection to the cluster. In Spark 2+, <code>SparkSession</code> wraps it. It's responsible for creating RDDs, broadcasting variables, accumulating metrics, and coordinating with the cluster manager.
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="question-card" id="q4">
+    <div class="q-header">
+      <span class="q-number">Q 04</span>
+      <div class="q-text">When processing a 500GB file in PySpark, which approach best handles memory constraints?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,4,'A')"><span class="option-letter">A</span>Load the entire file into a DataFrame and then apply filters</button>
+      <button class="option" onclick="answer(this,4,'B')"><span class="option-letter">B</span>Use <code>spark.read</code> with partition-aware formats like Parquet, push down filters via predicates, and increase partition count with <code>repartition()</code> if needed</button>
+      <button class="option" onclick="answer(this,4,'C')"><span class="option-letter">C</span>Split the file manually into 1GB chunks before loading into Spark</button>
+      <button class="option" onclick="answer(this,4,'D')"><span class="option-letter">D</span>Use <code>collect()</code> to bring data to the driver and process it with pandas</button>
+    </div>
+    <span class="result-badge" id="badge4"></span>
+    <div class="explanation" id="exp4">
+      <strong>Answer: B</strong><br><br>
+      For large files, the correct strategy is:<br><br>
+      1. <strong>Use columnar formats</strong> (Parquet, ORC) which support predicate pushdown — Spark reads only relevant columns/row groups, not the entire file.<br><br>
+      2. <strong>Partition pruning</strong>: Store data partitioned by date/region so Spark skips irrelevant directories entirely.<br><br>
+      3. <strong>Adjust partitions</strong>: Rule of thumb — each partition should be 128MB–200MB. For 500GB: ~2500–4000 partitions. Use <code>spark.sql.files.maxPartitionBytes</code> to control this.<br><br>
+      4. <strong>Avoid <code>collect()</code></strong> on large data — this brings everything to the driver and causes OOM errors.<br><br>
+      5. Use <strong>streaming reads</strong> for incremental processing with <code>spark.readStream</code>.<br><br>
+      6. Set <code>spark.sql.adaptive.enabled=true</code> (AQE) to dynamically adjust partition sizes based on actual data.
+    </div>
+  </div>
+
+  <!-- Q5 -->
+  <div class="question-card" id="q5">
+    <div class="q-header">
+      <span class="q-number">Q 05</span>
+      <div class="q-text">Which of these is a TRANSFORMATION, not an action, in PySpark?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,5,'A')"><span class="option-letter">A</span><code>df.count()</code></button>
+      <button class="option" onclick="answer(this,5,'B')"><span class="option-letter">B</span><code>df.collect()</code></button>
+      <button class="option" onclick="answer(this,5,'C')"><span class="option-letter">C</span><code>df.groupBy("dept").agg({"salary": "avg"})</code></button>
+      <button class="option" onclick="answer(this,5,'D')"><span class="option-letter">D</span><code>df.write.parquet("/output")</code></button>
+    </div>
+    <span class="result-badge" id="badge5"></span>
+    <div class="explanation" id="exp5">
+      <strong>Answer: C</strong><br><br>
+      <strong>Transformations</strong> are lazy — they return a new DataFrame/RDD and add a step to the logical plan without executing anything:<br>
+      • <code>select()</code>, <code>filter()</code>, <code>groupBy()</code>, <code>join()</code>, <code>withColumn()</code>, <code>orderBy()</code>, <code>agg()</code><br><br>
+      <strong>Actions</strong> trigger execution of the entire DAG:<br>
+      • <code>count()</code> — returns a number<br>
+      • <code>collect()</code> — returns all rows to driver<br>
+      • <code>write</code> — saves data to storage<br>
+      • <code>show()</code>, <code>take(n)</code>, <code>first()</code>, <code>foreach()</code><br><br>
+      The tricky part: <code>groupBy().agg()</code> looks like it's computing something, but it's still building a logical plan. Only when you call <code>show()</code> or <code>collect()</code> on the result does actual computation happen. This is the core of lazy evaluation.
+    </div>
+  </div>
+
+  <!-- Q6 -->
+  <div class="question-card" id="q6">
+    <div class="q-header">
+      <span class="q-number">Q 06</span>
+      <div class="q-text">How does Spark determine the number of partitions when reading a file from HDFS?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,6,'A')"><span class="option-letter">A</span>Always creates exactly one partition per file regardless of file size</button>
+      <button class="option" onclick="answer(this,6,'B')"><span class="option-letter">B</span>Creates partitions based on the number of available executor cores</button>
+      <button class="option" onclick="answer(this,6,'C')"><span class="option-letter">C</span>By default, creates one partition per HDFS block (default 128MB), controllable via <code>spark.sql.files.maxPartitionBytes</code></button>
+      <button class="option" onclick="answer(this,6,'D')"><span class="option-letter">D</span>Partitions are always equal to <code>spark.default.parallelism</code></button>
+    </div>
+    <span class="result-badge" id="badge6"></span>
+    <div class="explanation" id="exp6">
+      <strong>Answer: C</strong><br><br>
+      Spark's partitioning logic:<br><br>
+      <strong>For HDFS/S3 files:</strong> Default partition size = HDFS block size (128MB). A 1GB file → ~8 partitions. Controlled by <code>spark.sql.files.maxPartitionBytes</code> (default 128MB).<br><br>
+      <strong>For RDDs:</strong> <code>sc.textFile(path, minPartitions)</code> — you can hint at minimum partitions but Spark may use more based on block size.<br><br>
+      <strong>For JDBC sources:</strong> You control partitions via <code>numPartitions</code>, <code>partitionColumn</code>, <code>lowerBound</code>, <code>upperBound</code>.<br><br>
+      <strong>Key configs:</strong><br>
+      • <code>spark.sql.files.maxPartitionBytes</code> — max bytes per partition<br>
+      • <code>spark.sql.files.openCostInBytes</code> — cost to open a file (small files get merged)<br>
+      • <code>spark.default.parallelism</code> — for RDD operations, defaults to total executor cores<br><br>
+      With <strong>AQE</strong> enabled, Spark can coalesce shuffle partitions dynamically after seeing actual data sizes.
+    </div>
+  </div>
+
+  <!-- Q7 -->
+  <div class="question-card" id="q7">
+    <div class="q-header">
+      <span class="q-number">Q 07</span>
+      <div class="q-text">What makes PySpark fault-tolerant when a node fails mid-computation?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,7,'A')"><span class="option-letter">A</span>Spark continuously replicates all data across three nodes like HDFS</button>
+      <button class="option" onclick="answer(this,7,'B')"><span class="option-letter">B</span>The driver keeps a full copy of all data in memory as backup</button>
+      <button class="option" onclick="answer(this,7,'C')"><span class="option-letter">C</span>RDDs track lineage — a directed acyclic graph of transformations — allowing lost partitions to be recomputed from source data</button>
+      <button class="option" onclick="answer(this,7,'D')"><span class="option-letter">D</span>Executors checkpoint their state to ZooKeeper every 30 seconds</button>
+    </div>
+    <span class="result-badge" id="badge7"></span>
+    <div class="explanation" id="exp7">
+      <strong>Answer: C</strong><br><br>
+      Spark's fault tolerance is based on <strong>lineage graphs (DAGs)</strong>, not data replication:<br><br>
+      Every RDD knows exactly how it was created — its parent RDDs and the transformation applied. This chain is the <strong>lineage</strong>. If a partition is lost (executor dies), Spark traces back through the lineage to recompute only the lost partition from its source data.<br><br>
+      <strong>Wide vs Narrow dependencies matter here:</strong><br>
+      • <strong>Narrow dependency</strong> (e.g., <code>map</code>, <code>filter</code>): Each child partition depends on one parent partition. Recovery is cheap — recompute just that partition.<br>
+      • <strong>Wide dependency</strong> (e.g., <code>groupBy</code>, <code>join</code>): Child partitions depend on ALL parent partitions. Recovery may require recomputing many partitions or previous shuffle stages.<br><br>
+      For long lineage chains (streaming, iterative algorithms), use <strong>checkpointing</strong> (<code>df.checkpoint()</code>) to truncate lineage and save state to reliable storage, preventing expensive full recomputation.
+    </div>
+  </div>
+
+  <!-- Q8 -->
+  <div class="question-card" id="q8">
+    <div class="q-header">
+      <span class="q-number">Q 08</span>
+      <div class="q-text">When should you use a broadcast variable instead of a regular variable in Spark?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,8,'A')"><span class="option-letter">A</span>Always — broadcast variables are faster than regular variables in every case</button>
+      <button class="option" onclick="answer(this,8,'B')"><span class="option-letter">B</span>When a large lookup table (typically &lt;10GB) needs to be shared with ALL executors efficiently, avoiding repeated network transfer per task</button>
+      <button class="option" onclick="answer(this,8,'C')"><span class="option-letter">C</span>When you need to accumulate results from multiple executors back to the driver</button>
+      <button class="option" onclick="answer(this,8,'D')"><span class="option-letter">D</span>Only for variables that are read and written by multiple tasks simultaneously</button>
+    </div>
+    <span class="result-badge" id="badge8"></span>
+    <div class="explanation" id="exp8">
+      <strong>Answer: B</strong><br><br>
+      Without broadcast: Spark serializes the variable and sends it with EVERY task. If you have 10,000 tasks and a 10MB lookup dict, that's 100GB of network transfer.<br><br>
+      <strong>With broadcast:</strong><br>
+      <code>lookup = spark.sparkContext.broadcast({"US": "United States", ...})</code><br>
+      Spark sends the data once per executor (using an efficient P2P BitTorrent-like protocol), where it's cached in memory. All tasks on that executor share the same copy.<br><br>
+      <strong>Best use cases:</strong><br>
+      • Lookup/dimension tables for joins (this is a "broadcast join")<br>
+      • Configuration dictionaries<br>
+      • ML model weights for distributed inference<br><br>
+      <strong>Size limit:</strong> Controlled by <code>spark.broadcast.blockSize</code> and <code>spark.sql.autoBroadcastJoinThreshold</code> (default 10MB for auto-broadcast joins). For larger tables, manually broadcast and use hints: <code>df.join(broadcast(small_df), ...)</code>.<br><br>
+      Access via <code>lookup.value</code> inside UDFs.
+    </div>
+  </div>
+
+  <!-- Q9 -->
+  <div class="question-card" id="q9">
+    <div class="q-header">
+      <span class="q-number">Q 09</span>
+      <div class="q-text">What is the key behavioral difference between accumulators and broadcast variables?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,9,'A')"><span class="option-letter">A</span>Accumulators can only store integers; broadcast variables store any Python object</button>
+      <button class="option" onclick="answer(this,9,'B')"><span class="option-letter">B</span>Broadcast variables are read-only on workers and write-once from the driver; accumulators are write-only on workers and read-only on the driver — enabling aggregation across tasks</button>
+      <button class="option" onclick="answer(this,9,'C')"><span class="option-letter">C</span>Accumulators are faster because they don't require serialization</button>
+      <button class="option" onclick="answer(this,9,'D')"><span class="option-letter">D</span>Both are identical in behavior but accumulators are used for numeric operations only</button>
+    </div>
+    <span class="result-badge" id="badge9"></span>
+    <div class="explanation" id="exp9">
+      <strong>Answer: B</strong><br><br>
+      <strong>Broadcast variables:</strong> Driver → Executors (read-only). Used to push large, static data to workers.<br><br>
+      <strong>Accumulators:</strong> Executors → Driver (aggregation only). Workers ADD to the accumulator; only the driver can READ the final value.<br><br>
+      <code>error_count = sc.accumulator(0)<br>
+      df.foreach(lambda row: error_count.add(1) if row["status"] == "ERROR" else None)<br>
+      print(error_count.value)  # Only valid on driver</code><br><br>
+      <strong>Critical gotcha:</strong> Accumulators in <em>transformations</em> (lazy operations) may be updated multiple times due to task retries or re-execution. This leads to double-counting. Accumulators in <em>actions</em> are more reliable. Always treat accumulator values as approximate metrics, not exact counts.<br><br>
+      <strong>Custom accumulators</strong>: Extend <code>AccumulatorParam</code> to create custom aggregation types (e.g., sets, dictionaries).
+    </div>
+  </div>
+
+  <!-- Q10 -->
+  <div class="question-card" id="q10">
+    <div class="q-header">
+      <span class="q-number">Q 10</span>
+      <div class="q-text">Which filter approach is most performant when working with PySpark DataFrames?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,10,'A')"><span class="option-letter">A</span><code>df.filter(lambda row: row["age"] > 30)</code> — Python lambda for flexibility</button>
+      <button class="option" onclick="answer(this,10,'B')"><span class="option-letter">B</span><code>df.rdd.filter(lambda r: r.age > 30).toDF()</code> — converting to RDD for control</button>
+      <button class="option" onclick="answer(this,10,'C')"><span class="option-letter">C</span><code>df.filter(col("age") > 30)</code> or <code>df.filter("age > 30")</code> — using native Spark Column expressions</button>
+      <button class="option" onclick="answer(this,10,'D')"><span class="option-letter">D</span>All approaches have identical performance since they produce the same result</button>
+    </div>
+    <span class="result-badge" id="badge10"></span>
+    <div class="explanation" id="exp10">
+      <strong>Answer: C</strong><br><br>
+      <strong>Native Column expressions</strong> (<code>col()</code>, SQL strings) are processed entirely within the JVM by the Catalyst Optimizer and Tungsten Execution Engine — no Python involved during actual execution.<br><br>
+      <strong>Why Python lambdas/UDFs are slower:</strong><br>
+      1. Data must be serialized from JVM → Python (pickle)<br>
+      2. Python processes the data row-by-row<br>
+      3. Results serialized back Python → JVM<br>
+      This serialization overhead can make Python UDFs 3–100x slower than equivalent native expressions.<br><br>
+      <strong>Performance ranking (fastest to slowest):</strong><br>
+      1. Built-in Spark functions (<code>col</code>, <code>lit</code>, <code>functions.*</code>)<br>
+      2. Spark SQL string expressions (<code>"age > 30"</code>)<br>
+      3. Pandas UDFs (vectorized, uses Apache Arrow)<br>
+      4. Python UDFs (row-by-row, highest overhead)<br><br>
+      Always prefer built-in functions from <code>pyspark.sql.functions</code> over UDFs when possible.
+    </div>
+  </div>
+
+  <div class="category-divider"><span>DataFrame Operations</span></div>
+
+  <!-- Q11 -->
+  <div class="question-card" id="q11">
+    <div class="q-header">
+      <span class="q-number">Q 11</span>
+      <div class="q-text">A job finishes with 1000 shuffle partitions but most are tiny (few KB). What's the best fix?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,11,'A')"><span class="option-letter">A</span>Use <code>repartition(50)</code> to redistribute data evenly across 50 partitions</button>
+      <button class="option" onclick="answer(this,11,'B')"><span class="option-letter">B</span>Use <code>coalesce(50)</code> to reduce partitions with minimal shuffling, or enable AQE to handle this automatically</button>
+      <button class="option" onclick="answer(this,11,'C')"><span class="option-letter">C</span>Increase <code>spark.default.parallelism</code> to create even more partitions</button>
+      <button class="option" onclick="answer(this,11,'D')"><span class="option-letter">D</span>Call <code>df.collect()</code> and re-parallelize with fewer partitions</button>
+    </div>
+    <span class="result-badge" id="badge11"></span>
+    <div class="explanation" id="exp11">
+      <strong>Answer: B</strong><br><br>
+      <strong><code>coalesce(n)</code></strong>: Reduces partitions by merging existing ones WITHOUT a full shuffle. It combines adjacent partitions on the same executor, making it extremely efficient for downsizing. Limitation: cannot increase partition count.<br><br>
+      <strong><code>repartition(n)</code></strong>: Performs a FULL shuffle — redistributes ALL data evenly across n partitions. Use when you need:<br>
+      • More partitions (scale up)<br>
+      • Even distribution (fix data skew)<br>
+      • Partitioning by a specific column: <code>repartition(n, col("country"))</code><br><br>
+      <strong>Decision rule:</strong><br>
+      • Reducing partitions → <code>coalesce()</code> (no shuffle, fast)<br>
+      • Increasing/rebalancing → <code>repartition()</code> (full shuffle, expensive)<br><br>
+      <strong>AQE solution:</strong> With Spark 3+, enable <code>spark.sql.adaptive.enabled=true</code> and <code>spark.sql.adaptive.coalescePartitions.enabled=true</code> — Spark automatically coalesces shuffle partitions based on target size (<code>spark.sql.adaptive.targetPostShuffleInputSize</code>, default 64MB).
+    </div>
+  </div>
+
+  <!-- Q12 -->
+  <div class="question-card" id="q12">
+    <div class="q-header">
+      <span class="q-number">Q 12</span>
+      <div class="q-text">Which method correctly fills null numeric values with the column mean in PySpark?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,12,'A')"><span class="option-letter">A</span><code>df.na.fill(0)</code> — fills all nulls with zero across the entire DataFrame</button>
+      <button class="option" onclick="answer(this,12,'B')"><span class="option-letter">B</span><code>df.fillna(df.mean())</code> — directly uses mean for all columns</button>
+      <button class="option" onclick="answer(this,12,'C')"><span class="option-letter">C</span>Compute mean per column separately, then use <code>df.na.fill({"col": mean_val})</code> with a dict mapping column names to fill values</button>
+      <button class="option" onclick="answer(this,12,'D')"><span class="option-letter">D</span><code>df.dropna(how="any")</code> — the only reliable approach for null handling</button>
+    </div>
+    <span class="result-badge" id="badge12"></span>
+    <div class="explanation" id="exp12">
+      <strong>Answer: C</strong><br><br>
+      PySpark doesn't have a single <code>df.mean()</code> method. You must compute means first:<br><br>
+      <code>from pyspark.sql import functions as F<br>
+      means = df.select([F.mean(c).alias(c) for c in numeric_cols]).collect()[0]<br>
+      fill_dict = {c: means[c] for c in numeric_cols if means[c] is not None}<br>
+      df_filled = df.na.fill(fill_dict)</code><br><br>
+      <strong>Key null-handling functions:</strong><br>
+      • <code>df.na.drop(how="any"/"all")</code> — drop rows with nulls<br>
+      • <code>df.na.fill(value)</code> or <code>df.na.fill({"col": val})</code> — fill nulls<br>
+      • <code>df.na.replace(old, new)</code> — replace specific values<br>
+      • <code>F.coalesce(col1, col2)</code> — return first non-null<br>
+      • <code>F.when(col.isNull(), default).otherwise(col)</code> — conditional fill<br><br>
+      <strong>MLlib Imputer:</strong> For sophisticated imputation (mean/median/mode), use <code>pyspark.ml.feature.Imputer</code> which handles multiple columns at once as a pipeline stage.
+    </div>
+  </div>
+
+  <!-- Q13 -->
+  <div class="question-card" id="q13">
+    <div class="q-header">
+      <span class="q-number">Q 13</span>
+      <div class="q-text">What does <code>df.withColumn("new_col", col("salary") * 1.1)</code> actually do internally?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,13,'A')"><span class="option-letter">A</span>Mutates the existing DataFrame in-place, adding a new column to it</button>
+      <button class="option" onclick="answer(this,13,'B')"><span class="option-letter">B</span>Creates a new DataFrame with the additional column; original is unchanged due to immutability</button>
+      <button class="option" onclick="answer(this,13,'C')"><span class="option-letter">C</span>Immediately executes the multiplication across all rows and stores the result</button>
+      <button class="option" onclick="answer(this,13,'D')"><span class="option-letter">D</span>Both A and C — Spark DataFrames support both mutable and immutable modes</button>
+    </div>
+    <span class="result-badge" id="badge13"></span>
+    <div class="explanation" id="exp13">
+      <strong>Answer: B</strong><br><br>
+      DataFrames are <strong>immutable</strong>. <code>withColumn()</code> returns a NEW DataFrame with the transformation added to the logical plan. The original <code>df</code> is completely unchanged.<br><br>
+      <code>df2 = df.withColumn("salary_bumped", col("salary") * 1.1)
+      # df still has no "salary_bumped" column
+      # df2 has the new column in its plan (not yet computed)</code><br><br>
+      <strong>Performance warning:</strong> Chaining many <code>withColumn()</code> calls can create deeply nested logical plans. For adding many columns at once, prefer:<br>
+      <code>df.select("*", (col("a") + 1).alias("b"), (col("c") * 2).alias("d"))</code><br><br>
+      <strong>Available column operations:</strong><br>
+      • <code>withColumn(name, expr)</code> — add/replace column<br>
+      • <code>withColumnRenamed(old, new)</code> — rename<br>
+      • <code>drop(col_name)</code> — remove column<br>
+      • <code>withMetadata(name, metadata)</code> — attach metadata
+    </div>
+  </div>
+
+  <!-- Q14 -->
+  <div class="question-card" id="q14">
+    <div class="q-header">
+      <span class="q-number">Q 14</span>
+      <div class="q-text">In a left join between df_orders and df_customers, what happens to orders with no matching customer?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,14,'A')"><span class="option-letter">A</span>Those orders are dropped from the result since there's no matching customer</button>
+      <button class="option" onclick="answer(this,14,'B')"><span class="option-letter">B</span>Those orders are retained with null values in all df_customers columns</button>
+      <button class="option" onclick="answer(this,14,'C')"><span class="option-letter">C</span>Spark throws an exception for unmatched rows in a left join</button>
+      <button class="option" onclick="answer(this,14,'D')"><span class="option-letter">D</span>The join silently converts to an inner join when unmatched rows are detected</button>
+    </div>
+    <span class="result-badge" id="badge14"></span>
+    <div class="explanation" id="exp14">
+      <strong>Answer: B</strong><br><br>
+      <code>df_orders.join(df_customers, on="customer_id", how="left")</code><br><br>
+      In a LEFT JOIN, ALL rows from the left DataFrame (df_orders) are preserved. For unmatched rows, the right DataFrame's columns are filled with <code>null</code>.<br><br>
+      <strong>All join types:</strong><br>
+      • <code>"inner"</code> — only matching rows<br>
+      • <code>"left"</code> or <code>"left_outer"</code> — all left rows, nulls for unmatched right<br>
+      • <code>"right"</code> or <code>"right_outer"</code> — all right rows, nulls for unmatched left<br>
+      • <code>"full"</code> or <code>"full_outer"</code> — all rows from both, nulls where unmatched<br>
+      • <code>"left_semi"</code> — left rows that HAVE a match (no right columns in output)<br>
+      • <code>"left_anti"</code> — left rows that DON'T have a match (like NOT EXISTS)<br>
+      • <code>"cross"</code> — cartesian product<br><br>
+      <strong>Tip:</strong> <code>left_semi</code> and <code>left_anti</code> are very powerful for filtering without including the right table's columns — great for deduplication checks.
+    </div>
+  </div>
+
+  <!-- Q15 -->
+  <div class="question-card" id="q15">
+    <div class="q-header">
+      <span class="q-number">Q 15</span>
+      <div class="q-text">What is the key difference between a temp view and a global temp view in PySpark?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,15,'A')"><span class="option-letter">A</span>Temp views are permanent; global temp views are dropped after the query completes</button>
+      <button class="option" onclick="answer(this,15,'B')"><span class="option-letter">B</span>Temp views are session-scoped (only visible within the creating SparkSession); global temp views persist across sessions within the same Spark application via the <code>global_temp</code> database</button>
+      <button class="option" onclick="answer(this,15,'C')"><span class="option-letter">C</span>Global temp views are stored on disk; temp views exist only in memory</button>
+      <button class="option" onclick="answer(this,15,'D')"><span class="option-letter">D</span>There is no functional difference — the "global" prefix is just a naming convention</button>
+    </div>
+    <span class="result-badge" id="badge15"></span>
+    <div class="explanation" id="exp15">
+      <strong>Answer: B</strong><br><br>
+      <strong>Temporary View:</strong><br>
+      <code>df.createOrReplaceTempView("sales")</code><br>
+      • Scoped to the current SparkSession<br>
+      • Dropped when the SparkSession ends<br>
+      • Referenced as: <code>spark.sql("SELECT * FROM sales")</code><br><br>
+      <strong>Global Temporary View:</strong><br>
+      <code>df.createOrReplaceGlobalTempView("sales_global")</code><br>
+      • Scoped to the entire Spark application (survives SparkSession restarts)<br>
+      • Stored in the special <code>global_temp</code> database<br>
+      • Referenced as: <code>spark.sql("SELECT * FROM global_temp.sales_global")</code><br>
+      • Dropped when the Spark application terminates<br><br>
+      <strong>Neither is truly persistent</strong> — both exist only in memory for the application lifetime. For persistence across application runs, use <code>df.write.saveAsTable("table_name")</code> in the Hive metastore.
+    </div>
+  </div>
+
+  <!-- Q16 -->
+  <div class="question-card" id="q16">
+    <div class="q-header">
+      <span class="q-number">Q 16</span>
+      <div class="q-text">Which window function correctly calculates a running total of sales per region, ordered by date?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,16,'A')"><span class="option-letter">A</span><code>df.groupBy("region").agg(F.sum("sales"))</code></button>
+      <button class="option" onclick="answer(this,16,'B')"><span class="option-letter">B</span><code>Window.partitionBy("region").orderBy("date")</code> with <code>F.sum("sales").over(w)</code></button>
+      <button class="option" onclick="answer(this,16,'C')"><span class="option-letter">C</span><code>df.withColumn("running", F.cumsum(col("sales")))</code></button>
+      <button class="option" onclick="answer(this,16,'D')"><span class="option-letter">D</span><code>df.sort("date").groupBy("region").agg(F.collect_list("sales"))</code></button>
+    </div>
+    <span class="result-badge" id="badge16"></span>
+    <div class="explanation" id="exp16">
+      <strong>Answer: B</strong><br><br>
+      <code>from pyspark.sql import Window<br>
+      from pyspark.sql import functions as F<br><br>
+      w = Window.partitionBy("region").orderBy("date").rowsBetween(Window.unboundedPreceding, Window.currentRow)<br>
+      df = df.withColumn("running_total", F.sum("sales").over(w))</code><br><br>
+      <strong>Key window frame types:</strong><br>
+      • <code>rowsBetween(start, end)</code> — physical rows<br>
+      • <code>rangeBetween(start, end)</code> — value-based range<br>
+      • <code>Window.unboundedPreceding</code> — start of partition<br>
+      • <code>Window.unboundedFollowing</code> — end of partition<br>
+      • <code>Window.currentRow</code> — current row<br><br>
+      <strong>Common window functions:</strong><br>
+      • Ranking: <code>rank()</code>, <code>dense_rank()</code>, <code>row_number()</code>, <code>ntile(n)</code><br>
+      • Analytics: <code>lag(col, n)</code>, <code>lead(col, n)</code>, <code>first()</code>, <code>last()</code><br>
+      • Aggregates: <code>sum()</code>, <code>avg()</code>, <code>min()</code>, <code>max()</code>, <code>count()</code> — all work with <code>.over(window)</code>
+    </div>
+  </div>
+
+  <!-- Q17 -->
+  <div class="question-card" id="q17">
+    <div class="q-header">
+      <span class="q-number">Q 17</span>
+      <div class="q-text">What is the fastest way to register and use a UDF in PySpark for DataFrame operations?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,17,'A')"><span class="option-letter">A</span>Use a standard Python UDF registered with <code>udf()</code> decorator for maximum flexibility</button>
+      <button class="option" onclick="answer(this,17,'B')"><span class="option-letter">B</span>Use a Pandas UDF (<code>@pandas_udf</code>) with vectorized operations for best performance; register SQL UDFs with <code>spark.udf.register()</code> for SQL access</button>
+      <button class="option" onclick="answer(this,17,'C')"><span class="option-letter">C</span>Convert to RDD, apply a lambda, and convert back for UDF-like behavior</button>
+      <button class="option" onclick="answer(this,17,'D')"><span class="option-letter">D</span>UDFs cannot be used in SQL queries — they only work with DataFrame API</button>
+    </div>
+    <span class="result-badge" id="badge17"></span>
+    <div class="explanation" id="exp17">
+      <strong>Answer: B</strong><br><br>
+      <strong>Standard Python UDF (slowest):</strong><br>
+      <code>from pyspark.sql.functions import udf<br>
+      from pyspark.sql.types import StringType<br>
+      @udf(returnType=StringType())<br>
+      def upper_udf(s): return s.upper() if s else None<br>
+      df.withColumn("upper_name", upper_udf(col("name")))</code><br><br>
+      <strong>Pandas UDF (vectorized, ~5-100x faster):</strong><br>
+      <code>from pyspark.sql.functions import pandas_udf<br>
+      import pandas as pd<br>
+      @pandas_udf("string")<br>
+      def upper_pandas(s: pd.Series) -> pd.Series:<br>
+      &nbsp;&nbsp;return s.str.upper()<br>
+      df.withColumn("upper_name", upper_pandas(col("name")))</code><br><br>
+      Pandas UDFs use Apache Arrow for zero-copy data transfer between JVM and Python, processing entire batches/columns at once.<br><br>
+      <strong>Register for SQL:</strong><br>
+      <code>spark.udf.register("upper_sql", upper_udf)<br>
+      spark.sql("SELECT upper_sql(name) FROM users")</code>
+    </div>
+  </div>
+
+  <!-- Q18 -->
+  <div class="question-card" id="q18">
+    <div class="q-header">
+      <span class="q-number">Q 18</span>
+      <div class="q-text">What is the practical difference between <code>df.cache()</code> and <code>df.persist(StorageLevel.DISK_ONLY)</code>?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,18,'A')"><span class="option-letter">A</span><code>cache()</code> is permanent; <code>persist()</code> can be manually unpersisted</button>
+      <button class="option" onclick="answer(this,18,'B')"><span class="option-letter">B</span><code>cache()</code> uses MEMORY_AND_DISK by default; both are lazy and only materialize on an action</button>
+      <button class="option" onclick="answer(this,18,'C')"><span class="option-letter">C</span><code>cache()</code> is equivalent to <code>persist(StorageLevel.MEMORY_ONLY)</code>; <code>persist()</code> allows custom storage levels including disk, off-heap, and serialized options</button>
+      <button class="option" onclick="answer(this,18,'D')"><span class="option-letter">D</span><code>persist()</code> immediately stores data; <code>cache()</code> waits for the second action</button>
+    </div>
+    <span class="result-badge" id="badge18"></span>
+    <div class="explanation" id="exp18">
+      <strong>Answer: C</strong><br><br>
+      <code>cache()</code> = <code>persist(StorageLevel.MEMORY_AND_DISK)</code> (note: for DataFrames in recent Spark versions it's MEMORY_AND_DISK; for RDDs it defaults to MEMORY_ONLY).<br><br>
+      <strong>Storage levels:</strong><br>
+      • <code>MEMORY_ONLY</code> — RAM only, drop if insufficient (fast, risky)<br>
+      • <code>MEMORY_AND_DISK</code> — RAM first, spill to disk (safe default)<br>
+      • <code>DISK_ONLY</code> — disk only (slow but doesn't consume RAM)<br>
+      • <code>MEMORY_ONLY_SER</code> — serialized in RAM (smaller footprint, more CPU)<br>
+      • <code>MEMORY_AND_DISK_SER</code> — serialized, spills to disk<br>
+      • <code>OFF_HEAP</code> — Tungsten off-heap memory<br><br>
+      <strong>Both are lazy</strong>: materialization happens on first action after <code>cache()</code>/<code>persist()</code> is called. Unpersist with <code>df.unpersist()</code>.<br><br>
+      <strong>When to cache:</strong> DataFrames used 2+ times in the same job (iterative algorithms, multiple downstream aggregations). Don't cache if used only once — it wastes memory.
+    </div>
+  </div>
+
+  <!-- Q19 -->
+  <div class="question-card" id="q19">
+    <div class="q-header">
+      <span class="q-number">Q 19</span>
+      <div class="q-text">Which format is BEST for large-scale analytical queries requiring column-level compression and predicate pushdown?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,19,'A')"><span class="option-letter">A</span>CSV — universally compatible and human-readable</button>
+      <button class="option" onclick="answer(this,19,'B')"><span class="option-letter">B</span>JSON — supports nested structures natively</button>
+      <button class="option" onclick="answer(this,19,'C')"><span class="option-letter">C</span>Parquet — columnar format with built-in compression, schema enforcement, and predicate/projection pushdown</button>
+      <button class="option" onclick="answer(this,19,'D')"><span class="option-letter">D</span>Text — fastest to write and simplest to process</button>
+    </div>
+    <span class="result-badge" id="badge19"></span>
+    <div class="explanation" id="exp19">
+      <strong>Answer: C</strong><br><br>
+      <strong>Parquet advantages:</strong><br>
+      • <strong>Columnar storage</strong>: Only reads queried columns (not entire rows). A query on 3 of 100 columns reads ~3% of data.<br>
+      • <strong>Predicate pushdown</strong>: Row group statistics (min/max) skip irrelevant row groups without reading them.<br>
+      • <strong>Efficient compression</strong>: Same-type column data compresses much better than mixed row data. Snappy/ZSTD compression gives 5-10x size reduction.<br>
+      • <strong>Schema evolution</strong>: Supports adding/removing columns<br><br>
+      <strong>Read/Write syntax:</strong><br>
+      <code># Write<br>
+      df.write.partitionBy("year","month").parquet("/path")<br>
+      # Read<br>
+      spark.read.parquet("/path")<br>
+      # CSV<br>
+      spark.read.option("header","true").option("inferSchema","true").csv("/path")<br>
+      # JSON<br>
+      spark.read.json("/path")</code><br><br>
+      <strong>Use CSV/JSON for</strong>: data exchange, human readability, smaller datasets. <strong>Use Parquet/ORC for</strong>: production data lakes, analytical workloads, storage efficiency.
+    </div>
+  </div>
+
+  <!-- Q20 -->
+  <div class="question-card" id="q20">
+    <div class="q-header">
+      <span class="q-number">Q 20</span>
+      <div class="q-text">How do you run a SQL query on a PySpark DataFrame?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,20,'A')"><span class="option-letter">A</span><code>df.query("SELECT * FROM df WHERE age > 30")</code></button>
+      <button class="option" onclick="answer(this,20,'B')"><span class="option-letter">B</span>Register as a view first (<code>df.createOrReplaceTempView("t")</code>), then use <code>spark.sql("SELECT * FROM t WHERE age > 30")</code></button>
+      <button class="option" onclick="answer(this,20,'C')"><span class="option-letter">C</span><code>spark.execute("SELECT * FROM df WHERE age > 30")</code></button>
+      <button class="option" onclick="answer(this,20,'D')"><span class="option-letter">D</span>SQL cannot be used with DataFrames — only with Hive tables</button>
+    </div>
+    <span class="result-badge" id="badge20"></span>
+    <div class="explanation" id="exp20">
+      <strong>Answer: B</strong><br><br>
+      You cannot directly query a DataFrame by variable name in SQL — you must register it as a named view first:<br><br>
+      <code>df.createOrReplaceTempView("employees")<br>
+      result = spark.sql("""<br>
+      &nbsp;&nbsp;SELECT dept, AVG(salary) as avg_sal<br>
+      &nbsp;&nbsp;FROM employees<br>
+      &nbsp;&nbsp;WHERE hire_date > '2020-01-01'<br>
+      &nbsp;&nbsp;GROUP BY dept<br>
+      &nbsp;&nbsp;HAVING avg_sal > 75000<br>
+      """)</code><br><br>
+      The result is itself a DataFrame — fully interoperable with the DataFrame API. You can chain DataFrame operations after SQL queries or convert SQL results to temp views for further SQL queries.<br><br>
+      <strong>Spark SQL supports:</strong> Standard SQL + Spark-specific functions, CTEs, subqueries, window functions, LATERAL VIEW, PIVOT, UNPIVOT, and many analytical functions. It's executed through the same Catalyst Optimizer as the DataFrame API.
+    </div>
+  </div>
+
+  <div class="category-divider"><span>Spark SQL & Optimization</span></div>
+
+  <!-- Q21 -->
+  <div class="question-card" id="q21">
+    <div class="q-header">
+      <span class="q-number">Q 21</span>
+      <div class="q-text">What does the Catalyst Optimizer do that makes Spark SQL significantly faster than raw RDD code?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,21,'A')"><span class="option-letter">A</span>It caches all query results automatically to avoid recomputation</button>
+      <button class="option" onclick="answer(this,21,'B')"><span class="option-letter">B</span>It transforms logical query plans through analysis, logical optimization (filter pushdown, constant folding, predicate reordering), physical planning, and code generation for optimal execution</button>
+      <button class="option" onclick="answer(this,21,'C')"><span class="option-letter">C</span>It converts Python code to Scala for faster JVM execution</button>
+      <button class="option" onclick="answer(this,21,'D')"><span class="option-letter">D</span>It automatically distributes queries across multiple clusters</button>
+    </div>
+    <span class="result-badge" id="badge21"></span>
+    <div class="explanation" id="exp21">
+      <strong>Answer: B</strong><br><br>
+      Catalyst is a query optimization framework with 4 phases:<br><br>
+      1. <strong>Analysis</strong>: Resolves column names, types, and table references. Produces an analyzed logical plan.<br><br>
+      2. <strong>Logical Optimization</strong>: Applies rule-based transformations:<br>
+      • <em>Predicate pushdown</em>: Move filters as close to data source as possible<br>
+      • <em>Projection pruning</em>: Read only needed columns<br>
+      • <em>Constant folding</em>: Evaluate <code>1 + 2</code> at plan time → <code>3</code><br>
+      • <em>Null propagation</em>, <em>Boolean simplification</em>, <em>subquery elimination</em><br><br>
+      3. <strong>Physical Planning</strong>: Generates multiple physical plans, estimates cost using statistics, picks the best (e.g., broadcast join vs sort-merge join).<br><br>
+      4. <strong>Code Generation</strong>: Tungsten generates optimized JVM bytecode for the physical plan — effectively compiling your query to machine-optimal code.<br><br>
+      This is why the same DataFrame operation can be 10-100x faster than equivalent RDD code: RDDs bypass ALL of this optimization.
+    </div>
+  </div>
+
+  <!-- Q22 -->
+  <div class="question-card" id="q22">
+    <div class="q-header">
+      <span class="q-number">Q 22</span>
+      <div class="q-text">What is the risk of using <code>inferSchema=True</code> when reading CSV files in production?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,22,'A')"><span class="option-letter">A</span>No risk — schema inference is always accurate for well-formatted CSV files</button>
+      <button class="option" onclick="answer(this,22,'B')"><span class="option-letter">B</span>It requires an extra full scan of the data to determine types, can misidentify types (e.g., "001" as int, not string), and breaks on schema changes between batches</button>
+      <button class="option" onclick="answer(this,22,'C')"><span class="option-letter">C</span>Schema inference only reads the first 100 rows, making it unreliable for large files</button>
+      <button class="option" onclick="answer(this,22,'D')"><span class="option-letter">D</span>It converts all columns to StringType regardless of actual data types</button>
+    </div>
+    <span class="result-badge" id="badge22"></span>
+    <div class="explanation" id="exp22">
+      <strong>Answer: B</strong><br><br>
+      <strong>Issues with inferSchema:</strong><br>
+      1. <strong>Extra scan</strong>: Spark must read all data once to infer types, doubling I/O cost<br>
+      2. <strong>Type mismatches</strong>: "001" → inferred as <code>LongType</code> (loses leading zeros); sparse columns with few non-null values → may infer wrong type<br>
+      3. <strong>Schema drift</strong>: If a new batch has a new column or changed type, inference gives a different schema → pipeline breaks<br><br>
+      <strong>Production best practice — always define explicit schema:</strong><br>
+      <code>from pyspark.sql.types import *<br>
+      schema = StructType([<br>
+      &nbsp;&nbsp;StructField("id", StringType(), nullable=False),<br>
+      &nbsp;&nbsp;StructField("amount", DoubleType(), nullable=True),<br>
+      &nbsp;&nbsp;StructField("date", DateType(), nullable=True)<br>
+      ])<br>
+      df = spark.read.schema(schema).csv("/path")</code><br><br>
+      For Parquet/Avro/ORC: schema is embedded in the file — always preferred over CSV for production pipelines.
+    </div>
+  </div>
+
+  <!-- Q23 -->
+  <div class="question-card" id="q23">
+    <div class="q-header">
+      <span class="q-number">Q 23</span>
+      <div class="q-text">When does Spark automatically choose a broadcast join over a sort-merge join?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,23,'A')"><span class="option-letter">A</span>Always, when joining two DataFrames with matching key columns</button>
+      <button class="option" onclick="answer(this,23,'B')"><span class="option-letter">B</span>When at least one table's estimated size is below <code>spark.sql.autoBroadcastJoinThreshold</code> (default 10MB), Spark broadcasts the smaller table to all executors</button>
+      <button class="option" onclick="answer(this,23,'C')"><span class="option-letter">C</span>Only when both tables fit entirely in memory</button>
+      <button class="option" onclick="answer(this,23,'D')"><span class="option-letter">D</span>When the join key is a string type</button>
+    </div>
+    <span class="result-badge" id="badge23"></span>
+    <div class="explanation" id="exp23">
+      <strong>Answer: B</strong><br><br>
+      <strong>Join strategy selection:</strong><br><br>
+      <strong>Broadcast Hash Join</strong>: Small table fits in memory → broadcast to ALL executors → each executor does a local hash lookup. No shuffle needed! Best performance.<br>
+      • Threshold: <code>spark.sql.autoBroadcastJoinThreshold=10MB</code> (increase for larger tables)<br>
+      • Force it: <code>df_large.join(broadcast(df_small), "key")</code><br><br>
+      <strong>Sort-Merge Join</strong> (default for large tables): Both sides are shuffled and sorted by join key, then merged. Expensive but scalable.<br><br>
+      <strong>Shuffle Hash Join</strong>: One side is hashed into memory partitions. Better than sort-merge when one side is moderately small.<br><br>
+      <strong>Cartesian Join</strong>: Cross join — avoid unless intentional.<br><br>
+      <strong>With AQE</strong>: Spark 3+ can switch join strategies at runtime based on actual shuffle sizes, converting sort-merge to broadcast join dynamically if the runtime size fits.
+    </div>
+  </div>
+
+  <!-- Q24 -->
+  <div class="question-card" id="q24">
+    <div class="q-header">
+      <span class="q-number">Q 24</span>
+      <div class="q-text">How do you create a persistent table in Spark SQL that survives application restarts?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,24,'A')"><span class="option-letter">A</span><code>df.createOrReplaceTempView("my_table")</code> with a special persistent flag</button>
+      <button class="option" onclick="answer(this,24,'B')"><span class="option-letter">B</span><code>df.write.saveAsTable("db.my_table")</code> which registers the table in the Hive metastore with data stored on HDFS/cloud storage</button>
+      <button class="option" onclick="answer(this,24,'C')"><span class="option-letter">C</span><code>spark.sql("CREATE PERMANENT TABLE my_table AS SELECT * FROM temp")</code></button>
+      <button class="option" onclick="answer(this,24,'D')"><span class="option-letter">D</span>Persistent tables require external databases like MySQL — Spark alone cannot persist tables</button>
+    </div>
+    <span class="result-badge" id="badge24"></span>
+    <div class="explanation" id="exp24">
+      <strong>Answer: B</strong><br><br>
+      <code>df.write.mode("overwrite").saveAsTable("analytics.sales_2024")</code><br><br>
+      This creates a <strong>managed table</strong>: Spark manages both data and metadata. Data is stored in the warehouse directory (HDFS or cloud storage), and metadata is registered in the Hive Metastore.<br><br>
+      <strong>Or with SQL:</strong><br>
+      <code>spark.sql("CREATE TABLE analytics.sales_2024 USING PARQUET AS SELECT * FROM temp_sales")</code><br><br>
+      <strong>External vs Managed tables:</strong><br>
+      • <strong>Managed</strong>: <code>saveAsTable()</code> — Spark owns data. DROP TABLE deletes data.<br>
+      • <strong>External</strong>: <code>LOCATION '/path'</code> — Spark only owns metadata. DROP TABLE keeps data.<br><br>
+      <code>spark.sql("""CREATE EXTERNAL TABLE ext_sales<br>
+      USING PARQUET LOCATION 's3://bucket/sales/'""")</code><br><br>
+      Once saved, query without re-registering: <code>spark.table("analytics.sales_2024")</code>
+    </div>
+  </div>
+
+  <!-- Q25 -->
+  <div class="question-card" id="q25">
+    <div class="q-header">
+      <span class="q-number">Q 25</span>
+      <div class="q-text">How does dynamic partition pruning (DPP) improve query performance in Spark 3+?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,25,'A')"><span class="option-letter">A</span>It pre-computes all possible partition values at job submission time</button>
+      <button class="option" onclick="answer(this,25,'B')"><span class="option-letter">B</span>It uses results from a filter on a small dimension table to prune partitions of a large fact table at runtime, avoiding scanning irrelevant partitions</button>
+      <button class="option" onclick="answer(this,25,'C')"><span class="option-letter">C</span>It dynamically adjusts the number of partitions based on available memory</button>
+      <button class="option" onclick="answer(this,25,'D')"><span class="option-letter">D</span>It removes empty partitions after shuffle operations automatically</button>
+    </div>
+    <span class="result-badge" id="badge25"></span>
+    <div class="explanation" id="exp25">
+      <strong>Answer: B</strong><br><br>
+      <strong>Example scenario:</strong><br>
+      <code>SELECT f.* FROM fact_sales f<br>
+      JOIN dim_date d ON f.date_id = d.date_id<br>
+      WHERE d.year = 2024</code><br><br>
+      Without DPP: Spark scans ALL partitions of fact_sales then filters.<br>
+      With DPP: Spark first executes the filter on dim_date to get matching date_ids (2024), then injects those values as a filter on fact_sales, pruning away all non-2024 partitions before they're read.<br><br>
+      <strong>Requirements for DPP:</strong><br>
+      • <code>spark.sql.optimizer.dynamicPartitionPruning.enabled=true</code> (default in Spark 3+)<br>
+      • The fact table must be partitioned by the join key<br>
+      • The filtering table (dimension) must be small enough to broadcast<br><br>
+      <strong>Performance impact:</strong> Can reduce I/O by 80-99% on star schema queries — one of the most impactful features in Spark 3. Works with Parquet, ORC, and Delta Lake.
+    </div>
+  </div>
+
+  <div class="category-divider"><span>Performance & Advanced Patterns</span></div>
+
+  <!-- Q26 -->
+  <div class="question-card" id="q26">
+    <div class="q-header">
+      <span class="q-number">Q 26</span>
+      <div class="q-text">A sort-merge join between two 50GB tables is slow. You can't increase cluster size. What's the best optimization?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,26,'A')"><span class="option-letter">A</span>Increase <code>spark.sql.shuffle.partitions</code> from 200 to 2000</button>
+      <button class="option" onclick="answer(this,26,'B')"><span class="option-letter">B</span>Pre-bucket both tables on the join key with the same number of buckets, eliminating the shuffle entirely</button>
+      <button class="option" onclick="answer(this,26,'C')"><span class="option-letter">C</span>Repartition both DataFrames to 1 partition before joining</button>
+      <button class="option" onclick="answer(this,26,'D')"><span class="option-letter">D</span>Convert both DataFrames to RDDs and use <code>join()</code> on PairRDD</button>
+    </div>
+    <span class="result-badge" id="badge26"></span>
+    <div class="explanation" id="exp26">
+      <strong>Answer: B</strong><br><br>
+      <strong>Bucketing</strong> is the most powerful optimization for repeated joins on the same key:<br><br>
+      <code># Write bucketed tables ONCE<br>
+      df_orders.write.bucketBy(128, "customer_id").sortBy("customer_id")<br>
+      &nbsp;&nbsp;.saveAsTable("orders_bucketed")<br>
+      df_customers.write.bucketBy(128, "customer_id").sortBy("customer_id")<br>
+      &nbsp;&nbsp;.saveAsTable("customers_bucketed")<br><br>
+      # Future joins have NO shuffle<br>
+      spark.table("orders_bucketed")<br>
+      &nbsp;&nbsp;.join(spark.table("customers_bucketed"), "customer_id")</code><br><br>
+      When both tables have the same number of buckets and are bucketed on the join key, Spark skips the shuffle entirely — bucket N from table A joins with bucket N from table B locally. This eliminates the most expensive phase of sort-merge join.<br><br>
+      <strong>Other optimizations for large joins:</strong><br>
+      • AQE: auto converts to broadcast if one side shrinks after filtering<br>
+      • Salting: add random prefix to join key to fix data skew<br>
+      • Predicate pushdown: filter before joining to reduce input sizes
+    </div>
+  </div>
+
+  <!-- Q27 -->
+  <div class="question-card" id="q27">
+    <div class="q-header">
+      <span class="q-number">Q 27</span>
+      <div class="q-text">Your Spark job has 99 tasks completing in 2 min but 1 task taking 45 min. This is classic data skew. What's the best fix?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,27,'A')"><span class="option-letter">A</span>Increase the number of executors to provide more resources</button>
+      <button class="option" onclick="answer(this,27,'B')"><span class="option-letter">B</span>Use salting: add a random prefix (0–N) to the join/group key, explode the other side to match, process in parallel, then aggregate results</button>
+      <button class="option" onclick="answer(this,27,'C')"><span class="option-letter">C</span>Reduce <code>spark.sql.shuffle.partitions</code> to merge small partitions</button>
+      <button class="option" onclick="answer(this,27,'D')"><span class="option-letter">D</span>Use <code>coalesce(1)</code> before the groupBy to force single-partition processing</button>
+    </div>
+    <span class="result-badge" id="badge27"></span>
+    <div class="explanation" id="exp27">
+      <strong>Answer: B</strong><br><br>
+      <strong>Salting technique for skewed groupBy:</strong><br>
+      <code># Add random salt to spread one key across N partitions<br>
+      import random<br>
+      from pyspark.sql import functions as F<br><br>
+      salt_n = 10<br>
+      df_salted = df.withColumn("salt", (F.rand() * salt_n).cast("int"))<br>
+      &nbsp;&nbsp;.withColumn("salted_key", F.concat(col("skewed_key"), F.lit("_"), col("salt")))<br><br>
+      # First aggregation (parallel)<br>
+      partial = df_salted.groupBy("salted_key").agg(F.sum("amount").alias("partial_sum"))<br><br>
+      # Remove salt, final aggregation<br>
+      result = partial.withColumn("key", F.split(col("salted_key"), "_")[0])<br>
+      &nbsp;&nbsp;.groupBy("key").agg(F.sum("partial_sum"))</code><br><br>
+      <strong>AQE Skew Join Optimization (Spark 3+):</strong><br>
+      Enable <code>spark.sql.adaptive.skewJoin.enabled=true</code> — Spark automatically detects skewed partitions (larger than <code>spark.sql.adaptive.skewJoin.skewedPartitionThresholdInBytes</code>) and splits them into smaller sub-partitions.
+    </div>
+  </div>
+
+  <!-- Q28 -->
+  <div class="question-card" id="q28">
+    <div class="q-header">
+      <span class="q-number">Q 28</span>
+      <div class="q-text">How do you perform a multi-level aggregation (total sales per country AND per country+product) efficiently in a single SQL query?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,28,'A')"><span class="option-letter">A</span>Run two separate queries and union the results</button>
+      <button class="option" onclick="answer(this,28,'B')"><span class="option-letter">B</span>Use <code>GROUPING SETS</code>, <code>ROLLUP</code>, or <code>CUBE</code> to compute multiple aggregation levels in one pass</button>
+      <button class="option" onclick="answer(this,28,'C')"><span class="option-letter">C</span>Use nested <code>groupBy().agg()</code> calls chained together</button>
+      <button class="option" onclick="answer(this,28,'D')"><span class="option-letter">D</span>Multi-level aggregation requires a window function — groupBy cannot handle this</button>
+    </div>
+    <span class="result-badge" id="badge28"></span>
+    <div class="explanation" id="exp28">
+      <strong>Answer: B</strong><br><br>
+      <code>spark.sql("""<br>
+      SELECT country, product, SUM(sales)<br>
+      FROM transactions<br>
+      GROUP BY GROUPING SETS (<br>
+      &nbsp;&nbsp;(country),          -- total per country<br>
+      &nbsp;&nbsp;(country, product)  -- total per country+product<br>
+      )<br>
+      """)</code><br><br>
+      <strong>ROLLUP</strong>: Generates hierarchical subtotals + grand total:<br>
+      <code>GROUP BY ROLLUP(country, product)</code><br>
+      → (country, product), (country), () [grand total]<br><br>
+      <strong>CUBE</strong>: All possible combinations:<br>
+      <code>GROUP BY CUBE(country, product)</code><br>
+      → (country, product), (country), (product), ()<br><br>
+      These are computed in a <strong>single data scan</strong> — far more efficient than running multiple queries. Use <code>GROUPING(country)</code> to distinguish subtotal rows (returns 1 for subtotals, 0 for regular rows). Essential for building summary tables and OLAP-style analytics.
+    </div>
+  </div>
+
+  <!-- Q29 -->
+  <div class="question-card" id="q29">
+    <div class="q-header">
+      <span class="q-number">Q 29</span>
+      <div class="q-text">What does enabling <code>spark.sql.cache.serializer</code> and calling <code>spark.catalog.cacheTable()</code> do differently from <code>df.cache()</code>?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,29,'A')"><span class="option-letter">A</span>There is no difference — they both cache the DataFrame in executor memory</button>
+      <button class="option" onclick="answer(this,29,'B')"><span class="option-letter">B</span><code>cacheTable()</code> is eager (materializes immediately); <code>df.cache()</code> is lazy. Catalog caching also enables the query result cache for repeated identical SQL queries</button>
+      <button class="option" onclick="answer(this,29,'C')"><span class="option-letter">C</span><code>cacheTable()</code> stores data on disk; <code>df.cache()</code> stores only in memory</button>
+      <button class="option" onclick="answer(this,29,'D')"><span class="option-letter">D</span><code>cacheTable()</code> is deprecated and should never be used</button>
+    </div>
+    <span class="result-badge" id="badge29"></span>
+    <div class="explanation" id="exp29">
+      <strong>Answer: B</strong><br><br>
+      <strong>Lazy caching (<code>df.cache()</code>):</strong> Adds cache hint to logical plan. Data is NOT cached until first action.<br><br>
+      <strong>Eager caching (<code>spark.catalog.cacheTable("name")</code>):</strong> Immediately triggers a scan and materializes the table into executor memory. No action needed.<br><br>
+      <strong>SQL result cache:</strong><br>
+      <code>spark.conf.set("spark.sql.cache.serializer", "org.apache.spark.sql.execution.columnar.InMemoryRelation")<br>
+      # Or simpler:<br>
+      spark.sql("CACHE TABLE sales_summary")</code><br><br>
+      For repeated identical queries, Spark can return cached results directly. This is especially useful in BI tools where many users run the same dashboards repeatedly.<br><br>
+      <strong>Uncaching:</strong><br>
+      <code>spark.catalog.uncacheTable("sales_summary")<br>
+      spark.sql("UNCACHE TABLE sales_summary")<br>
+      df.unpersist()</code>
+    </div>
+  </div>
+
+  <div class="category-divider"><span>ETL, Streaming & Production</span></div>
+
+  <!-- Q30 -->
+  <div class="question-card" id="q30">
+    <div class="q-header">
+      <span class="q-number">Q 30</span>
+      <div class="q-text">In a production ETL pipeline, what's the correct order of operations for reliability?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,30,'A')"><span class="option-letter">A</span>Write → Transform → Validate → Read (write first to reserve space)</button>
+      <button class="option" onclick="answer(this,30,'B')"><span class="option-letter">B</span>Read → Transform → Validate schema/data quality → Write with idempotent output (atomic rename or Delta Lake ACID)</button>
+      <button class="option" onclick="answer(this,30,'C')"><span class="option-letter">C</span>Read → Write raw → Transform in-place → Validate after</button>
+      <button class="option" onclick="answer(this,30,'D')"><span class="option-letter">D</span>The order doesn't matter as long as all steps complete successfully</button>
+    </div>
+    <span class="result-badge" id="badge30"></span>
+    <div class="explanation" id="exp30">
+      <strong>Answer: B</strong><br><br>
+      <strong>Production ETL architecture:</strong><br><br>
+      1. <strong>Extract</strong>: Read from source with explicit schema + error handling<br>
+      2. <strong>Transform</strong>: Apply business logic, joins, aggregations<br>
+      3. <strong>Validate</strong>: Check row counts, null rates, schema, value ranges. Fail fast with meaningful errors<br>
+      4. <strong>Write idempotently</strong>:<br>
+      &nbsp;&nbsp;• Use Delta Lake for ACID transactions<br>
+      &nbsp;&nbsp;• Or write to temp path + atomic rename: <code>_SUCCESS</code> file pattern<br>
+      &nbsp;&nbsp;• Use <code>mode("overwrite")</code> with partition overwrite mode<br><br>
+      <strong>Idempotency is critical</strong> for retry safety. A job that fails midway and is retried should produce the same result without duplicates.<br><br>
+      <strong>Best practices:</strong><br>
+      • Medallion architecture: Bronze (raw) → Silver (cleaned) → Gold (aggregated)<br>
+      • Log lineage metadata (source, row counts, checksums)<br>
+      • Use circuit breakers for bad data<br>
+      • Monitor data quality metrics over time
+    </div>
+  </div>
+
+  <!-- Q31 -->
+  <div class="question-card" id="q31">
+    <div class="q-header">
+      <span class="q-number">Q 31</span>
+      <div class="q-text">In Structured Streaming, what is the default output mode for aggregation queries?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,31,'A')"><span class="option-letter">A</span><code>append</code> — only new rows are written each micro-batch</button>
+      <button class="option" onclick="answer(this,31,'B')"><span class="option-letter">B</span><code>complete</code> — the full result table is rewritten each micro-batch</button>
+      <button class="option" onclick="answer(this,31,'C')"><span class="option-letter">C</span><code>update</code> — only changed rows are output</button>
+      <button class="option" onclick="answer(this,31,'D')"><span class="option-letter">D</span>Aggregations automatically use <code>append</code> mode since only new aggregated values are output</button>
+    </div>
+    <span class="result-badge" id="badge31"></span>
+    <div class="explanation" id="exp31">
+      <strong>Answer: B</strong><br><br>
+      <strong>Three output modes in Structured Streaming:</strong><br><br>
+      <strong>Append</strong>: Only newly added rows are written. Rows in the result table are never changed. Works for non-aggregation queries or aggregations with watermark where results are finalized.<br><br>
+      <strong>Complete</strong>: The entire result table is written every trigger. Required for aggregation without watermark (because any new data can change any aggregate). Expensive for large result sets.<br><br>
+      <strong>Update</strong>: Only rows that changed since last trigger are output. Most efficient for aggregations — only outputs changed aggregates. Not supported by all sinks.<br><br>
+      <strong>Mode compatibility:</strong><br>
+      | Query Type | Append | Complete | Update |<br>
+      |---|---|---|---|<br>
+      | No aggregation | ✅ | ❌ | ✅ |<br>
+      | Agg with watermark | ✅ | ✅ | ✅ |<br>
+      | Agg without watermark | ❌ | ✅ | ✅ |<br><br>
+      Sinks: console, memory support all modes. Kafka, Delta Lake support append/update. File sink supports only append.
+    </div>
+  </div>
+
+  <!-- Q32 -->
+  <div class="question-card" id="q32">
+    <div class="q-header">
+      <span class="q-number">Q 32</span>
+      <div class="q-text">What's the ideal partition size and count rule of thumb for optimal Spark performance?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,32,'A')"><span class="option-letter">A</span>Always use exactly 200 partitions — this is Spark's default for a reason</button>
+      <button class="option" onclick="answer(this,32,'B')"><span class="option-letter">B</span>Target 128-200MB per partition; total partitions ≥ 2-3x total CPU cores; adjust based on data characteristics and operation type</button>
+      <button class="option" onclick="answer(this,32,'C')"><span class="option-letter">C</span>One partition per executor core is always optimal</button>
+      <button class="option" onclick="answer(this,32,'D')"><span class="option-letter">D</span>More partitions always mean better performance — aim for 10,000+</button>
+    </div>
+    <span class="result-badge" id="badge32"></span>
+    <div class="explanation" id="exp32">
+      <strong>Answer: B</strong><br><br>
+      <strong>Partition sizing guidelines:</strong><br><br>
+      • <strong>Target size</strong>: 128–256MB per partition in memory<br>
+      • <strong>Count</strong>: 2–4x your total executor cores (ensures CPU stays busy even with stragglers)<br>
+      • <strong>Too few partitions</strong>: Tasks too large, risk OOM, poor parallelism<br>
+      • <strong>Too many partitions</strong>: Task scheduling overhead dominates, excessive shuffle files, driver bottleneck<br><br>
+      <strong>Practical calculations:</strong><br>
+      • 1TB data, 128MB target → ~8192 partitions<br>
+      • 100 cores → at least 200-400 partitions to keep all cores busy<br><br>
+      <strong>Operation-specific tuning:</strong><br>
+      • Shuffle operations: Set <code>spark.sql.shuffle.partitions</code> (default 200, often needs tuning)<br>
+      • Wide transformations increase partition count; <code>coalesce()</code> reduces<br>
+      • With AQE enabled, Spark 3+ auto-coalesces small shuffle partitions<br><br>
+      <strong>Rule</strong>: Start with <code>2 * num_cores</code>, profile, then tune based on task time (ideal: 1–10 minutes per task).
+    </div>
+  </div>
+
+  <!-- Q33 -->
+  <div class="question-card" id="q33">
+    <div class="q-header">
+      <span class="q-number">Q 33</span>
+      <div class="q-text">A Spark job is slow but you don't know why. What's the FIRST thing you should check?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,33,'A')"><span class="option-letter">A</span>Add more executors to the cluster immediately</button>
+      <button class="option" onclick="answer(this,33,'B')"><span class="option-letter">B</span>Check the Spark UI: examine the DAG visualization, identify long-running stages, check task timelines for skew, and look at GC time vs task time</button>
+      <button class="option" onclick="answer(this,33,'C')"><span class="option-letter">C</span>Increase executor memory to maximum available</button>
+      <button class="option" onclick="answer(this,33,'D')"><span class="option-letter">D</span>Convert all DataFrame operations to RDD for more control</button>
+    </div>
+    <span class="result-badge" id="badge33"></span>
+    <div class="explanation" id="exp33">
+      <strong>Answer: B</strong><br><br>
+      <strong>Spark UI diagnostic checklist:</strong><br><br>
+      <strong>1. Jobs tab</strong>: Identify which job is slow → drill into stages<br>
+      <strong>2. Stages tab</strong>: Look for:<br>
+      &nbsp;&nbsp;• Long stage duration<br>
+      &nbsp;&nbsp;• High shuffle read/write (indicates expensive operations)<br>
+      &nbsp;&nbsp;• Spill to disk (memory pressure)<br><br>
+      <strong>3. Task timeline</strong>: Look for:<br>
+      &nbsp;&nbsp;• Straggler tasks (data skew)<br>
+      &nbsp;&nbsp;• High GC time (&gt;10% = memory issue)<br>
+      &nbsp;&nbsp;• Scheduler delay (too many small tasks)<br>
+      &nbsp;&nbsp;• Fetch wait time (slow shuffle reads)<br><br>
+      <strong>4. SQL tab</strong>: View physical plan, estimated vs actual row counts<br><br>
+      <strong>Common findings and fixes:</strong><br>
+      • Skew → salting or AQE skew join<br>
+      • GC pressure → increase memory or reduce object creation<br>
+      • Many small tasks → coalesce, increase partition size<br>
+      • Full stage scan → check predicate pushdown, add filters<br>
+      • Lots of shuffles → cache intermediate results, bucket tables
+    </div>
+  </div>
+
+  <!-- Q34 -->
+  <div class="question-card" id="q34">
+    <div class="q-header">
+      <span class="q-number">Q 34</span>
+      <div class="q-text">A new column is added to a source CSV every week. How should your PySpark pipeline handle this schema evolution?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,34,'A')"><span class="option-letter">A</span>Use <code>inferSchema=True</code> to automatically pick up new columns</button>
+      <button class="option" onclick="answer(this,34,'B')"><span class="option-letter">B</span>Define an explicit schema with all known columns plus use <code>mergeSchema</code> option or Delta Lake's schema evolution to handle additions gracefully</button>
+      <button class="option" onclick="answer(this,34,'C')"><span class="option-letter">C</span>Schema evolution is not supported in PySpark — pipelines must be rebuilt for each change</button>
+      <button class="option" onclick="answer(this,34,'D')"><span class="option-letter">D</span>Use <code>PERMISSIVE</code> mode to silently drop new columns</button>
+    </div>
+    <span class="result-badge" id="badge34"></span>
+    <div class="explanation" id="exp34">
+      <strong>Answer: B</strong><br><br>
+      <strong>Schema evolution strategies:</strong><br><br>
+      <strong>1. Parquet schema merging:</strong><br>
+      <code>spark.read.option("mergeSchema", "true").parquet("/path")</code><br>
+      Merges schemas across files — new columns from newer files appear with nulls in older files.<br><br>
+      <strong>2. Delta Lake (best option):</strong><br>
+      <code>spark.conf.set("spark.databricks.delta.schema.autoMerge.enabled", "true")<br>
+      df.write.format("delta").mode("append").option("mergeSchema","true").save("/delta/table")</code><br><br>
+      <strong>3. Defensive explicit schema with nullable new columns:</strong><br>
+      <code>schema = StructType([<br>
+      &nbsp;&nbsp;...,  # existing columns<br>
+      &nbsp;&nbsp;StructField("new_col", StringType(), nullable=True)  # add new ones<br>
+      ])</code><br><br>
+      <strong>Schema change types:</strong><br>
+      • Adding nullable columns ✅ easy<br>
+      • Renaming columns ⚠️ breaking — requires migration<br>
+      • Changing types ⚠️ breaking — requires casting<br>
+      • Removing columns ⚠️ check downstream consumers
+    </div>
+  </div>
+
+  <!-- Q35 -->
+  <div class="question-card" id="q35">
+    <div class="q-header">
+      <span class="q-number">Q 35</span>
+      <div class="q-text">What is the primary purpose of checkpointing in Spark Structured Streaming?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,35,'A')"><span class="option-letter">A</span>To save the final output of each micro-batch to HDFS for later analysis</button>
+      <button class="option" onclick="answer(this,35,'B')"><span class="option-letter">B</span>To persist the streaming query's state (offsets, aggregation state) to fault-tolerant storage, enabling exactly-once recovery after failures</button>
+      <button class="option" onclick="answer(this,35,'C')"><span class="option-letter">C</span>To cache intermediate DataFrames to speed up stateful operations</button>
+      <button class="option" onclick="answer(this,35,'D')"><span class="option-letter">D</span>To create snapshots of the input data source for replay</button>
+    </div>
+    <span class="result-badge" id="badge35"></span>
+    <div class="explanation" id="exp35">
+      <strong>Answer: B</strong><br><br>
+      Checkpointing in Structured Streaming saves:<br><br>
+      1. <strong>Source offsets</strong>: Exactly which records have been read (Kafka offsets, file positions) — enables picking up where we left off<br>
+      2. <strong>Aggregation state</strong>: For stateful operations (counts, sessions), the current state of each group<br>
+      3. <strong>Metadata</strong>: Committed batch IDs for end-to-end exactly-once semantics<br><br>
+      <code>query = (df.writeStream<br>
+      &nbsp;&nbsp;.format("delta")<br>
+      &nbsp;&nbsp;.option("checkpointLocation", "s3://bucket/checkpoints/query1")<br>
+      &nbsp;&nbsp;.outputMode("append")<br>
+      &nbsp;&nbsp;.start("/output"))</code><br><br>
+      <strong>Without checkpointing:</strong> If the job fails and restarts, it either reprocesses all data or loses all accumulated state — neither is acceptable in production.<br><br>
+      <strong>For RDDs (DStreams):</strong> <code>dstream.checkpoint(Duration(30000))</code> truncates long lineage chains that would be expensive to recompute after failure.<br><br>
+      Checkpoint location must be on fault-tolerant storage (HDFS, S3, ADLS) — not local filesystem.
+    </div>
+  </div>
+
+  <!-- Q36 -->
+  <div class="question-card" id="q36">
+    <div class="q-header">
+      <span class="q-number">Q 36</span>
+      <div class="q-text">How do you implement incremental processing to load only new records since the last run?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,36,'A')"><span class="option-letter">A</span>Reload all data every run and deduplicate — simplest and most reliable</button>
+      <button class="option" onclick="answer(this,36,'B')"><span class="option-letter">B</span>Track a watermark (max processed timestamp/ID), filter source for records after it, process and update the watermark in a persistent store (or use Delta Lake's MERGE + Change Data Feed)</button>
+      <button class="option" onclick="answer(this,36,'C')"><span class="option-letter">C</span>Use <code>spark.readStream</code> — it automatically handles incremental loading</button>
+      <button class="option" onclick="answer(this,36,'D')"><span class="option-letter">D</span>Incremental processing is only possible with Kafka sources, not file-based sources</button>
+    </div>
+    <span class="result-badge" id="badge36"></span>
+    <div class="explanation" id="exp36">
+      <strong>Answer: B</strong><br><br>
+      <strong>Watermark-based incremental pattern:</strong><br>
+      <code># Read last processed timestamp from metadata store<br>
+      last_ts = get_watermark("my_pipeline")<br><br>
+      # Read only new records<br>
+      new_data = spark.read.parquet("/source").filter(col("updated_at") > last_ts)<br><br>
+      # Process<br>
+      result = transform(new_data)<br>
+      result.write.mode("append").parquet("/target")<br><br>
+      # Update watermark<br>
+      new_ts = new_data.agg(F.max("updated_at")).collect()[0][0]<br>
+      save_watermark("my_pipeline", new_ts)</code><br><br>
+      <strong>Delta Lake Change Data Feed (CDC):</strong><br>
+      <code>changes = spark.read.format("delta")<br>
+      &nbsp;&nbsp;.option("readChangeFeed", "true")<br>
+      &nbsp;&nbsp;.option("startingVersion", last_version)<br>
+      &nbsp;&nbsp;.table("source_table")<br>
+      # Returns insert/update/delete records with _change_type column</code><br><br>
+      <strong>Spark Structured Streaming</strong>: File-based sources (Parquet, JSON, CSV) automatically track processed files via checkpointing — another form of incremental loading.
+    </div>
+  </div>
+
+  <!-- Q37 -->
+  <div class="question-card" id="q37">
+    <div class="q-header">
+      <span class="q-number">Q 37</span>
+      <div class="q-text">You need to join a 500GB fact table with three 50GB dimension tables. What is the optimal strategy?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,37,'A')"><span class="option-letter">A</span>Join all four tables simultaneously in one expression for Spark to optimize</button>
+      <button class="option" onclick="answer(this,37,'B')"><span class="option-letter">B</span>Filter and reduce each dimension table first, broadcast the reduced versions if they fit &lt;10GB, pre-bucket all tables on join keys if used repeatedly, and cache intermediate results</button>
+      <button class="option" onclick="answer(this,37,'C')"><span class="option-letter">C</span>Convert to RDDs and use <code>cogroup()</code> for multiple-table joins</button>
+      <button class="option" onclick="answer(this,37,'D')"><span class="option-letter">D</span>Use <code>crossJoin()</code> and then filter — Spark will optimize this automatically</button>
+    </div>
+    <span class="result-badge" id="badge37"></span>
+    <div class="explanation" id="exp37">
+      <strong>Answer: B</strong><br><br>
+      <strong>Multi-table join strategy:</strong><br><br>
+      1. <strong>Filter early</strong>: Apply all possible filters to each table BEFORE joining to minimize data size<br><br>
+      2. <strong>Broadcast small dims</strong>: If filtered dimension is &lt;10GB (or set threshold higher):<br>
+      <code>from pyspark.sql.functions import broadcast<br>
+      result = fact.join(broadcast(dim1_filtered), "key1")<br>
+      &nbsp;&nbsp;.join(broadcast(dim2_filtered), "key2")<br>
+      &nbsp;&nbsp;.join(broadcast(dim3_filtered), "key3")</code><br><br>
+      3. <strong>Join order matters</strong>: Join to most selective filter first (reduces fact table size for subsequent joins)<br><br>
+      4. <strong>Bucketing</strong>: If these joins run daily, pre-bucket all tables on join keys<br><br>
+      5. <strong>Cache intermediate</strong>: If fact + dim1 result is used multiple times:<br>
+      <code>fact_with_dim1 = fact.join(broadcast(dim1), "key1").cache()</code><br><br>
+      6. Enable AQE: Spark can dynamically switch join strategies based on runtime statistics.
+    </div>
+  </div>
+
+  <!-- Q38 -->
+  <div class="question-card" id="q38">
+    <div class="q-header">
+      <span class="q-number">Q 38</span>
+      <div class="q-text">What is the fundamental architectural difference between batch and stream processing in Spark?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,38,'A')"><span class="option-letter">A</span>Batch processing uses DataFrames; stream processing uses RDDs only</button>
+      <button class="option" onclick="answer(this,38,'B')"><span class="option-letter">B</span>Batch processes a bounded, static dataset in one pass; streaming treats an unbounded, continuous data stream as an infinite table, processing incremental micro-batches or continuously</button>
+      <button class="option" onclick="answer(this,38,'C')"><span class="option-letter">C</span>Stream processing is faster in all cases because it processes data as it arrives</button>
+      <button class="option" onclick="answer(this,38,'D')"><span class="option-letter">D</span>Both are architecturally identical — streaming is just batch with smaller files</button>
+    </div>
+    <span class="result-badge" id="badge38"></span>
+    <div class="explanation" id="exp38">
+      <strong>Answer: B</strong><br><br>
+      <strong>Batch Processing:</strong><br>
+      • Bounded dataset (finite, known size)<br>
+      • Runs periodically (hourly, daily)<br>
+      • Can scan, sort, and aggregate entire dataset<br>
+      • High latency (minutes to hours)<br>
+      • High throughput — optimal for historical analysis<br><br>
+      <strong>Stream Processing (Structured Streaming):</strong><br>
+      • Unbounded dataset (continuous, infinite)<br>
+      • Runs continuously (milliseconds to seconds latency)<br>
+      • Cannot scan entire history — must maintain state<br>
+      • Spark implements as continuous micro-batches (default) or continuous processing mode<br><br>
+      <strong>Structured Streaming mental model:</strong> Think of the incoming stream as rows appended to an infinite table. Each trigger, Spark processes new rows and updates the result table. This unifies batch and streaming — the same DataFrame API works for both!<br><br>
+      <code>df_stream = spark.readStream.format("kafka")...<br>
+      result = df_stream.groupBy("key").count()  # Same as batch!</code>
+    </div>
+  </div>
+
+  <!-- Q39 -->
+  <div class="question-card" id="q39">
+    <div class="q-header">
+      <span class="q-number">Q 39</span>
+      <div class="q-text">Which approach correctly encrypts sensitive PII data in a PySpark pipeline?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,39,'A')"><span class="option-letter">A</span>Store all data in plaintext and rely on HDFS file permissions for security</button>
+      <button class="option" onclick="answer(this,39,'B')"><span class="option-letter">B</span>Use column-level encryption via UDFs wrapping AES/KMS, store encryption keys in a secrets manager (not in code), apply data masking/tokenization, and use Spark's SSL for in-transit encryption</button>
+      <button class="option" onclick="answer(this,39,'C')"><span class="option-letter">C</span>Rename PII columns to non-descriptive names like "col1", "col2"</button>
+      <button class="option" onclick="answer(this,39,'D')"><span class="option-letter">D</span>PySpark cannot handle encryption — use a separate ETL tool for PII data</button>
+    </div>
+    <span class="result-badge" id="badge39"></span>
+    <div class="explanation" id="exp39">
+      <strong>Answer: B</strong><br><br>
+      <strong>Multi-layer PII security strategy:</strong><br><br>
+      <strong>1. Column-level encryption:</strong><br>
+      <code>from cryptography.fernet import Fernet<br>
+      key = get_key_from_secrets_manager()  # NEVER hardcode keys<br>
+      cipher_udf = udf(lambda v: encrypt(v, key) if v else None, StringType())<br>
+      df = df.withColumn("ssn_encrypted", cipher_udf(col("ssn"))).drop("ssn")</code><br><br>
+      <strong>2. Data masking:</strong><br>
+      <code>df.withColumn("email_masked", regexp_replace(col("email"), r"(?<=.{2}).(?=.*@)", "*"))</code><br><br>
+      <strong>3. Tokenization</strong>: Replace PII with surrogate tokens in a secure mapping table<br><br>
+      <strong>4. Role-based access</strong>: Column-level security in Delta Lake / Apache Ranger<br><br>
+      <strong>5. In-transit encryption</strong>: <code>spark.ssl.enabled=true</code><br><br>
+      <strong>6. At-rest encryption</strong>: HDFS transparent data encryption or cloud KMS (S3 SSE-KMS, Azure CMK)<br><br>
+      Never log PII, never <code>collect()</code> PII to driver unless absolutely necessary.
+    </div>
+  </div>
+
+  <!-- Q40 -->
+  <div class="question-card" id="q40">
+    <div class="q-header">
+      <span class="q-number">Q 40</span>
+      <div class="q-text">Which combination of settings best reduces memory pressure for a job processing 10TB of data?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,40,'A')"><span class="option-letter">A</span>Increase <code>spark.executor.memory</code> to maximum and use <code>MEMORY_ONLY</code> storage level</button>
+      <button class="option" onclick="answer(this,40,'B')"><span class="option-letter">B</span>Use columnar formats (Parquet), push down filters/projections, appropriate partition count, serialized storage levels, avoid <code>collect()</code>, use AQE, and tune GC settings</button>
+      <button class="option" onclick="answer(this,40,'C')"><span class="option-letter">C</span>Convert all DataFrames to RDDs for manual memory management</button>
+      <button class="option" onclick="answer(this,40,'D')"><span class="option-letter">D</span>Process data sequentially (one partition at a time) to control memory usage</button>
+    </div>
+    <span class="result-badge" id="badge40"></span>
+    <div class="explanation" id="exp40">
+      <strong>Answer: B</strong><br><br>
+      <strong>Memory optimization checklist for large datasets:</strong><br><br>
+      <strong>I/O reduction:</strong><br>
+      • Use Parquet/ORC (columnar, compressed) — read 10x less data<br>
+      • Projection pushdown: <code>df.select("col1","col2")</code> not <code>df.select("*")</code><br>
+      • Predicate pushdown: filter early, filter at source<br><br>
+      <strong>Memory management:</strong><br>
+      • Set <code>spark.memory.fraction=0.8</code> (execution + storage pool)<br>
+      • Use <code>MEMORY_AND_DISK_SER</code> for cached DataFrames (serialized = smaller footprint)<br>
+      • Tune GC: <code>-XX:+UseG1GC -XX:InitiatingHeapOccupancyPercent=35</code><br>
+      • Avoid <code>collect()</code> — always write results to storage<br><br>
+      <strong>Partitioning:</strong><br>
+      • Target 128-256MB per partition<br>
+      • Enable AQE: <code>spark.sql.adaptive.enabled=true</code><br><br>
+      <strong>Python-specific:</strong><br>
+      • Use Pandas UDFs instead of Python UDFs (Arrow transfer, batch processing)<br>
+      • Minimize Python object creation in loops
+    </div>
+  </div>
+
+  <div class="category-divider"><span>Delta Lake & Advanced Features</span></div>
+
+  <!-- Q41 -->
+  <div class="question-card" id="q41">
+    <div class="q-header">
+      <span class="q-number">Q 41</span>
+      <div class="q-text">What makes Delta Lake's ACID transactions possible on a distributed file system like HDFS/S3?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,41,'A')"><span class="option-letter">A</span>Delta Lake uses a distributed lock manager that blocks concurrent writes</button>
+      <button class="option" onclick="answer(this,41,'B')"><span class="option-letter">B</span>Delta Lake maintains a transaction log (JSON files in _delta_log/) using optimistic concurrency control — writes create new Parquet files and atomically append a JSON commit entry, enabling serializable isolation</button>
+      <button class="option" onclick="answer(this,41,'C')"><span class="option-letter">C</span>Delta Lake requires a dedicated ACID database (PostgreSQL) to store transaction metadata</button>
+      <button class="option" onclick="answer(this,41,'D')"><span class="option-letter">D</span>ACID is simulated by copying the entire table before each write operation</button>
+    </div>
+    <span class="result-badge" id="badge41"></span>
+    <div class="explanation" id="exp41">
+      <strong>Answer: B</strong><br><br>
+      <strong>Delta Lake transaction log architecture:</strong><br><br>
+      Every table has a <code>_delta_log/</code> directory containing JSON files (one per transaction):<br>
+      <code>_delta_log/00000000000000000000.json  ← initial table creation<br>
+      _delta_log/00000000000000000001.json  ← first write<br>
+      _delta_log/00000000000000000010.checkpoint.parquet  ← compacted log</code><br><br>
+      Each JSON entry records: added files, removed files, schema, statistics.<br><br>
+      <strong>ACID properties:</strong><br>
+      • <strong>Atomicity</strong>: Write new Parquet files, then atomically commit JSON entry. Failure = no commit = no change visible<br>
+      • <strong>Consistency</strong>: Schema enforcement prevents corrupt writes<br>
+      • <strong>Isolation</strong>: Optimistic concurrency — concurrent writes detect conflicts via version checks<br>
+      • <strong>Durability</strong>: Committed entries on HDFS/S3 are durable<br><br>
+      <strong>Benefits:</strong> Safe concurrent reads/writes, schema evolution, time travel, upserts with MERGE, CDC, audit history.
+    </div>
+  </div>
+
+  <!-- Q42 -->
+  <div class="question-card" id="q42">
+    <div class="q-header">
+      <span class="q-number">Q 42</span>
+      <div class="q-text">How do you query a Delta table as it appeared 7 days ago?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,42,'A')"><span class="option-letter">A</span><code>spark.read.parquet("/delta/table").filter(col("_commit_timestamp") < "7 days ago")</code></button>
+      <button class="option" onclick="answer(this,42,'B')"><span class="option-letter">B</span><code>spark.read.format("delta").option("timestampAsOf", "2024-01-01").load("/delta/table")</code> or <code>SELECT * FROM table TIMESTAMP AS OF '2024-01-01'</code></button>
+      <button class="option" onclick="answer(this,42,'C')"><span class="option-letter">C</span>Time travel is not possible in Delta Lake — you must manually backup tables</button>
+      <button class="option" onclick="answer(this,42,'D')"><span class="option-letter">D</span><code>delta.restore("/delta/table", version=7)</code></button>
+    </div>
+    <span class="result-badge" id="badge42"></span>
+    <div class="explanation" id="exp42">
+      <strong>Answer: B</strong><br><br>
+      <strong>Time travel by timestamp:</strong><br>
+      <code>df = spark.read.format("delta")<br>
+      &nbsp;&nbsp;.option("timestampAsOf", "2024-01-15 00:00:00")<br>
+      &nbsp;&nbsp;.load("/delta/table")</code><br><br>
+      <strong>Time travel by version number:</strong><br>
+      <code>df = spark.read.format("delta")<br>
+      &nbsp;&nbsp;.option("versionAsOf", 42)<br>
+      &nbsp;&nbsp;.load("/delta/table")</code><br><br>
+      <strong>SQL syntax:</strong><br>
+      <code>SELECT * FROM my_table TIMESTAMP AS OF '2024-01-15'<br>
+      SELECT * FROM my_table VERSION AS OF 42</code><br><br>
+      <strong>Audit history:</strong><br>
+      <code>from delta.tables import DeltaTable<br>
+      dt = DeltaTable.forPath(spark, "/delta/table")<br>
+      dt.history().show()  # All commits with timestamp, operation, user</code><br><br>
+      <strong>Restore to previous version:</strong><br>
+      <code>dt.restoreToVersion(42)<br>
+      dt.restoreToTimestamp("2024-01-15")</code><br><br>
+      Time travel is possible as long as old Parquet files haven't been vacuumed (<code>VACUUM</code> deletes old versions, default retention 7 days).
+    </div>
+  </div>
+
+  <!-- Q43 -->
+  <div class="question-card" id="q43">
+    <div class="q-header">
+      <span class="q-number">Q 43</span>
+      <div class="q-text">How do you calculate a 7-day rolling average of daily sales per store using window functions?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,43,'A')"><span class="option-letter">A</span><code>df.groupBy("store_id").agg(F.avg("sales"))</code> — groupBy computes the rolling average</button>
+      <button class="option" onclick="answer(this,43,'B')"><span class="option-letter">B</span><code>Window.partitionBy("store_id").orderBy("date").rowsBetween(-6, 0)</code> with <code>F.avg("sales").over(w)</code></button>
+      <button class="option" onclick="answer(this,43,'C')"><span class="option-letter">C</span><code>Window.partitionBy("store_id").orderBy("date").rangeBetween(-7, 0)</code></button>
+      <button class="option" onclick="answer(this,43,'D')"><span class="option-letter">D</span>Rolling averages require converting to pandas with <code>toPandas().rolling(7).mean()</code></button>
+    </div>
+    <span class="result-badge" id="badge43"></span>
+    <div class="explanation" id="exp43">
+      <strong>Answer: B</strong><br><br>
+      <code>from pyspark.sql import Window, functions as F<br><br>
+      w = Window.partitionBy("store_id")<br>
+      &nbsp;&nbsp;.orderBy("date")<br>
+      &nbsp;&nbsp;.rowsBetween(-6, 0)  # current row + 6 preceding rows = 7 rows<br><br>
+      df = df.withColumn("rolling_avg_7d", F.avg("sales").over(w))</code><br><br>
+      <strong>rowsBetween vs rangeBetween:</strong><br>
+      • <code>rowsBetween(-6, 0)</code>: Exactly 7 physical rows (correct for daily data where each row = 1 day)<br>
+      • <code>rangeBetween(-6, 0)</code>: 7 units of the ORDER BY column's value — for dates ordered as integers, this means 6 days back. BUT if dates are stored as DateType, range-based windows can behave unexpectedly.<br><br>
+      <strong>For sparse data (missing days):</strong> <code>rowsBetween</code> gives 7 data points regardless of gaps; <code>rangeBetween</code> gives a true calendar window but may include fewer rows.<br><br>
+      <strong>Other rolling patterns:</strong><br>
+      • Last 30 days: <code>rowsBetween(-29, 0)</code><br>
+      • Trailing 3 rows: <code>rowsBetween(-2, 0)</code><br>
+      • Centered 5-row: <code>rowsBetween(-2, 2)</code>
+    </div>
+  </div>
+
+  <!-- Q44 -->
+  <div class="question-card" id="q44">
+    <div class="q-header">
+      <span class="q-number">Q 44</span>
+      <div class="q-text">What are stateful operations in Structured Streaming, and why do they require special handling?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,44,'A')"><span class="option-letter">A</span>Stateful operations are any operations that write to external storage during streaming</button>
+      <button class="option" onclick="answer(this,44,'B')"><span class="option-letter">B</span>Stateful operations (aggregations, sessionization, stream-stream joins) maintain state across micro-batches, stored in the state store, requiring watermarking to bound state size and enable cleanup of old state</button>
+      <button class="option" onclick="answer(this,44,'C')"><span class="option-letter">C</span>Stateful operations only apply to SQL queries, not DataFrame API streaming</button>
+      <button class="option" onclick="answer(this,44,'D')"><span class="option-letter">D</span>All streaming operations are stateful by default in Spark</button>
+    </div>
+    <span class="result-badge" id="badge44"></span>
+    <div class="explanation" id="exp44">
+      <strong>Answer: B</strong><br><br>
+      <strong>Stateful operations</strong> need to remember past data across micro-batches:<br>
+      • <strong>Aggregations</strong>: Running count of users per session<br>
+      • <strong>Stream-stream joins</strong>: Buffering one side waiting for the other<br>
+      • <strong>Sessionization</strong>: Grouping events within a time window<br>
+      • <strong>mapGroupsWithState / flatMapGroupsWithState</strong>: Custom stateful logic<br><br>
+      <strong>The problem:</strong> Without bounds, state grows infinitely → OOM.<br><br>
+      <strong>Solution — Watermarking:</strong><br>
+      <code>df.withWatermark("event_time", "10 minutes")<br>
+      &nbsp;&nbsp;.groupBy(window(col("event_time"), "5 minutes"), col("user_id"))<br>
+      &nbsp;&nbsp;.count()</code><br>
+      The watermark tells Spark: "Data more than 10 minutes late can be dropped." This bounds state — Spark evicts state older than <code>max_event_time - watermark_delay</code>.<br><br>
+      <strong>State store:</strong> By default, state is stored in HDFS/checkpoint location (RocksDB state store available for better performance). State must survive executor failures — hence checkpointing is mandatory for stateful streaming.
+    </div>
+  </div>
+
+  <!-- Q45 -->
+  <div class="question-card" id="q45">
+    <div class="q-header">
+      <span class="q-number">Q 45</span>
+      <div class="q-text">How do you implement retry logic with exponential backoff for a flaky external API call in a PySpark job?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,45,'A')"><span class="option-letter">A</span>Set <code>spark.task.maxFailures=10</code> — Spark handles all retry logic automatically</button>
+      <button class="option" onclick="answer(this,45,'B')"><span class="option-letter">B</span>Wrap the API call in a Python retry function within a Pandas UDF or mapPartitions, implementing exponential backoff with jitter, and use dead-letter queues for permanent failures</button>
+      <button class="option" onclick="answer(this,45,'C')"><span class="option-letter">C</span>Use try/except inside a standard Python UDF — Spark will automatically retry failed rows</button>
+      <button class="option" onclick="answer(this,45,'D')"><span class="option-letter">D</span>External API calls should never be made inside Spark jobs</button>
+    </div>
+    <span class="result-badge" id="badge45"></span>
+    <div class="explanation" id="exp45">
+      <strong>Answer: B</strong><br><br>
+      <code>import time, random<br>
+      def call_with_retry(func, max_retries=3, base_delay=1.0):<br>
+      &nbsp;&nbsp;for attempt in range(max_retries):<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;try:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return func()<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;except Exception as e:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if attempt == max_retries - 1: raise<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;delay = base_delay * (2 ** attempt) + random.uniform(0, 1)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;time.sleep(delay)<br><br>
+      # Use in mapPartitions for efficiency (one connection per partition)<br>
+      def process_partition(rows):<br>
+      &nbsp;&nbsp;session = create_session()  # reuse connection<br>
+      &nbsp;&nbsp;for row in rows:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;result = call_with_retry(lambda: api_call(session, row))<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;yield result</code><br><br>
+      <strong>Additional patterns:</strong><br>
+      • <strong>Dead-letter queue</strong>: Catch permanent failures → write to error table<br>
+      • <strong>Circuit breaker</strong>: Stop retrying if failure rate exceeds threshold<br>
+      • <code>spark.task.maxFailures</code>: Spark-level task retry (for executor crashes, not logic errors)<br>
+      • Use <strong>mapPartitions</strong> to initialize connections once per partition, not once per row
+    </div>
+  </div>
+
+  <!-- Q46 -->
+  <div class="question-card" id="q46">
+    <div class="q-header">
+      <span class="q-number">Q 46</span>
+      <div class="q-text">In the Spark UI, what does a very high "Shuffle Write" but very low "Shuffle Read" in the same stage indicate?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,46,'A')"><span class="option-letter">A</span>The stage is reading from cache instead of disk — this is a good sign</button>
+      <button class="option" onclick="answer(this,46,'B')"><span class="option-letter">B</span>Data is being written for the next stage's shuffle read; the next stage will have high shuffle read. High shuffle write with high serialization time indicates poor partition design or large object sizes</button>
+      <button class="option" onclick="answer(this,46,'C')"><span class="option-letter">C</span>This indicates a bug — shuffle read must always equal shuffle write</button>
+      <button class="option" onclick="answer(this,46,'D')"><span class="option-letter">D</span>The shuffle data is being cached automatically to improve performance</button>
+    </div>
+    <span class="result-badge" id="badge46"></span>
+    <div class="explanation" id="exp46">
+      <strong>Answer: B</strong><br><br>
+      <strong>Shuffle anatomy:</strong><br>
+      • Stage N (map side): Produces shuffle write (partitioned output files)<br>
+      • Stage N+1 (reduce side): Reads those files as shuffle read<br><br>
+      So high shuffle WRITE in stage N → high shuffle READ in stage N+1. They're paired across stages, not within the same stage.<br><br>
+      <strong>Key Spark UI metrics to watch:</strong><br>
+      • <strong>Shuffle Write/Read</strong>: High values → expensive network transfer → consider bucketing, broadcasting<br>
+      • <strong>GC Time / Task Time ratio</strong>: &gt;10% GC → memory pressure, tune heap or reduce object creation<br>
+      • <strong>Spill (memory/disk)</strong>: Executor ran out of memory → increase memory or reduce data per task<br>
+      • <strong>Task duration spread</strong>: Wide spread = data skew<br>
+      • <strong>Input size vs Output size</strong>: Large reduction = effective filter; no reduction = filter not pushed down<br>
+      • <strong>Executor tab</strong>: Check active tasks, failed tasks, GC stats per executor<br>
+      • <strong>SQL tab</strong>: Physical plan with actual row counts vs estimates — big discrepancy = stale statistics
+    </div>
+  </div>
+
+  <!-- Q47 -->
+  <div class="question-card" id="q47">
+    <div class="q-header">
+      <span class="q-number">Q 47</span>
+      <div class="q-text">What is the exact relationship between SparkSession and SparkContext in Spark 2+?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,47,'A')"><span class="option-letter">A</span>SparkSession replaced SparkContext entirely — SparkContext no longer exists in Spark 2+</button>
+      <button class="option" onclick="answer(this,47,'B')"><span class="option-letter">B</span>SparkSession is a unified entry point that wraps SparkContext plus SQLContext plus HiveContext. SparkContext is still accessible via <code>spark.sparkContext</code> and is required for RDD operations and low-level cluster interactions</button>
+      <button class="option" onclick="answer(this,47,'C')"><span class="option-letter">C</span>SparkContext and SparkSession are completely independent — you need both initialized separately</button>
+      <button class="option" onclick="answer(this,47,'D')"><span class="option-letter">D</span>SparkSession is only for SQL; SparkContext is only for streaming</button>
+    </div>
+    <span class="result-badge" id="badge47"></span>
+    <div class="explanation" id="exp47">
+      <strong>Answer: B</strong><br><br>
+      <strong>Evolution of Spark entry points:</strong><br>
+      • Spark 1.x: <code>SparkContext</code> (RDDs) + <code>SQLContext</code> (DataFrames) + <code>HiveContext</code> (Hive integration) — three separate objects<br>
+      • Spark 2+: <code>SparkSession</code> unifies all three<br><br>
+      <code>spark = SparkSession.builder\<br>
+      &nbsp;&nbsp;.appName("MyApp")\<br>
+      &nbsp;&nbsp;.config("spark.sql.shuffle.partitions", "200")\<br>
+      &nbsp;&nbsp;.enableHiveSupport()\<br>
+      &nbsp;&nbsp;.getOrCreate()<br><br>
+      sc = spark.sparkContext  # Still available<br>
+      rdd = sc.textFile("/path")  # For RDD operations<br>
+      bvar = sc.broadcast(my_dict)  # For broadcast variables<br>
+      acc = sc.accumulator(0)  # For accumulators</code><br><br>
+      <strong>SparkSession is responsible for:</strong> DataFrame/Dataset API, Spark SQL, table catalog, session configuration, streaming<br><br>
+      <strong>SparkContext is responsible for:</strong> Cluster connection, RDD creation, broadcasting, accumulators, scheduling, executor management
+    </div>
+  </div>
+
+  <!-- Q48 -->
+  <div class="question-card" id="q48">
+    <div class="q-header">
+      <span class="q-number">Q 48</span>
+      <div class="q-text">Events arrive up to 2 hours late in your Kafka stream. How do you handle late data without accumulating infinite state?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,48,'A')"><span class="option-letter">A</span>Drop all late-arriving data — latency guarantees require ignoring delayed events</button>
+      <button class="option" onclick="answer(this,48,'B')"><span class="option-letter">B</span>Set a watermark of "2 hours" on the event timestamp column — Spark accepts events up to 2 hours late, updates window aggregates, then discards state for windows older than (max_event_time - 2 hours)</button>
+      <button class="option" onclick="answer(this,48,'C')"><span class="option-letter">C</span>Buffer all incoming data in a separate table and process daily as a batch job</button>
+      <button class="option" onclick="answer(this,48,'D')"><span class="option-letter">D</span>Use <code>trigger(processingTime="2 hours")</code> to delay processing until late data arrives</button>
+    </div>
+    <span class="result-badge" id="badge48"></span>
+    <div class="explanation" id="exp48">
+      <strong>Answer: B</strong><br><br>
+      <code>from pyspark.sql.functions import window, col<br><br>
+      df_stream = spark.readStream.format("kafka")...<br><br>
+      result = (df_stream<br>
+      &nbsp;&nbsp;.withWatermark("event_time", "2 hours")  # Accept up to 2hr late<br>
+      &nbsp;&nbsp;.groupBy(<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;window(col("event_time"), "10 minutes"),  # 10-min windows<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;col("user_id")<br>
+      &nbsp;&nbsp;)<br>
+      &nbsp;&nbsp;.count())</code><br><br>
+      <strong>How watermarking works:</strong><br>
+      • Spark tracks max event_time seen = T<br>
+      • Watermark threshold = T - 2 hours<br>
+      • Events with event_time &lt; watermark are DROPPED<br>
+      • Windows that ended before the watermark are FINALIZED and state is evicted<br><br>
+      <strong>Trade-off:</strong> Higher watermark = accept more late data + larger state. Lower watermark = less late data accepted + smaller state.<br><br>
+      <strong>For append output mode:</strong> Results are only emitted after the window is finalized (watermark passes the window end). For update mode, partial results are emitted each trigger and updated when late data arrives.
+    </div>
+  </div>
+
+  <!-- Q49 -->
+  <div class="question-card" id="q49">
+    <div class="q-header">
+      <span class="q-number">Q 49</span>
+      <div class="q-text">What is the architectural difference between Spark's Catalyst Optimizer and Tungsten Execution Engine?</div>
+    </div>
+    <div class="options-grid">
+      <button class="option" onclick="answer(this,49,'A')"><span class="option-letter">A</span>Catalyst handles streaming; Tungsten handles batch processing — they never interact</button>
+      <button class="option" onclick="answer(this,49,'B')"><span class="option-letter">B</span>Catalyst is a LOGICAL layer that transforms and optimizes query plans (rule-based + cost-based); Tungsten is a PHYSICAL execution layer that optimizes runtime performance (off-heap memory, cache-aware computation, LLVM code generation)</button>
+      <button class="option" onclick="answer(this,49,'C')"><span class="option-letter">C</span>Tungsten is Catalyst's replacement in Spark 3+ — they serve the same purpose</button>
+      <button class="option" onclick="answer(this,49,'D')"><span class="option-letter">D</span>Catalyst optimizes Python code; Tungsten optimizes Scala/Java code</button>
+    </div>
+    <span class="result-badge" id="badge49"></span>
+    <div class="explanation" id="exp49">
+      <strong>Answer: B</strong><br><br>
+      They operate at completely different levels and are complementary:<br><br>
+      <strong>Catalyst Optimizer (logical layer):</strong><br>
+      • Works on the QUERY PLAN — the "what to compute"<br>
+      • Applies logical transformations: push filters down, eliminate redundant projections, reorder joins, fold constants<br>
+      • Cost-based optimization: uses table statistics to choose best join strategies<br>
+      • Language: Trees of plan nodes (works on all languages equally)<br>
+      • Output: Optimized physical plan<br><br>
+      <strong>Tungsten Execution Engine (physical layer):</strong><br>
+      • Works on HOW to execute the physical plan — "how to actually run it"<br>
+      • <strong>Off-heap memory</strong>: Manages binary data in native memory, bypasses JVM GC entirely<br>
+      • <strong>Cache-aware algorithms</strong>: Data structures optimized for CPU cache lines<br>
+      • <strong>Whole-stage code generation</strong>: Compiles entire pipeline into a single optimized JVM function (eliminates virtual function calls, enables SIMD-like operations)<br>
+      • <strong>Binary format</strong>: Operates directly on compact binary data without Java object overhead<br><br>
+      <strong>Pipeline:</strong> SQL/DataFrame API → Catalyst (optimize plan) → Tungsten (execute efficiently)
+    </div>
+  </div>
+
+  <div class="final-result" id="finalResult">
+    <div class="final-score-ring" id="scoreRing">
+      <div class="final-score-inner">
+        <div class="final-pct" id="finalPct">0%</div>
+        <div class="final-label">SCORE</div>
+      </div>
+    </div>
+    <div class="final-grade" id="finalGrade"></div>
+    <div class="final-msg" id="finalMsg"></div>
+    <button class="retry-btn" onclick="resetQuiz()">↺ RETRY QUIZ</button>
+  </div>
+
+</div>
+
+<script>
+  const TOTAL = 49;
+  const CORRECT_ANSWERS = {
+    1:'B',2:'B',3:'B',4:'B',5:'C',6:'C',7:'C',8:'B',9:'B',10:'C',
+    11:'B',12:'C',13:'B',14:'B',15:'B',16:'B',17:'B',18:'C',19:'C',20:'B',
+    21:'B',22:'B',23:'B',24:'B',25:'B',26:'B',27:'B',28:'B',29:'B',30:'B',
+    31:'B',32:'B',33:'B',34:'B',35:'B',36:'B',37:'B',38:'B',39:'B',40:'B',
+    41:'B',42:'B',43:'B',44:'B',45:'B',46:'B',47:'B',48:'B',49:'B'
+  };
+
+  let score = 0;
+  let answered = 0;
+
+  function answer(btn, qNum, selected) {
+    const card = document.getElementById('q' + qNum);
+    if (card.classList.contains('answered-correct') || card.classList.contains('answered-wrong')) return;
+
+    const correct = CORRECT_ANSWERS[qNum];
+    const options = card.querySelectorAll('.option');
+    const letters = ['A','B','C','D'];
+
+    options.forEach((opt, i) => {
+      opt.disabled = true;
+      if (letters[i] === correct) {
+        opt.classList.add('correct');
+      }
+    });
+
+    const badge = document.getElementById('badge' + qNum);
+    const exp = document.getElementById('exp' + qNum);
+
+    if (selected === correct) {
+      btn.classList.add('correct');
+      card.classList.add('answered-correct');
+      badge.className = 'result-badge correct-badge show';
+      badge.textContent = '✓ CORRECT';
+      score++;
+    } else {
+      btn.classList.add('wrong');
+      card.classList.add('answered-wrong');
+      badge.className = 'result-badge wrong-badge show';
+      badge.textContent = '✗ INCORRECT';
+    }
+
+    exp.classList.add('visible');
+    answered++;
+
+    updateScoreBoard();
+
+    if (answered === TOTAL) {
+      setTimeout(showFinalResult, 800);
+    }
+  }
+
+  function updateScoreBoard() {
+    document.getElementById('scoreDisplay').textContent = score + ' / ' + answered;
+    const pct = Math.round((answered / TOTAL) * 100);
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressText').textContent = answered + ' of ' + TOTAL + ' answered';
+  }
+
+  function showFinalResult() {
+    const pct = Math.round((score / TOTAL) * 100);
+    const ring = document.getElementById('scoreRing');
+    ring.style.setProperty('--pct', pct);
+    document.getElementById('finalPct').textContent = pct + '%';
+
+    let grade, msg;
+    if (pct >= 90) { grade = '🏆 Expert'; msg = 'Outstanding! You have mastered PySpark.'; }
+    else if (pct >= 75) { grade = '⭐ Proficient'; msg = 'Great work! Strong PySpark knowledge.'; }
+    else if (pct >= 60) { grade = '📈 Intermediate'; msg = 'Good foundation. Review the explanations above.'; }
+    else if (pct >= 40) { grade = '📚 Developing'; msg = 'Keep studying! Focus on fundamentals.'; }
+    else { grade = '🌱 Beginner'; msg = 'Read through all explanations carefully and retry.'; }
+
+    document.getElementById('finalGrade').textContent = grade;
+    document.getElementById('finalMsg').textContent = msg + ' (' + score + '/' + TOTAL + ' correct)';
+    document.getElementById('finalResult').classList.add('show');
+    document.getElementById('finalResult').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function resetQuiz() {
+    score = 0;
+    answered = 0;
+    updateScoreBoard();
+    document.getElementById('progressFill').style.width = '0%';
+    document.getElementById('scoreDisplay').textContent = '0 / 0';
+    document.getElementById('finalResult').classList.remove('show');
+
+    for (let i = 1; i <= TOTAL; i++) {
+      const card = document.getElementById('q' + i);
+      card.classList.remove('answered-correct','answered-wrong');
+      card.querySelectorAll('.option').forEach(o => {
+        o.classList.remove('correct','wrong','missed');
+        o.disabled = false;
+      });
+      const badge = document.getElementById('badge' + i);
+      badge.className = 'result-badge';
+      badge.textContent = '';
+      document.getElementById('exp' + i).classList.remove('visible');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>

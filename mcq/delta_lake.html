@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Delta Lake Deep Dive Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f0e8;
+    --surface: #ede7d9;
+    --card: #faf7f2;
+    --border: #d4c9b0;
+    --border-dark: #b8a98a;
+    --ink: #1a1410;
+    --ink-soft: #4a3f30;
+    --ink-muted: #8a7a65;
+    --lake: #1a4a6b;
+    --lake-light: #2d6f9e;
+    --lake-pale: #e8f2f9;
+    --ember: #c4440a;
+    --ember-pale: #fdf0ea;
+    --forest: #2d6b3a;
+    --forest-pale: #eaf4ec;
+    --gold: #b8860b;
+    --gold-pale: #fdf8e8;
+    --correct: #2d6b3a;
+    --wrong: #b83232;
+    --correct-bg: #eaf4ec;
+    --wrong-bg: #fdf0f0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Subtle paper texture via repeating gradient */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(180,160,120,0.06) 28px, rgba(180,160,120,0.06) 29px),
+      repeating-linear-gradient(90deg, transparent, transparent 28px, rgba(180,160,120,0.04) 28px, rgba(180,160,120,0.04) 29px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* HERO */
+  .hero {
+    position: relative;
+    z-index: 1;
+    background: var(--lake);
+    color: #fff;
+    padding: 56px 24px 48px;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: -40px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+  }
+
+  .hero-inner {
+    position: relative;
+    z-index: 2;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 16px;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 24px; height: 1px;
+    background: rgba(255,255,255,0.4);
+  }
+
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2.4rem, 7vw, 4.2rem);
+    line-height: 1.1;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: #7ec8e8;
+  }
+
+  .hero-sub {
+    font-size: 1rem;
+    font-weight: 300;
+    color: rgba(255,255,255,0.7);
+    max-width: 480px;
+    line-height: 1.6;
+    margin-bottom: 32px;
+  }
+
+  .hero-stats {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .h-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-left: 2px solid rgba(255,255,255,0.2);
+    padding-left: 14px;
+  }
+
+  .h-stat-n {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #7ec8e8;
+    line-height: 1;
+  }
+
+  .h-stat-l {
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* STICKY SCORE BAR */
+  .score-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--ink);
+    color: #fff;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 52px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .sb-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .sb-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #7ec8e8;
+    white-space: nowrap;
+  }
+
+  .sb-progress {
+    flex: 1;
+    height: 3px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    min-width: 60px;
+  }
+
+  .sb-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #7ec8e8, #5bf7a0);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .sb-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.4);
+    white-space: nowrap;
+  }
+
+  .sb-reset {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.4);
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 5px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .sb-reset:hover { color: #fff; border-color: rgba(255,255,255,0.5); }
+
+  /* QUIZ BODY */
+  .quiz-wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 32px 16px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* CATEGORY LABEL */
+  .cat-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    margin-bottom: -4px;
+  }
+
+  .cat-label-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--lake);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .cat-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border-dark), transparent);
+  }
+
+  /* QUESTION CARD */
+  .qcard {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.25s, box-shadow 0.25s;
+    animation: riseIn 0.35s ease both;
+  }
+
+  @keyframes riseIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .qcard:hover { border-color: var(--border-dark); }
+  .qcard.ok  { border-color: var(--correct); box-shadow: 0 2px 16px rgba(45,107,58,0.1); }
+  .qcard.bad { border-color: var(--wrong);   box-shadow: 0 2px 16px rgba(184,50,50,0.1); }
+
+  .qhead {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .qnum {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--lake);
+    background: var(--lake-pale);
+    border: 1px solid rgba(26,74,107,0.2);
+    border-radius: 4px;
+    padding: 3px 9px;
+    white-space: nowrap;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .qtext {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+
+  /* OPTIONS */
+  .opts {
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 11px 14px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    cursor: pointer;
+    transition: all 0.18s;
+    background: #fff;
+    text-align: left;
+    width: 100%;
+    color: var(--ink-soft);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    -webkit-appearance: none;
+  }
+
+  .opt:hover:not(:disabled) {
+    border-color: var(--lake-light);
+    background: var(--lake-pale);
+    color: var(--ink);
+  }
+
+  .opt-letter {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--ink-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    min-width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.18s;
+  }
+
+  .opt.correct {
+    border-color: var(--correct);
+    background: var(--correct-bg);
+    color: var(--ink);
+  }
+  .opt.correct .opt-letter { background: var(--correct); color: #fff; border-color: var(--correct); }
+
+  .opt.wrong {
+    border-color: var(--wrong);
+    background: var(--wrong-bg);
+    color: var(--ink);
+  }
+  .opt.wrong .opt-letter { background: var(--wrong); color: #fff; border-color: var(--wrong); }
+
+  .opt.reveal-correct {
+    border-color: rgba(45,107,58,0.4);
+    background: rgba(234,244,236,0.5);
+  }
+  .opt.reveal-correct .opt-letter { background: rgba(45,107,58,0.15); color: var(--correct); }
+
+  .opt:disabled { cursor: default; }
+
+  /* BADGE */
+  .badge {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    margin: 0 18px 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 3px;
+  }
+  .badge.show { display: inline-flex; }
+  .badge.ok   { color: var(--correct); background: var(--correct-bg); }
+  .badge.bad  { color: var(--wrong);   background: var(--wrong-bg); }
+
+  /* EXPLANATION */
+  .exp {
+    margin: 0 18px 18px;
+    padding: 16px;
+    background: var(--lake-pale);
+    border: 1px solid rgba(26,74,107,0.15);
+    border-radius: 7px;
+    font-size: 0.83rem;
+    line-height: 1.7;
+    color: var(--ink-soft);
+    display: none;
+  }
+
+  .exp.show {
+    display: block;
+    animation: fadeSlide 0.3s ease;
+  }
+
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .exp strong { color: var(--lake); font-weight: 600; }
+  .exp em { color: var(--ember); font-style: normal; font-weight: 600; }
+  .exp code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.77rem;
+    background: rgba(26,74,107,0.08);
+    color: var(--lake);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .exp .note {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: var(--gold-pale);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 4px 4px 0;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+  .exp .note strong { color: var(--gold); }
+
+  /* FINAL RESULT */
+  .final {
+    display: none;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 44px 28px;
+    text-align: center;
+    animation: riseIn 0.5s ease;
+  }
+  .final.show { display: block; }
+
+  .final-ring {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    margin: 0 auto 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: conic-gradient(var(--lake) calc(var(--p, 0) * 1%), var(--border) 0%);
+  }
+
+  .final-ring-inner {
+    width: 106px;
+    height: 106px;
+    background: var(--card);
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+
+  .final-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: var(--lake);
+    line-height: 1;
+  }
+
+  .final-of {
+    font-size: 0.65rem;
+    color: var(--ink-muted);
+    letter-spacing: 1px;
+  }
+
+  .final-grade {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+
+  .final-msg {
+    font-size: 0.9rem;
+    color: var(--ink-muted);
+    margin-bottom: 28px;
+    font-weight: 300;
+  }
+
+  .final-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #fff;
+    background: var(--lake);
+    border: none;
+    padding: 13px 30px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .final-btn:hover { background: var(--lake-light); transform: translateY(-1px); }
+
+  /* RESPONSIVE */
+  @media (max-width: 580px) {
+    .hero { padding: 40px 16px 36px; }
+    .qhead { padding: 16px 14px 12px; gap: 10px; }
+    .qtext { font-size: 0.875rem; }
+    .opts { padding: 12px 12px; gap: 7px; }
+    .opt { padding: 10px 12px; font-size: 0.83rem; }
+    .exp { margin: 0 12px 14px; font-size: 0.8rem; }
+    .badge { margin: 0 12px 4px; }
+    .score-bar { gap: 10px; padding: 0 14px; }
+    .sb-label { display: none; }
+    .hero-stats { gap: 16px; }
+    .h-stat-n { font-size: 1.3rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">Deep Dive Assessment</div>
+    <h1>Delta <em>Lake</em><br>Mastery Quiz</h1>
+    <p class="hero-sub">28 challenging questions on architecture, internals, ACID transactions, time travel, and production patterns.</p>
+    <div class="hero-stats">
+      <div class="h-stat"><span class="h-stat-n">28</span><span class="h-stat-l">Questions</span></div>
+      <div class="h-stat"><span class="h-stat-n">7</span><span class="h-stat-l">Topics</span></div>
+      <div class="h-stat"><span class="h-stat-n">∞</span><span class="h-stat-l">Attempts</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCORE BAR -->
+<div class="score-bar">
+  <span class="sb-label">Score</span>
+  <span class="sb-score" id="sbScore">0 / 0</span>
+  <div class="sb-progress"><div class="sb-fill" id="sbFill"></div></div>
+  <span class="sb-count" id="sbCount">0/28</span>
+  <button class="sb-reset" onclick="resetAll()">↺ RESET</button>
+</div>
+
+<!-- QUIZ -->
+<div class="quiz-wrap" id="quizWrap">
+
+  <div class="cat-label"><span class="cat-label-text">Foundations</span></div>
+
+  <!-- Q1 -->
+  <div class="qcard" id="qc1">
+    <div class="qhead"><span class="qnum">Q 01</span>
+      <div class="qtext">What is Delta Lake, and what core problem does it solve over standard data lakes?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,1,'A')"><span class="opt-letter">A</span>Delta Lake is a proprietary Databricks database that replaces HDFS with a relational engine</button>
+      <button class="opt" onclick="ans(this,1,'B')"><span class="opt-letter">B</span>Delta Lake is an open-source storage layer that adds ACID transactions, schema enforcement, and time travel to data lakes built on cloud or HDFS object stores</button>
+      <button class="opt" onclick="ans(this,1,'C')"><span class="opt-letter">C</span>Delta Lake is a query optimizer that speeds up Parquet reads by caching metadata in memory</button>
+      <button class="opt" onclick="ans(this,1,'D')"><span class="opt-letter">D</span>Delta Lake is a streaming framework that replaces Apache Kafka for real-time ingestion</button>
+    </div>
+    <span class="badge" id="b1"></span>
+    <div class="exp" id="e1">
+      <strong>Answer: B</strong><br><br>
+      Standard data lakes store files (Parquet, JSON, CSV) on object storage but suffer from: no atomicity (partial writes leave corrupt state), no isolation (concurrent reads/writes produce dirty reads), no schema enforcement (bad data silently corrupts datasets), and no easy rollback.<br><br>
+      <strong>Delta Lake solves this by adding a transaction log</strong> (<code>_delta_log/</code>) on top of Parquet files. Every read and write goes through this log, giving the lake ACID guarantees previously only available in relational databases.<br><br>
+      Key features:<br>
+      • <em>ACID transactions</em> — atomic commits, serializable isolation<br>
+      • <em>Schema enforcement</em> — rejects writes that don't match the table schema<br>
+      • <em>Schema evolution</em> — controlled schema changes with audit trail<br>
+      • <em>Time travel</em> — query historical versions<br>
+      • <em>Scalable metadata</em> — handles tables with millions of files<br><br>
+      Delta Lake is open-source (Apache 2.0 license) and works with Spark, Flink, Hive, and other engines.
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="qcard" id="qc2">
+    <div class="qhead"><span class="qnum">Q 02</span>
+      <div class="qtext">What is a Data Lake, and how does it differ from a Data Warehouse?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,2,'A')"><span class="opt-letter">A</span>A Data Lake is a structured repository with a fixed schema; a Data Warehouse stores raw unstructured data</button>
+      <button class="opt" onclick="ans(this,2,'B')"><span class="opt-letter">B</span>A Data Lake stores raw data of any format (structured, semi-structured, unstructured) at any scale with schema-on-read; a Data Warehouse stores curated, structured data with schema-on-write for BI</button>
+      <button class="opt" onclick="ans(this,2,'C')"><span class="opt-letter">C</span>A Data Lake is faster than a Data Warehouse for all query types because it uses columnar formats</button>
+      <button class="opt" onclick="ans(this,2,'D')"><span class="opt-letter">D</span>Both are identical — "Data Lake" is just a marketing term for a distributed Data Warehouse</button>
+    </div>
+    <span class="badge" id="b2"></span>
+    <div class="exp" id="e2">
+      <strong>Answer: B</strong><br><br>
+      <strong>Data Lake:</strong><br>
+      • Stores ANY format: CSV, JSON, Parquet, images, logs, binary<br>
+      • Schema-on-read: structure applied when data is queried<br>
+      • Cheap object storage (S3, ADLS, GCS)<br>
+      • High flexibility, lower governance<br>
+      • Risk of becoming a "data swamp" without proper management<br><br>
+      <strong>Data Warehouse:</strong><br>
+      • Stores structured, processed data only<br>
+      • Schema-on-write: structure enforced at load time<br>
+      • Optimized for OLAP queries (Redshift, Snowflake, BigQuery)<br>
+      • High governance, lower flexibility<br>
+      • Expensive for very large raw datasets<br><br>
+      <strong>Modern trend — Lakehouse:</strong> Delta Lake + Spark combines both: raw storage cost of a lake + ACID + schema enforcement + performance of a warehouse. This is the "lakehouse" architecture.
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="qcard" id="qc3">
+    <div class="qhead"><span class="qnum">Q 03</span>
+      <div class="qtext">How is the Delta Lake transaction log structured and when are new log entries created?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,3,'A')"><span class="opt-letter">A</span>A single XML file is updated in-place for every transaction using file locking</button>
+      <button class="opt" onclick="ans(this,3,'B')"><span class="opt-letter">B</span>An append-only series of JSON files in <code>_delta_log/</code>, one per committed transaction (00000000000000000000.json, 00000000000000000001.json...), plus Parquet checkpoint files every 10 commits</button>
+      <button class="opt" onclick="ans(this,3,'C')"><span class="opt-letter">C</span>Transaction logs are stored in a separate PostgreSQL database, not in the file system</button>
+      <button class="opt" onclick="ans(this,3,'D')"><span class="opt-letter">D</span>Delta writes a new log file only when the table is explicitly checkpointed by the user</button>
+    </div>
+    <span class="badge" id="b3"></span>
+    <div class="exp" id="e3">
+      <strong>Answer: B</strong><br><br>
+      The <code>_delta_log/</code> directory lives alongside your Parquet data files. Structure:<br><br>
+      <code>my_table/<br>
+      ├── _delta_log/<br>
+      │   ├── 00000000000000000000.json  ← CREATE TABLE<br>
+      │   ├── 00000000000000000001.json  ← first INSERT<br>
+      │   ├── 00000000000000000002.json  ← UPDATE<br>
+      │   ├── ...<br>
+      │   ├── 00000000000000000010.checkpoint.parquet<br>
+      │   └── _last_checkpoint<br>
+      ├── part-00000-...parquet<br>
+      └── part-00001-...parquet</code><br><br>
+      Each JSON log file records:<br>
+      • <strong>add</strong>: New Parquet files added (with stats: min/max per column, null count)<br>
+      • <strong>remove</strong>: Files logically deleted (marked as removed, not physically deleted)<br>
+      • <strong>metaData</strong>: Schema, partition columns, configuration<br>
+      • <strong>protocol</strong>: Reader/writer version requirements<br>
+      • <strong>commitInfo</strong>: Operation type, timestamp, user, notebook ID<br><br>
+      <div class="note"><strong>Key insight:</strong> Files are NEVER modified — only new files are added and old files are marked "removed" in the log. Physical deletion happens only during VACUUM.</div>
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="qcard" id="qc4">
+    <div class="qhead"><span class="qnum">Q 04</span>
+      <div class="qtext">How does time travel work in Delta Lake when you query a historical version?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,4,'A')"><span class="opt-letter">A</span>Spark replays all write operations from the beginning to reconstruct the historical state</button>
+      <button class="opt" onclick="ans(this,4,'B')"><span class="opt-letter">B</span>Delta reads the transaction log up to the requested version/timestamp to determine which Parquet files were "active" at that point, then reads only those files</button>
+      <button class="opt" onclick="ans(this,4,'C')"><span class="opt-letter">C</span>Time travel copies all historical data into a separate snapshot table on each write</button>
+      <button class="opt" onclick="ans(this,4,'D')"><span class="opt-letter">D</span>Time travel is stored in a hidden Hive metastore — querying history requires Hive integration</button>
+    </div>
+    <span class="badge" id="b4"></span>
+    <div class="exp" id="e4">
+      <strong>Answer: B</strong><br><br>
+      Time travel is elegantly simple because of the append-only log:<br><br>
+      1. You request version N: <code>spark.read.format("delta").option("versionAsOf", 5).load("/path")</code><br>
+      2. Delta reads log entries 0 through N<br>
+      3. Builds a "snapshot" — the set of active Parquet files at version N (files added up to N, minus files removed up to N)<br>
+      4. Reads exactly those Parquet files — no data reconstruction needed<br><br>
+      <strong>Supported syntax:</strong><br>
+      <code># By version number<br>
+      df = spark.read.format("delta").option("versionAsOf", 10).load("/delta/events")<br><br>
+      # By timestamp<br>
+      df = spark.read.format("delta").option("timestampAsOf","2024-06-01").load("/delta/events")<br><br>
+      # SQL<br>
+      SELECT * FROM events VERSION AS OF 10<br>
+      SELECT * FROM events TIMESTAMP AS OF '2024-06-01'</code><br><br>
+      <strong>Limitation:</strong> Time travel only works as long as old Parquet files haven't been deleted by VACUUM (default retention: 7 days). Attempting to time-travel past the VACUUM horizon raises an error.
+    </div>
+  </div>
+
+  <!-- Q5 -->
+  <div class="qcard" id="qc5">
+    <div class="qhead"><span class="qnum">Q 05</span>
+      <div class="qtext">How often is a Parquet checkpoint file created in the Delta transaction log?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,5,'A')"><span class="opt-letter">A</span>Every single commit creates a checkpoint for faster recovery</button>
+      <button class="opt" onclick="ans(this,5,'B')"><span class="opt-letter">B</span>Every 10 commits by default (configurable via <code>delta.checkpointInterval</code>), checkpointing consolidates all preceding log entries into a single Parquet snapshot</button>
+      <button class="opt" onclick="ans(this,5,'C')"><span class="opt-letter">C</span>Checkpoints are only created when OPTIMIZE is run manually</button>
+      <button class="opt" onclick="ans(this,5,'D')"><span class="opt-letter">D</span>Every 100 commits, and this interval cannot be changed</button>
+    </div>
+    <span class="badge" id="b5"></span>
+    <div class="exp" id="e5">
+      <strong>Answer: B</strong><br><br>
+      Without checkpoints, reading a Delta table with 10,000 commits would require reading 10,000 JSON log files sequentially — extremely slow.<br><br>
+      <strong>Checkpoints solve this:</strong> Every 10 commits (default), Delta writes a compact Parquet file that represents the COMPLETE state of the table at that version. The <code>_last_checkpoint</code> file records the latest checkpoint version.<br><br>
+      <strong>On table open, Delta:</strong><br>
+      1. Reads <code>_last_checkpoint</code> → finds latest checkpoint (e.g., version 990)<br>
+      2. Loads the checkpoint Parquet (represents full state at v990)<br>
+      3. Reads only JSON files AFTER v990 (v991...v999)<br>
+      → Avoids reading all 1000 log files<br><br>
+      <strong>Change the interval:</strong><br>
+      <code>ALTER TABLE my_table SET TBLPROPERTIES ('delta.checkpointInterval' = '50')</code><br><br>
+      <strong>Checkpoint contains:</strong> All active "add" entries (the complete set of live Parquet files + their column statistics), protocol, and metadata — the same info as replaying all JSON logs from scratch, but in a single efficient read.
+    </div>
+  </div>
+
+  <!-- Q6 -->
+  <div class="qcard" id="qc6">
+    <div class="qhead"><span class="qnum">Q 06</span>
+      <div class="qtext">How do you read a Delta table's Parquet data files directly (bypassing the transaction log)?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,6,'A')"><span class="opt-letter">A</span><code>spark.read.format("delta").load("/path")</code> — this is the only correct way to read Delta data</button>
+      <button class="opt" onclick="ans(this,6,'B')"><span class="opt-letter">B</span><code>spark.read.parquet("/path")</code> reads raw Parquet files, but you may see deleted/outdated files that the Delta log has marked as removed — it bypasses ACID guarantees</button>
+      <button class="opt" onclick="ans(this,6,'C')"><span class="opt-letter">C</span>You cannot read Delta Parquet files directly — they use a proprietary encrypted format</button>
+      <button class="opt" onclick="ans(this,6,'D')"><span class="opt-letter">D</span><code>spark.read.format("delta").option("bypassLog", True).load("/path")</code></button>
+    </div>
+    <span class="badge" id="b6"></span>
+    <div class="exp" id="e6">
+      <strong>Answer: B</strong><br><br>
+      Delta data files are standard Parquet — any Parquet reader can open them. However, reading them directly with <code>spark.read.parquet("/path")</code> is dangerous in production:<br><br>
+      <strong>Problems with bypassing the log:</strong><br>
+      • You may read files that Delta has marked as "removed" (from deletes/updates) — seeing ghost data<br>
+      • You may miss files still being written — seeing partial inserts<br>
+      • No column statistics for data skipping — slower queries<br>
+      • No schema enforcement — type mismatches silently accepted<br><br>
+      <strong>Always use Delta format in production:</strong><br>
+      <code># Correct: respects transaction log<br>
+      spark.read.format("delta").load("/delta/events")<br>
+      spark.table("my_delta_table")<br><br>
+      # Also valid for checkpoint inspection:<br>
+      spark.read.parquet("/delta/events/_delta_log/00000000000000000010.checkpoint.parquet")</code><br><br>
+      <div class="note"><strong>Use case for direct Parquet read:</strong> Debugging — reading the checkpoint Parquet to inspect active file list and column statistics without going through Spark SQL.</div>
+    </div>
+  </div>
+
+  <div class="cat-label"><span class="cat-label-text">Log Internals</span></div>
+
+  <!-- Q7 -->
+  <div class="qcard" id="qc7">
+    <div class="qhead"><span class="qnum">Q 07</span>
+      <div class="qtext">What is the format and content structure of a Delta Lake transaction log JSON file?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,7,'A')"><span class="opt-letter">A</span>A single large JSON object with all table changes in one nested structure</button>
+      <button class="opt" onclick="ans(this,7,'B')"><span class="opt-letter">B</span>Newline-delimited JSON (NDJSON) where each line is an independent action object: commitInfo, add, remove, metaData, or protocol</button>
+      <button class="opt" onclick="ans(this,7,'C')"><span class="opt-letter">C</span>A binary Avro file with a predefined schema for compactness</button>
+      <button class="opt" onclick="ans(this,7,'D')"><span class="opt-letter">D</span>A JSON array of SQL statements that are replayed during reads</button>
+    </div>
+    <span class="badge" id="b7"></span>
+    <div class="exp" id="e7">
+      <strong>Answer: B</strong><br><br>
+      Each <code>.json</code> log file is NDJSON — one JSON object per line, each representing one atomic action:<br><br>
+      <code>{"commitInfo":{"timestamp":1704067200000,"operation":"WRITE","operationParameters":{"mode":"Append"},"isolationLevel":"Serializable","isBlindAppend":true}}<br>
+      {"protocol":{"minReaderVersion":1,"minWriterVersion":2}}<br>
+      {"metaData":{"id":"abc123","format":{"provider":"parquet"},"schemaString":"{...}","partitionColumns":["date"]}}<br>
+      {"add":{"path":"date=2024-01-01/part-00000-xyz.parquet","size":1048576,"stats":"{\"numRecords\":50000,\"minValues\":{\"amount\":0.01},\"maxValues\":{\"amount\":9999.99}}","dataChange":true}}<br>
+      {"remove":{"path":"date=2024-01-01/part-old-abc.parquet","deletionTimestamp":1704067200000,"dataChange":true}}</code><br><br>
+      <strong>Action types:</strong><br>
+      • <code>commitInfo</code>: Who, what operation, when, parameters<br>
+      • <code>add</code>: New file with path, size, partition values, column stats<br>
+      • <code>remove</code>: File being logically deleted (still physically present until VACUUM)<br>
+      • <code>metaData</code>: Schema, partition columns, table properties<br>
+      • <code>protocol</code>: Minimum reader/writer versions required<br>
+      • <code>cdc</code>: Change data capture files (when CDC enabled)
+    </div>
+  </div>
+
+  <!-- Q8 -->
+  <div class="qcard" id="qc8">
+    <div class="qhead"><span class="qnum">Q 08</span>
+      <div class="qtext">What is the format of a Delta Lake checkpoint file and why is it different from the JSON log files?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,8,'A')"><span class="opt-letter">A</span>Checkpoints use the same NDJSON format as log files, just with all entries concatenated</button>
+      <button class="opt" onclick="ans(this,8,'B')"><span class="opt-letter">B</span>Checkpoints are Parquet files (columnar format) containing only the surviving "add" entries — it's a materialized snapshot of the full table state optimized for fast reads</button>
+      <button class="opt" onclick="ans(this,8,'C')"><span class="opt-letter">C</span>Checkpoints are ORC files because ORC is faster than Parquet for metadata reads</button>
+      <button class="opt" onclick="ans(this,8,'D')"><span class="opt-letter">D</span>Checkpoints are compressed ZIP archives containing all previous JSON log files</button>
+    </div>
+    <span class="badge" id="b8"></span>
+    <div class="exp" id="e8">
+      <strong>Answer: B</strong><br><br>
+      Checkpoints are stored as Parquet files: <code>_delta_log/00000000000000000010.checkpoint.parquet</code><br><br>
+      <strong>Why Parquet instead of JSON?</strong><br>
+      • Parquet is columnar — reading only the "path" column of 1M file entries is fast<br>
+      • Parquet has built-in compression — much smaller than equivalent JSON<br>
+      • Parquet supports predicate pushdown — can filter by partition value<br><br>
+      <strong>What's IN the checkpoint:</strong><br>
+      The checkpoint contains only the NET state — only "add" entries for files that are STILL active (removes have been applied). It does NOT contain commitInfo or intermediate removes. Think of it as: "if you started fresh, these are the Parquet files that make up the table."<br><br>
+      <strong>Multi-part checkpoints</strong> (Delta 2.0+): For very large tables with millions of files, the checkpoint can be split into multiple Parquet files:<br>
+      <code>00000000000000001000.checkpoint.0000000001.0000000003.parquet<br>
+      00000000000000001000.checkpoint.0000000002.0000000003.parquet<br>
+      00000000000000001000.checkpoint.0000000003.0000000003.parquet</code><br><br>
+      <div class="note"><strong>Tip:</strong> You can read checkpoint files directly with <code>spark.read.parquet("_delta_log/...checkpoint.parquet")</code> to debug what files are in the table's active set.</div>
+    </div>
+  </div>
+
+  <div class="cat-label"><span class="cat-label-text">Operations & DML</span></div>
+
+  <!-- Q9 -->
+  <div class="qcard" id="qc9">
+    <div class="qhead"><span class="qnum">Q 09</span>
+      <div class="qtext">Which of the following is NOT a supported operation in Delta Lake?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,9,'A')"><span class="opt-letter">A</span>MERGE (upsert) — insert new rows and update existing ones in a single atomic operation</button>
+      <button class="opt" onclick="ans(this,9,'B')"><span class="opt-letter">B</span>CLONE — create a shallow or deep copy of a table</button>
+      <button class="opt" onclick="ans(this,9,'C')"><span class="opt-letter">C</span>TRUNCATE WITH CASCADE — recursively truncates referenced foreign key tables</button>
+      <button class="opt" onclick="ans(this,9,'D')"><span class="opt-letter">D</span>RESTORE — roll back a table to a previous version</button>
+    </div>
+    <span class="badge" id="b9"></span>
+    <div class="exp" id="e9">
+      <strong>Answer: C</strong><br><br>
+      Delta Lake is not a relational database — it has no concept of foreign keys or CASCADE constraints. <strong>TRUNCATE WITH CASCADE</strong> is a PostgreSQL/SQL Server concept.<br><br>
+      <strong>Delta Lake's actual operations:</strong><br>
+      • <strong>CREATE TABLE</strong>: <code>CREATE TABLE t USING DELTA</code> or <code>df.write.format("delta").save(path)</code><br>
+      • <strong>INSERT / APPEND</strong>: <code>df.write.mode("append").format("delta").save(path)</code><br>
+      • <strong>OVERWRITE</strong>: <code>df.write.mode("overwrite").format("delta").save(path)</code><br>
+      • <strong>UPDATE</strong>: <code>UPDATE t SET col=val WHERE condition</code><br>
+      • <strong>DELETE</strong>: <code>DELETE FROM t WHERE condition</code><br>
+      • <strong>MERGE</strong>: Upsert, conditional insert/update/delete<br>
+      • <strong>OPTIMIZE</strong>: Compact small files, Z-Order<br>
+      • <strong>VACUUM</strong>: Remove old unreferenced files<br>
+      • <strong>RESTORE</strong>: Roll back to a specific version<br>
+      • <strong>CLONE</strong>: Shallow (metadata only) or deep (copy data) clone<br>
+      • <strong>DESCRIBE HISTORY</strong>: Audit log of all operations
+    </div>
+  </div>
+
+  <!-- Q10 -->
+  <div class="qcard" id="qc10">
+    <div class="qhead"><span class="qnum">Q 10</span>
+      <div class="qtext">When you run <code>UPDATE events SET status='processed' WHERE date='2024-01-01'</code> in Delta Lake, what physically happens?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,10,'A')"><span class="opt-letter">A</span>Delta modifies the Parquet files in-place, updating only the affected rows using byte-range writes</button>
+      <button class="opt" onclick="ans(this,10,'B')"><span class="opt-letter">B</span>Delta reads affected Parquet files, rewrites them with updated rows as NEW files, marks old files as "removed" in the log, and adds the new files — the update is atomic via the log commit</button>
+      <button class="opt" onclick="ans(this,10,'C')"><span class="opt-letter">C</span>A new column "status_v2" is created and the old "status" column is kept for history</button>
+      <button class="opt" onclick="ans(this,10,'D')"><span class="opt-letter">D</span>Delta appends a correction record and applies it at read time using MVCC</button>
+    </div>
+    <span class="badge" id="b10"></span>
+    <div class="exp" id="e10">
+      <strong>Answer: B</strong><br><br>
+      Parquet files are immutable — you cannot update individual bytes. Delta handles this with a <strong>copy-on-write (CoW)</strong> approach by default:<br><br>
+      <strong>UPDATE execution steps:</strong><br>
+      1. <strong>Scan</strong>: Find which Parquet files contain rows matching <code>date='2024-01-01'</code> (using column stats to skip irrelevant files)<br>
+      2. <strong>Read + Rewrite</strong>: For each affected file, read all rows, apply the update, write a new Parquet file<br>
+      3. <strong>Log commit</strong>: Atomically write a log entry with:<br>
+      &nbsp;&nbsp;• <code>remove</code> actions for old files<br>
+      &nbsp;&nbsp;• <code>add</code> actions for new files<br>
+      4. Old files still exist on disk until VACUUM runs<br><br>
+      <strong>This means:</strong> A small update to one row in a 10GB partition file causes the ENTIRE partition file to be rewritten. This is why:<br>
+      • Small, frequent updates are expensive in Delta (consider Deletion Vectors for this!)<br>
+      • Batch updates are far more efficient than row-by-row updates<br>
+      • Merge-on-Read (MoR) with Deletion Vectors reduces rewrite cost for deletes/updates
+    </div>
+  </div>
+
+  <div class="cat-label"><span class="cat-label-text">Architecture</span></div>
+
+  <!-- Q11 -->
+  <div class="qcard" id="qc11">
+    <div class="qhead"><span class="qnum">Q 11</span>
+      <div class="qtext">In a traditional Data Lake solution architecture, what is the primary challenge that leads to the "data swamp" problem?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,11,'A')"><span class="opt-letter">A</span>Object storage is too expensive to store large volumes of raw data</button>
+      <button class="opt" onclick="ans(this,11,'B')"><span class="opt-letter">B</span>Lack of ACID guarantees means failed jobs leave partial data, no schema enforcement means bad data pollutes the lake, and missing metadata makes data undiscoverable</button>
+      <button class="opt" onclick="ans(this,11,'C')"><span class="opt-letter">C</span>Data lakes cannot support SQL queries — only NoSQL access patterns</button>
+      <button class="opt" onclick="ans(this,11,'D')"><span class="opt-letter">D</span>Data lakes require specialized hardware that is incompatible with cloud infrastructure</button>
+    </div>
+    <span class="badge" id="b11"></span>
+    <div class="exp" id="e11">
+      <strong>Answer: B</strong><br><br>
+      Traditional Data Lake architecture (S3/ADLS + Spark/Hive) faces these core reliability problems:<br><br>
+      <strong>1. No atomicity:</strong> A Spark job writing 1000 files fails at file 700 → lake has partial data. No rollback. Next reader sees corrupt state.<br><br>
+      <strong>2. No schema enforcement:</strong> Anyone can write any schema. Data engineer writes <code>amount</code> as string; analyst expects decimal → silent errors downstream.<br><br>
+      <strong>3. No isolation:</strong> Reader running a 2-hour query sees data being modified by a concurrent writer → dirty reads.<br><br>
+      <strong>4. Undiscoverable data:</strong> Without a catalog, files are just blobs. Which files are current? Which are stale? Unknown.<br><br>
+      <strong>5. No update/delete:</strong> To correct a row, you must rewrite entire partitions manually.<br><br>
+      <strong>Traditional Data Lake stack:</strong><br>
+      • Storage: S3/ADLS/GCS<br>
+      • Ingestion: Kafka → Spark Streaming<br>
+      • Processing: Spark/Hive<br>
+      • Query: Presto/Athena/Hive<br>
+      • Catalog: Glue/Hive Metastore<br><br>
+      Delta Lake addresses ALL of the above.
+    </div>
+  </div>
+
+  <!-- Q12 -->
+  <div class="qcard" id="qc12">
+    <div class="qhead"><span class="qnum">Q 12</span>
+      <div class="qtext">In a Delta Lake solution architecture, what replaces the traditional "job failure = corrupt state" problem?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,12,'A')"><span class="opt-letter">A</span>Delta Lake runs all jobs in a single thread to prevent concurrent failures</button>
+      <button class="opt" onclick="ans(this,12,'B')"><span class="opt-letter">B</span>Optimistic concurrency control + atomic log commits: new files are written before the log is updated; if the job fails, the log is never committed and old files remain authoritative</button>
+      <button class="opt" onclick="ans(this,12,'C')"><span class="opt-letter">C</span>Delta Lake uses database-style row locking to prevent concurrent writes</button>
+      <button class="opt" onclick="ans(this,12,'D')"><span class="opt-letter">D</span>Failed jobs automatically trigger a RESTORE to the previous version</button>
+    </div>
+    <span class="badge" id="b12"></span>
+    <div class="exp" id="e12">
+      <strong>Answer: B</strong><br><br>
+      <strong>Delta Lake write protocol (simplified):</strong><br><br>
+      1. Writer reads latest table version (e.g., v5)<br>
+      2. Writer computes which files to add/remove<br>
+      3. Writer uploads new Parquet data files to storage<br>
+      4. Writer attempts to atomically create <code>00000000000000000006.json</code> (v6 commit)<br>
+      5a. <strong>Success</strong> → commit exists → table is now v6 → new files are "visible"<br>
+      5b. <strong>Failure</strong> → log file never written → old files remain active → orphan new files exist but are invisible (cleaned up by VACUUM)<br><br>
+      <strong>Conflict detection (Optimistic Concurrency):</strong><br>
+      If two writers both try to create v6:<br>
+      • Object stores (S3, ADLS) provide atomic put-if-absent for small files<br>
+      • First writer wins, creates v6.json<br>
+      • Second writer's put fails → checks if conflict is resolvable → if the two writers touched different files, Delta retries at v7; if same files, raises <code>ConcurrentModificationException</code><br><br>
+      This is why Delta supports concurrent reads with ZERO blocking and concurrent writes with conflict detection.
+    </div>
+  </div>
+
+  <!-- Q13 -->
+  <div class="qcard" id="qc13">
+    <div class="qhead"><span class="qnum">Q 13</span>
+      <div class="qtext">In the Medallion Architecture, what is the typical data format in the Bronze layer?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,13,'A')"><span class="opt-letter">A</span>Only CSV files, as Bronze must be human-readable for data validation</button>
+      <button class="opt" onclick="ans(this,13,'B')"><span class="opt-letter">B</span>Raw data in its original format (JSON, CSV, Avro, binary, etc.) stored as-is or lightly converted to Delta/Parquet, preserving full source fidelity with minimal transformation</button>
+      <button class="opt" onclick="ans(this,13,'C')"><span class="opt-letter">C</span>Highly optimized, pre-aggregated data ready for direct BI consumption</button>
+      <button class="opt" onclick="ans(this,13,'D')"><span class="opt-letter">D</span>Bronze only stores streaming data; batch data goes directly to Silver</button>
+    </div>
+    <span class="badge" id="b13"></span>
+    <div class="exp" id="e13">
+      <strong>Answer: B</strong><br><br>
+      The <strong>Medallion (Bronze/Silver/Gold) Architecture</strong> is a data design pattern for Delta Lake:<br><br>
+      <strong>🥉 Bronze Layer (Raw):</strong><br>
+      • Source: Kafka, REST APIs, JDBC, files (CSV/JSON/XML/Avro)<br>
+      • Format: Stored as Delta tables but containing raw data — minimal or no transformation<br>
+      • Added metadata: ingestion timestamp, source file name, batch ID<br>
+      • Schema: Often permissive (all strings) to avoid ingestion failures<br>
+      • Purpose: Immutable landing zone — "source of truth" for replay<br>
+      • Retention: Long-term (often years)<br><br>
+      <strong>Best practice for Bronze:</strong><br>
+      <code>raw_df\<br>
+      &nbsp;&nbsp;.withColumn("_ingest_timestamp", current_timestamp())<br>
+      &nbsp;&nbsp;.withColumn("_source_file", input_file_name())<br>
+      &nbsp;&nbsp;.write.format("delta")\<br>
+      &nbsp;&nbsp;.mode("append")\<br>
+      &nbsp;&nbsp;.save("/lake/bronze/events")</code><br><br>
+      <div class="note"><strong>Key principle:</strong> Never delete from Bronze. If upstream data changes, you can always re-derive Silver/Gold from Bronze. Bronze is your insurance policy.</div>
+    </div>
+  </div>
+
+  <!-- Q14 -->
+  <div class="qcard" id="qc14">
+    <div class="qhead"><span class="qnum">Q 14</span>
+      <div class="qtext">What characterizes data in the Silver layer of the Medallion Architecture?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,14,'A')"><span class="opt-letter">A</span>Silver stores pre-computed aggregates and KPIs for dashboard consumption</button>
+      <button class="opt" onclick="ans(this,14,'B')"><span class="opt-letter">B</span>Silver contains cleansed, validated, conformed, and joined data — deduped, type-cast, nulls handled, business keys resolved — serving as the enterprise-wide single source of truth</button>
+      <button class="opt" onclick="ans(this,14,'C')"><span class="opt-letter">C</span>Silver data is identical to Bronze but stored in a different bucket for cost separation</button>
+      <button class="opt" onclick="ans(this,14,'D')"><span class="opt-letter">D</span>Silver always uses CSV format for compatibility with legacy BI tools</button>
+    </div>
+    <span class="badge" id="b14"></span>
+    <div class="exp" id="e14">
+      <strong>Answer: B</strong><br><br>
+      <strong>🥈 Silver Layer (Cleansed / Conformed):</strong><br>
+      • <strong>Input</strong>: Bronze Delta tables<br>
+      • <strong>Format</strong>: Delta tables with enforced schema<br>
+      • <strong>Transformations applied</strong>:<br>
+      &nbsp;&nbsp;– Type casting (string → int, string → date)<br>
+      &nbsp;&nbsp;– Deduplication (remove exact or fuzzy duplicates)<br>
+      &nbsp;&nbsp;– Null handling (drop, fill, flag)<br>
+      &nbsp;&nbsp;– Data validation (reject out-of-range values)<br>
+      &nbsp;&nbsp;– Business key resolution (normalize customer IDs)<br>
+      &nbsp;&nbsp;– Joins (enrich events with dimension data)<br>
+      • <strong>Schema</strong>: Strictly enforced, documented<br>
+      • <strong>Users</strong>: Data scientists, ML engineers, advanced analysts<br>
+      • <strong>SLA</strong>: Updated within minutes to hours of Bronze<br><br>
+      <strong>Silver loading pattern:</strong><br>
+      <code>bronze_df = spark.read.format("delta").load("/lake/bronze/orders")<br>
+      silver_df = bronze_df\<br>
+      &nbsp;&nbsp;.dropDuplicates(["order_id"])\<br>
+      &nbsp;&nbsp;.withColumn("amount", col("amount_str").cast("decimal(18,2)"))\<br>
+      &nbsp;&nbsp;.filter(col("order_date").isNotNull())<br>
+      silver_df.write.format("delta").mode("overwrite").save("/lake/silver/orders")</code>
+    </div>
+  </div>
+
+  <!-- Q15 -->
+  <div class="qcard" id="qc15">
+    <div class="qhead"><span class="qnum">Q 15</span>
+      <div class="qtext">What type of data and transformations belong in the Gold layer of the Medallion Architecture?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,15,'A')"><span class="opt-letter">A</span>Gold stores the same data as Silver, but with row-level access control policies applied</button>
+      <button class="opt" onclick="ans(this,15,'B')"><span class="opt-letter">B</span>Gold contains business-domain-specific, pre-aggregated tables optimized for direct BI/reporting consumption — denormalized, metric-ready, and often modeled as star/snowflake schemas</button>
+      <button class="opt" onclick="ans(this,15,'C')"><span class="opt-letter">C</span>Gold is the archive layer — historical data older than 2 years is moved here automatically</button>
+      <button class="opt" onclick="ans(this,15,'D')"><span class="opt-letter">D</span>Gold stores only streaming data with sub-second latency requirements</button>
+    </div>
+    <span class="badge" id="b15"></span>
+    <div class="exp" id="e15">
+      <strong>Answer: B</strong><br><br>
+      <strong>🥇 Gold Layer (Business-ready / Serving):</strong><br>
+      • <strong>Input</strong>: Silver Delta tables<br>
+      • <strong>Format</strong>: Delta tables, heavily optimized (Z-Ordered, compacted)<br>
+      • <strong>Transformations</strong>: GROUP BY, window functions, complex aggregations, business logic<br>
+      • <strong>Models</strong>: Star schema fact/dimension tables, wide denormalized tables, cubes<br>
+      • <strong>Users</strong>: BI tools (Power BI, Tableau), executives, dashboards, APIs<br>
+      • <strong>Update frequency</strong>: Hourly, daily (depending on business need)<br><br>
+      <strong>Example Gold table:</strong><br>
+      <code># Daily sales summary (Gold)<br>
+      silver_orders\<br>
+      &nbsp;&nbsp;.groupBy("region", "product_category", "order_date")\<br>
+      &nbsp;&nbsp;.agg(<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;sum("amount").alias("total_revenue"),<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;count("order_id").alias("order_count"),<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;avg("amount").alias("avg_order_value")<br>
+      &nbsp;&nbsp;)\<br>
+      &nbsp;&nbsp;.write.format("delta")\<br>
+      &nbsp;&nbsp;.mode("overwrite")\<br>
+      &nbsp;&nbsp;.partitionBy("order_date")\<br>
+      &nbsp;&nbsp;.save("/lake/gold/daily_sales_summary")</code><br><br>
+      <div class="note"><strong>Separation of concerns:</strong> Errors at any layer don't propagate upward retroactively. Bronze mistakes can be fixed, Silver re-derived, Gold rebuilt — without touching source systems.</div>
+    </div>
+  </div>
+
+  <div class="cat-label"><span class="cat-label-text">Table Management</span></div>
+
+  <!-- Q16 -->
+  <div class="qcard" id="qc16">
+    <div class="qhead"><span class="qnum">Q 16</span>
+      <div class="qtext">Which method correctly creates an external Delta table with partitioning on a cloud storage path?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,16,'A')"><span class="opt-letter">A</span><code>spark.createDeltaTable("db.events", partitionBy="date", location="s3://bucket/events")</code></button>
+      <button class="opt" onclick="ans(this,16,'B')"><span class="opt-letter">B</span>Using DataFrame API: <code>df.write.format("delta").partitionBy("date").save("s3://bucket/events")</code> OR SQL: <code>CREATE TABLE db.events USING DELTA PARTITIONED BY (date) LOCATION 's3://bucket/events'</code></button>
+      <button class="opt" onclick="ans(this,16,'C')"><span class="opt-letter">C</span><code>df.write.delta("s3://bucket/events")</code> — shorthand method automatically detects partitions</button>
+      <button class="opt" onclick="ans(this,16,'D')"><span class="opt-letter">D</span>Delta tables can only be created in the default Hive warehouse directory, not on custom paths</button>
+    </div>
+    <span class="badge" id="b16"></span>
+    <div class="exp" id="e16">
+      <strong>Answer: B</strong><br><br>
+      <strong>Multiple ways to create a Delta table:</strong><br><br>
+      <strong>1. DataFrame write (creates data + log):</strong><br>
+      <code>df.write.format("delta")\<br>
+      &nbsp;&nbsp;.mode("overwrite")\<br>
+      &nbsp;&nbsp;.partitionBy("year", "month")\<br>
+      &nbsp;&nbsp;.save("s3://my-bucket/delta/events")</code><br><br>
+      <strong>2. SQL CREATE TABLE (schema only, no data):</strong><br>
+      <code>CREATE TABLE analytics.events (<br>
+      &nbsp;&nbsp;event_id STRING,<br>
+      &nbsp;&nbsp;user_id BIGINT,<br>
+      &nbsp;&nbsp;amount DECIMAL(18,2),<br>
+      &nbsp;&nbsp;event_date DATE<br>
+      ) USING DELTA<br>
+      PARTITIONED BY (event_date)<br>
+      LOCATION 's3://my-bucket/delta/events'</code><br><br>
+      <strong>3. DeltaTableBuilder API:</strong><br>
+      <code>DeltaTable.createOrReplace(spark)\<br>
+      &nbsp;&nbsp;.tableName("analytics.events")\<br>
+      &nbsp;&nbsp;.addColumn("event_id", "STRING")\<br>
+      &nbsp;&nbsp;.addColumn("amount", "DECIMAL(18,2)")\<br>
+      &nbsp;&nbsp;.partitionedBy("event_date")\<br>
+      &nbsp;&nbsp;.location("s3://bucket/events")\<br>
+      &nbsp;&nbsp;.execute()</code><br><br>
+      <div class="note"><strong>Managed vs External:</strong> Without LOCATION → managed table (Spark owns data). With LOCATION → external table (DROP TABLE keeps data on disk).</div>
+    </div>
+  </div>
+
+  <!-- Q17 -->
+  <div class="qcard" id="qc17">
+    <div class="qhead"><span class="qnum">Q 17</span>
+      <div class="qtext">What is a DeltaTable instance in PySpark, and when would you use it instead of SQL?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,17,'A')"><span class="opt-letter">A</span>A DeltaTable instance is identical to a SparkSession — it is just an alias</button>
+      <button class="opt" onclick="ans(this,17,'B')"><span class="opt-letter">B</span>DeltaTable is a Python class from <code>delta.tables</code> that provides a programmatic API for Delta-specific operations (MERGE, history, vacuum, restore, generate) that can't be expressed purely in SQL or DataFrame API</button>
+      <button class="opt" onclick="ans(this,17,'C')"><span class="opt-letter">C</span>DeltaTable is only used for reading Delta tables — writes always use the DataFrame API</button>
+      <button class="opt" onclick="ans(this,17,'D')"><span class="opt-letter">D</span>DeltaTable is a legacy class from Delta Lake 1.x and is deprecated in Delta Lake 2+</button>
+    </div>
+    <span class="badge" id="b17"></span>
+    <div class="exp" id="e17">
+      <strong>Answer: B</strong><br><br>
+      <code>from delta.tables import DeltaTable<br><br>
+      # Load by path<br>
+      dt = DeltaTable.forPath(spark, "/delta/events")<br><br>
+      # Load by table name<br>
+      dt = DeltaTable.forName(spark, "analytics.events")</code><br><br>
+      <strong>DeltaTable-specific operations:</strong><br><br>
+      <code># MERGE (upsert) — most common use<br>
+      dt.alias("target").merge(<br>
+      &nbsp;&nbsp;source_df.alias("source"),<br>
+      &nbsp;&nbsp;"target.id = source.id"<br>
+      ).whenMatchedUpdateAll()\<br>
+      &nbsp;&nbsp;.whenNotMatchedInsertAll()\<br>
+      &nbsp;&nbsp;.execute()<br><br>
+      # View history<br>
+      dt.history().show(truncate=False)<br><br>
+      # VACUUM<br>
+      dt.vacuum(retentionHours=168)  # 7 days<br><br>
+      # RESTORE<br>
+      dt.restoreToVersion(5)<br>
+      dt.restoreToTimestamp("2024-01-01 00:00:00")<br><br>
+      # Get underlying DataFrame<br>
+      df = dt.toDF()</code><br><br>
+      Use DeltaTable when you need MERGE logic, programmatic history access, or operations that benefit from Python control flow (conditional merges, dynamic source construction).
+    </div>
+  </div>
+
+  <!-- Q18 -->
+  <div class="qcard" id="qc18">
+    <div class="qhead"><span class="qnum">Q 18</span>
+      <div class="qtext">What is the best approach to automatically insert operational metrics (row counts, duration, status) into an audit table after each pipeline run?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,18,'A')"><span class="opt-letter">A</span>Manually write a separate Spark job that reads the data again and counts rows after each pipeline</button>
+      <button class="opt" onclick="ans(this,18,'B')"><span class="opt-letter">B</span>Use Delta's <code>DESCRIBE HISTORY</code> / <code>commitInfo</code> to extract operation metrics, or wrap pipeline logic in a try/finally block that captures row counts from write operations and appends a metrics row to an audit Delta table</button>
+      <button class="opt" onclick="ans(this,18,'C')"><span class="opt-letter">C</span>Enable <code>spark.sql.auditLog=true</code> — Spark automatically populates an audit table</button>
+      <button class="opt" onclick="ans(this,18,'D')"><span class="opt-letter">D</span>Audit logging requires an external tool like Apache Atlas — it cannot be done within PySpark</button>
+    </div>
+    <span class="badge" id="b18"></span>
+    <div class="exp" id="e18">
+      <strong>Answer: B</strong><br><br>
+      <strong>Pattern 1 — Capture metrics during write:</strong><br>
+      <code>import time<br>
+      from pyspark.sql import functions as F<br><br>
+      start = time.time()<br>
+      try:<br>
+      &nbsp;&nbsp;records_in = source_df.count()<br>
+      &nbsp;&nbsp;result_df = transform(source_df)<br>
+      &nbsp;&nbsp;records_out = result_df.count()<br>
+      &nbsp;&nbsp;result_df.write.format("delta").mode("append").save(target_path)<br>
+      &nbsp;&nbsp;status = "SUCCESS"<br>
+      except Exception as ex:<br>
+      &nbsp;&nbsp;status = f"FAILED: {str(ex)}"<br>
+      &nbsp;&nbsp;records_out = 0<br>
+      &nbsp;&nbsp;raise<br>
+      finally:<br>
+      &nbsp;&nbsp;audit_row = spark.createDataFrame([(<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;"pipeline_name", records_in, records_out,<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;round(time.time()-start, 2), status, current_timestamp()<br>
+      &nbsp;&nbsp;)], ["pipeline","rows_in","rows_out","duration_s","status","run_ts"])<br>
+      &nbsp;&nbsp;audit_row.write.format("delta").mode("append").save("/audit/pipeline_metrics")</code><br><br>
+      <strong>Pattern 2 — Use Delta history:</strong><br>
+      <code>dt = DeltaTable.forPath(spark, target_path)<br>
+      history = dt.history(1)  # Most recent commit<br>
+      # Extract operationMetrics: numOutputRows, numFiles, etc.</code>
+    </div>
+  </div>
+
+  <div class="cat-label"><span class="cat-label-text">ACID & Reliability</span></div>
+
+  <!-- Q19 -->
+  <div class="qcard" id="qc19">
+    <div class="qhead"><span class="qnum">Q 19</span>
+      <div class="qtext">How does Delta Lake achieve Isolation (the "I" in ACID) for concurrent readers and writers?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,19,'A')"><span class="opt-letter">A</span>Delta uses table-level locks — readers block writers and vice versa</button>
+      <button class="opt" onclick="ans(this,19,'B')"><span class="opt-letter">B</span>Readers always see a consistent snapshot (Snapshot Isolation): a reader begins at version N and reads only the files active at N, regardless of concurrent writes committing new versions</button>
+      <button class="opt" onclick="ans(this,19,'C')"><span class="opt-letter">C</span>Delta achieves isolation by queuing all operations sequentially on the driver</button>
+      <button class="opt" onclick="ans(this,19,'D')"><span class="opt-letter">D</span>Isolation is only guaranteed in Databricks — open-source Delta Lake has no isolation guarantees</button>
+    </div>
+    <span class="badge" id="b19"></span>
+    <div class="exp" id="e19">
+      <strong>Answer: B</strong><br><br>
+      Delta Lake implements <strong>Snapshot Isolation</strong> (a form of MVCC — Multi-Version Concurrency Control):<br><br>
+      <strong>Reader behavior:</strong><br>
+      1. Reader starts a query → reads latest committed version (e.g., v10)<br>
+      2. Builds snapshot: set of Parquet files active at v10<br>
+      3. During the query, writer commits v11 (new files added)<br>
+      4. Reader continues seeing v10 — completely unaffected by v11<br>
+      5. Next reader query will see v11<br><br>
+      <strong>Writer conflict detection:</strong><br>
+      • Two writers start at v10<br>
+      • Writer A commits → creates v11.json<br>
+      • Writer B tries to commit → detects v11 exists<br>
+      • Delta checks: do v11's changes conflict with Writer B's changes?<br>
+      &nbsp;&nbsp;– If no overlap → Writer B retries and commits v12 (success)<br>
+      &nbsp;&nbsp;– If overlap (same rows modified) → <code>ConcurrentModificationException</code><br><br>
+      <strong>Isolation levels supported:</strong><br>
+      • <code>Serializable</code> (default for writes): Strictest — no write-write conflicts<br>
+      • <code>WriteSerializable</code>: Allows some concurrent writes that don't logically conflict<br>
+      • Reads: Always Snapshot Isolation — ZERO reader-writer conflicts
+    </div>
+  </div>
+
+  <!-- Q20 -->
+  <div class="qcard" id="qc20">
+    <div class="qhead"><span class="qnum">Q 20</span>
+      <div class="qtext">What happens when you try to write a DataFrame with an extra column to a Delta table with schema enforcement enabled?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,20,'A')"><span class="opt-letter">A</span>The extra column is silently dropped and the write succeeds</button>
+      <button class="opt" onclick="ans(this,20,'B')"><span class="opt-letter">B</span>Delta throws an <code>AnalysisException</code> at write time — the transaction is rejected and the table remains unchanged</button>
+      <button class="opt" onclick="ans(this,20,'C')"><span class="opt-letter">C</span>The extra column is added to the table schema automatically (schema evolution)</button>
+      <button class="opt" onclick="ans(this,20,'D')"><span class="opt-letter">D</span>Delta writes the data but stores the extra column in a separate overflow table</button>
+    </div>
+    <span class="badge" id="b20"></span>
+    <div class="exp" id="e20">
+      <strong>Answer: B</strong><br><br>
+      Schema enforcement (also called schema validation) is Delta Lake's default protection against accidental schema changes:<br><br>
+      <strong>What triggers an AnalysisException:</strong><br>
+      • DataFrame has a column NOT in the table schema<br>
+      • DataFrame has different data type for an existing column (e.g., long vs string)<br>
+      • DataFrame is missing a non-nullable column<br><br>
+      <strong>Example:</strong><br>
+      <code># Table schema: id INT, name STRING<br>
+      bad_df = spark.createDataFrame([(1, "Alice", "New York")], ["id","name","city"])<br>
+      bad_df.write.format("delta").mode("append").save("/delta/users")<br>
+      # → AnalysisException: A schema mismatch detected when writing to the Delta table<br>
+      # → Extra column: city</code><br><br>
+      <strong>How to intentionally add the column (schema evolution):</strong><br>
+      <code>bad_df.write.format("delta")\<br>
+      &nbsp;&nbsp;.mode("append")\<br>
+      &nbsp;&nbsp;.option("mergeSchema", "true")\<br>
+      &nbsp;&nbsp;.save("/delta/users")<br>
+      # Now table has: id, name, city (city is null for old rows)</code><br><br>
+      Schema enforcement is a feature, not a bug — it prevents data quality issues from silently propagating into your lake.
+    </div>
+  </div>
+
+  <!-- Q21 -->
+  <div class="qcard" id="qc21">
+    <div class="qhead"><span class="qnum">Q 21</span>
+      <div class="qtext">Which type of schema change CANNOT be handled automatically by Delta Lake's schema evolution, even with <code>mergeSchema=true</code>?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,21,'A')"><span class="opt-letter">A</span>Adding a new nullable column</button>
+      <button class="opt" onclick="ans(this,21,'B')"><span class="opt-letter">B</span>Changing a column's data type from <code>INT</code> to <code>LONG</code> (widening)</button>
+      <button class="opt" onclick="ans(this,21,'C')"><span class="opt-letter">C</span>Changing a column's data type from <code>STRING</code> to <code>INT</code> (narrowing/incompatible type change)</button>
+      <button class="opt" onclick="ans(this,21,'D')"><span class="opt-letter">D</span>Adding a new nested field to a struct column</button>
+    </div>
+    <span class="badge" id="b21"></span>
+    <div class="exp" id="e21">
+      <strong>Answer: C</strong><br><br>
+      Delta Lake supports <strong>additive schema evolution</strong> automatically via <code>mergeSchema=true</code> or <code>autoMerge=true</code>:<br><br>
+      <strong>✅ Supported automatically:</strong><br>
+      • Adding new columns (nullable)<br>
+      • Widening numeric types: <code>INT → LONG</code>, <code>FLOAT → DOUBLE</code><br>
+      • Adding new fields to existing <code>StructType</code> columns<br>
+      • Changing nullable to non-nullable (with caution)<br><br>
+      <strong>❌ NOT supported (requires manual intervention):</strong><br>
+      • Incompatible type changes: <code>STRING → INT</code>, <code>LONG → INT</code> (data loss risk)<br>
+      • Removing columns (Delta doesn't automatically drop columns)<br>
+      • Renaming columns (treated as drop + add, not a rename)<br>
+      • Changing partition columns<br><br>
+      <strong>For unsupported changes — use overwrite:</strong><br>
+      <code>new_df.write.format("delta")\<br>
+      &nbsp;&nbsp;.mode("overwrite")\<br>
+      &nbsp;&nbsp;.option("overwriteSchema", "true")\<br>
+      &nbsp;&nbsp;.save("/delta/table")<br>
+      # Overwrites both data AND schema — use carefully!</code><br><br>
+      <div class="note"><strong>Production approach:</strong> Treat schema changes as migrations — version them, test them in lower environments, and document them in the table's DESCRIBE HISTORY.</div>
+    </div>
+  </div>
+
+  <div class="cat-label"><span class="cat-label-text">Query Optimization</span></div>
+
+  <!-- Q22 -->
+  <div class="qcard" id="qc22">
+    <div class="qhead"><span class="qnum">Q 22</span>
+      <div class="qtext">How does Z-Ordering improve query performance, and what type of queries benefit most?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,22,'A')"><span class="opt-letter">A</span>Z-Ordering compresses data using the Zstandard algorithm, reducing file sizes by 10x</button>
+      <button class="opt" onclick="ans(this,22,'B')"><span class="opt-letter">B</span>Z-Ordering co-locates rows with similar values for specified columns into the same files, allowing Delta to skip entire files when column statistics don't match filter predicates (data skipping)</button>
+      <button class="opt" onclick="ans(this,22,'C')"><span class="opt-letter">C</span>Z-Ordering creates a secondary index that stores row positions for O(log n) lookups</button>
+      <button class="opt" onclick="ans(this,22,'D')"><span class="opt-letter">D</span>Z-Ordering reorders columns within Parquet files to match common query patterns</button>
+    </div>
+    <span class="badge" id="b22"></span>
+    <div class="exp" id="e22">
+      <strong>Answer: B</strong><br><br>
+      <strong>How Z-Ordering works:</strong><br>
+      Z-Ordering (Z-curve / Morton curve) is a space-filling curve that maps multi-dimensional data to one dimension while preserving locality. When applied to columns A and B, rows with similar (A, B) values cluster together in files.<br><br>
+      <code>OPTIMIZE events ZORDER BY (user_id, event_date)</code><br><br>
+      <strong>Data skipping mechanism:</strong><br>
+      Each Parquet file in Delta stores column statistics (min/max per column). When you query <code>WHERE user_id = 12345</code>:<br>
+      1. Delta reads min/max user_id for each file<br>
+      2. Skips files where 12345 is outside [min, max]<br>
+      3. Only reads files that could contain user_id = 12345<br><br>
+      <strong>Without Z-Order:</strong> user_ids scattered across all files → data skipping ineffective → scan all files<br>
+      <strong>With Z-Order:</strong> user_ids clustered → most files skipped → only read 1-2% of data<br><br>
+      <strong>Best columns for Z-Ordering:</strong><br>
+      • High-cardinality columns in WHERE clauses: user_id, product_id, transaction_id<br>
+      • Time columns with range queries: event_timestamp<br>
+      • Limit to 1-4 columns (effectiveness decreases with more columns)
+    </div>
+  </div>
+
+  <!-- Q23 -->
+  <div class="qcard" id="qc23">
+    <div class="qhead"><span class="qnum">Q 23</span>
+      <div class="qtext">What is the difference between OPTIMIZE and VACUUM in Delta Lake?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,23,'A')"><span class="opt-letter">A</span>OPTIMIZE compresses files using gzip; VACUUM decompresses them for faster reads</button>
+      <button class="opt" onclick="ans(this,23,'B')"><span class="opt-letter">B</span>OPTIMIZE compacts small Parquet files into larger ones (and optionally Z-Orders) — improving read performance; VACUUM permanently deletes old/unreferenced files from storage, freeing disk space</button>
+      <button class="opt" onclick="ans(this,23,'C')"><span class="opt-letter">C</span>OPTIMIZE removes duplicate rows; VACUUM removes null values from all columns</button>
+      <button class="opt" onclick="ans(this,23,'D')"><span class="opt-letter">D</span>Both do the same thing — they are aliases for the same underlying operation</button>
+    </div>
+    <span class="badge" id="b23"></span>
+    <div class="exp" id="e23">
+      <strong>Answer: B</strong><br><br>
+      <strong>OPTIMIZE</strong> — improves READ performance:<br>
+      <code>OPTIMIZE my_table                        -- compact to 1GB files<br>
+      OPTIMIZE my_table ZORDER BY (user_id)   -- compact + co-locate<br>
+      OPTIMIZE my_table WHERE date='2024-01-01'  -- partition-targeted</code><br>
+      • Reads many small files, writes fewer large files (~1GB target)<br>
+      • Old small files get "remove" entries in the log (still exist on disk)<br>
+      • Small files problem: 1000 × 1MB files vs 1 × 1GB file → 1000x more file open overhead<br>
+      • Does NOT delete anything from disk<br><br>
+      <strong>VACUUM</strong> — reclaims STORAGE space:<br>
+      <code>VACUUM my_table RETAIN 168 HOURS  -- delete files older than 7 days<br>
+      VACUUM my_table RETAIN 0 HOURS   -- DANGEROUS: kills time travel entirely</code><br>
+      • Physically deletes Parquet files marked as "removed" in the log<br>
+      • Also deletes orphan files (files not referenced by any log entry)<br>
+      • Default retention: 7 days (168 hours)<br>
+      • After VACUUM, time travel before the retention window is impossible<br><br>
+      <div class="note"><strong>Order matters:</strong> Run OPTIMIZE regularly (hourly/daily). Run VACUUM periodically (weekly) after verifying no long-running queries need old files.</div>
+    </div>
+  </div>
+
+  <!-- Q24 -->
+  <div class="qcard" id="qc24">
+    <div class="qhead"><span class="qnum">Q 24</span>
+      <div class="qtext">Two Spark jobs simultaneously try to DELETE different rows from the same Delta table. What happens?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,24,'A')"><span class="opt-letter">A</span>Both deletes always fail — Delta does not allow concurrent DML operations</button>
+      <button class="opt" onclick="ans(this,24,'B')"><span class="opt-letter">B</span>Both succeed if they touch different files (non-overlapping data); if they read/write the same files, one succeeds and one gets a ConcurrentDeleteReadException and must retry</button>
+      <button class="opt" onclick="ans(this,24,'C')"><span class="opt-letter">C</span>The second delete waits until the first completes (table-level pessimistic lock)</button>
+      <button class="opt" onclick="ans(this,24,'D')"><span class="opt-letter">D</span>Both deletes succeed without conflict detection — last write wins</button>
+    </div>
+    <span class="badge" id="b24"></span>
+    <div class="exp" id="e24">
+      <strong>Answer: B</strong><br><br>
+      Delta Lake uses <strong>optimistic concurrency control</strong> — it assumes conflicts are rare and checks at commit time:<br><br>
+      <strong>Scenario: Job A deletes rows from partition P1; Job B deletes rows from partition P2</strong><br>
+      1. Job A reads v10, removes files in P1, tries to commit v11 → SUCCESS<br>
+      2. Job B reads v10, removes files in P2, tries to commit v11 → v11 exists!<br>
+      3. Delta checks: did Job B's read-set overlap with Job A's write-set?<br>
+      &nbsp;&nbsp;→ P1 ≠ P2: NO overlap → Job B retries and commits as v12 ✅<br><br>
+      <strong>Scenario: Both jobs delete from the SAME partition file</strong><br>
+      1. Job A commits v11 (removing file X)<br>
+      2. Job B tries to commit — it also read file X and wants to remove it<br>
+      3. Delta detects: Job A already removed file X → conflict!<br>
+      → Job B raises <code>ConcurrentDeleteReadException</code><br>
+      → Must be retried (re-read latest version, re-execute delete)<br><br>
+      <strong>Exception types:</strong><br>
+      • <code>ConcurrentDeleteReadException</code>: Concurrent delete on same files<br>
+      • <code>ConcurrentDeleteDeleteException</code>: Both try to delete same file<br>
+      • <code>ConcurrentTransactionException</code>: General conflict
+    </div>
+  </div>
+
+  <div class="cat-label"><span class="cat-label-text">Advanced Patterns</span></div>
+
+  <!-- Q25 -->
+  <div class="qcard" id="qc25">
+    <div class="qhead"><span class="qnum">Q 25</span>
+      <div class="qtext">What is the most efficient pattern for incrementally loading new records into a Delta table without reprocessing historical data?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,25,'A')"><span class="opt-letter">A</span>Use <code>mode("overwrite")</code> every run and re-read the entire source — Delta handles deduplication automatically</button>
+      <button class="opt" onclick="ans(this,25,'B')"><span class="opt-letter">B</span>Use Spark Structured Streaming with <code>spark.readStream</code> on the Delta source, or use the watermark pattern with MERGE to upsert only new/changed records based on a high-water-mark timestamp or offset</button>
+      <button class="opt" onclick="ans(this,25,'C')"><span class="opt-letter">C</span>Enable <code>spark.delta.autoIncremental=true</code> — Delta automatically detects and loads only new data</button>
+      <button class="opt" onclick="ans(this,25,'D')"><span class="opt-letter">D</span>Incremental loading requires Apache Kafka — it cannot be done with file-based Delta sources</button>
+    </div>
+    <span class="badge" id="b25"></span>
+    <div class="exp" id="e25">
+      <strong>Answer: B</strong><br><br>
+      <strong>Pattern 1 — Delta as Streaming Source:</strong><br>
+      <code>stream = spark.readStream.format("delta")\<br>
+      &nbsp;&nbsp;.load("/delta/bronze/events")<br>
+      stream.writeStream.format("delta")\<br>
+      &nbsp;&nbsp;.option("checkpointLocation", "/checkpoints/silver_events")\<br>
+      &nbsp;&nbsp;.start("/delta/silver/events")</code><br>
+      Delta's streaming source automatically tracks which versions have been processed via the checkpoint.<br><br>
+      <strong>Pattern 2 — High-Water-Mark batch:</strong><br>
+      <code>last_ts = spark.read.format("delta").load("/meta/watermarks")\<br>
+      &nbsp;&nbsp;.filter(col("pipeline")=="events").select("max_ts").collect()[0][0]<br><br>
+      new_data = spark.read.format("delta").load("/delta/bronze/events")\<br>
+      &nbsp;&nbsp;.filter(col("updated_at") > last_ts)<br><br>
+      # Upsert via MERGE<br>
+      DeltaTable.forPath(spark, "/delta/silver/events")\<br>
+      &nbsp;&nbsp;.alias("t").merge(new_data.alias("s"), "t.id = s.id")\<br>
+      &nbsp;&nbsp;.whenMatchedUpdateAll().whenNotMatchedInsertAll().execute()</code><br><br>
+      <strong>Pattern 3 — Delta Change Data Feed (CDC):</strong><br>
+      <code>changes = spark.read.format("delta")\<br>
+      &nbsp;&nbsp;.option("readChangeFeed","true")\<br>
+      &nbsp;&nbsp;.option("startingVersion", last_version)\<br>
+      &nbsp;&nbsp;.table("bronze_events")<br>
+      # Each row has _change_type: insert/update_postimage/delete</code>
+    </div>
+  </div>
+
+  <!-- Q26 -->
+  <div class="qcard" id="qc26">
+    <div class="qhead"><span class="qnum">Q 26</span>
+      <div class="qtext">In a Delta MERGE operation, what happens if a source row matches multiple target rows?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,26,'A')"><span class="opt-letter">A</span>Delta automatically picks the first matching target row and ignores the rest</button>
+      <button class="opt" onclick="ans(this,26,'B')"><span class="opt-letter">B</span>Delta throws a runtime error: <code>MERGE with multiple matches</code> — source rows must have at most one matching target row; you must deduplicate source before MERGE</button>
+      <button class="opt" onclick="ans(this,26,'C')"><span class="opt-letter">C</span>All matching target rows are updated, producing one updated row per match</button>
+      <button class="opt" onclick="ans(this,26,'D')"><span class="opt-letter">D</span>The MERGE silently updates all matching target rows without any error</button>
+    </div>
+    <span class="badge" id="b26"></span>
+    <div class="exp" id="e26">
+      <strong>Answer: B</strong><br><br>
+      Delta MERGE follows SQL standard semantics — a source row can match AT MOST one target row. If duplicates exist, you get: <code>UnsupportedOperationException: Cannot perform Merge as multiple source rows matched and attempted to modify the same target row</code><br><br>
+      <strong>Complete MERGE syntax:</strong><br>
+      <code>DeltaTable.forPath(spark, "/delta/customers").alias("target")\<br>
+      &nbsp;&nbsp;.merge(<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;updates_df.alias("source"),<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;"target.customer_id = source.customer_id"<br>
+      &nbsp;&nbsp;)\<br>
+      &nbsp;&nbsp;.whenMatchedUpdate(set={"name":"source.name","email":"source.email"})\<br>
+      &nbsp;&nbsp;.whenNotMatchedInsertAll()\<br>
+      &nbsp;&nbsp;.whenNotMatchedBySourceDelete()\<br>
+      &nbsp;&nbsp;.execute()</code><br><br>
+      <strong>Deduplicating source before MERGE:</strong><br>
+      <code>deduped_source = updates_df\<br>
+      &nbsp;&nbsp;.withColumn("rn", row_number().over(<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;Window.partitionBy("customer_id").orderBy(col("updated_at").desc())<br>
+      &nbsp;&nbsp;))\<br>
+      &nbsp;&nbsp;.filter(col("rn") == 1).drop("rn")</code><br><br>
+      <strong>MERGE clause types:</strong><br>
+      • <code>whenMatchedUpdate</code> / <code>whenMatchedDelete</code><br>
+      • <code>whenNotMatchedInsert</code> (target has no match)<br>
+      • <code>whenNotMatchedBySourceUpdate/Delete</code> (source has no match — Delta 2.0+)
+    </div>
+  </div>
+
+  <!-- Q27 -->
+  <div class="qcard" id="qc27">
+    <div class="qhead"><span class="qnum">Q 27</span>
+      <div class="qtext">How do you automate small file compaction in a production Delta Lake pipeline?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,27,'A')"><span class="opt-letter">A</span>Small files are not a concern in Delta Lake — the transaction log handles them automatically</button>
+      <button class="opt" onclick="ans(this,27,'B')"><span class="opt-letter">B</span>Schedule OPTIMIZE as a scheduled job (Databricks workflow / Airflow DAG), use Auto Compaction and Optimized Writes features, or trigger OPTIMIZE programmatically after writes exceed a threshold</button>
+      <button class="opt" onclick="ans(this,27,'C')"><span class="opt-letter">C</span>Set <code>spark.sql.delta.smallFileThreshold=true</code> to automatically merge files on every write</button>
+      <button class="opt" onclick="ans(this,27,'D')"><span class="opt-letter">D</span>Convert the table to ORC format, which automatically handles small files</button>
+    </div>
+    <span class="badge" id="b27"></span>
+    <div class="exp" id="e27">
+      <strong>Answer: B</strong><br><br>
+      <strong>Strategy 1 — Databricks Auto Compaction (automatic):</strong><br>
+      <code>ALTER TABLE my_table SET TBLPROPERTIES (<br>
+      &nbsp;&nbsp;'delta.autoOptimize.autoCompact' = 'true',<br>
+      &nbsp;&nbsp;'delta.autoOptimize.optimizeWrite' = 'true'<br>
+      )</code><br>
+      • <strong>Optimized Writes</strong>: Dynamically adjusts shuffle partitions to produce ~128MB files per write<br>
+      • <strong>Auto Compaction</strong>: After each write, asynchronously compacts files that are too small<br><br>
+      <strong>Strategy 2 — Scheduled OPTIMIZE job:</strong><br>
+      <code># Airflow / workflow task running nightly<br>
+      spark.sql("OPTIMIZE analytics.events ZORDER BY (user_id)")<br>
+      spark.sql("VACUUM analytics.events RETAIN 168 HOURS")</code><br><br>
+      <strong>Strategy 3 — Partition-targeted OPTIMIZE after write:</strong><br>
+      <code>date_val = datetime.now().strftime("%Y-%m-%d")<br>
+      spark.sql(f"OPTIMIZE events WHERE date='{date_val}'")<br>
+      # Only compacts today's partition, much faster</code><br><br>
+      <div class="note"><strong>Target file size config:</strong> <code>spark.databricks.delta.optimize.maxFileSize</code> (default ~1GB). Adjust based on typical query patterns — smaller files for selective queries, larger for full scans.</div>
+    </div>
+  </div>
+
+  <!-- Q28 -->
+  <div class="qcard" id="qc28">
+    <div class="qhead"><span class="qnum">Q 28</span>
+      <div class="qtext">What is a Deletion Vector in Delta Lake, and how does it improve DELETE/UPDATE performance?</div>
+    </div>
+    <div class="opts">
+      <button class="opt" onclick="ans(this,28,'A')"><span class="opt-letter">A</span>A deletion vector is a list of SQL DELETE statements stored in the transaction log for replay during reads</button>
+      <button class="opt" onclick="ans(this,28,'B')"><span class="opt-letter">B</span>A deletion vector is a small bitmap file that marks which rows in a Parquet file are deleted, enabling Merge-on-Read: the data file is NOT rewritten on DELETE — only the bitmap is added, making deletes nearly instantaneous</button>
+      <button class="opt" onclick="ans(this,28,'C')"><span class="opt-letter">C</span>Deletion vectors are compact hash tables that track deleted primary keys for deduplication during ingestion</button>
+      <button class="opt" onclick="ans(this,28,'D')"><span class="opt-letter">D</span>A deletion vector is a special partition that collects all deleted rows for bulk physical deletion during VACUUM</button>
+    </div>
+    <span class="badge" id="b28"></span>
+    <div class="exp" id="e28">
+      <strong>Answer: B</strong><br><br>
+      Deletion Vectors (DVs) were introduced in Delta Lake 2.3 and represent a fundamental shift from Copy-on-Write (CoW) to Merge-on-Read (MoR) for deletes and updates:<br><br>
+      <strong>Without Deletion Vectors (Copy-on-Write):</strong><br>
+      DELETE 1 row from a 1GB Parquet file → entire 1GB file rewritten as new file → extremely expensive for frequent small deletes<br><br>
+      <strong>With Deletion Vectors (Merge-on-Read):</strong><br>
+      DELETE 1 row from a 1GB Parquet file → write a tiny <code>.bin</code> bitmap file marking that row as deleted → original Parquet file unchanged → near-instant delete!<br><br>
+      <strong>How reads work with DVs:</strong><br>
+      1. Reader loads Parquet file<br>
+      2. Loads associated deletion vector bitmap<br>
+      3. Filters out rows marked as deleted in the bitmap<br>
+      → Reader sees correct data without expensive rewrite<br><br>
+      <strong>Enable Deletion Vectors:</strong><br>
+      <code>ALTER TABLE my_table SET TBLPROPERTIES (<br>
+      &nbsp;&nbsp;'delta.enableDeletionVectors' = 'true'<br>
+      )</code><br><br>
+      <strong>Trade-offs:</strong><br>
+      • ✅ Writes: Much faster (no file rewrite)<br>
+      • ⚠️ Reads: Slightly slower (must apply bitmap filter)<br>
+      • Run OPTIMIZE periodically to physically remove deleted rows and eliminate DVs, restoring optimal read performance
+    </div>
+  </div>
+
+  <!-- FINAL RESULT -->
+  <div class="final" id="finalBox">
+    <div class="final-ring" id="finalRing">
+      <div class="final-ring-inner">
+        <div class="final-pct" id="finalPct">0%</div>
+        <div class="final-of" id="finalOf">0/28</div>
+      </div>
+    </div>
+    <div class="final-grade" id="finalGrade"></div>
+    <div class="final-msg" id="finalMsg"></div>
+    <button class="final-btn" onclick="resetAll()">↺ &nbsp;Retry Quiz</button>
+  </div>
+
+</div>
+
+<script>
+  const TOTAL = 28;
+  const ANSWERS = {
+    1:'B',2:'B',3:'B',4:'B',5:'B',6:'B',7:'B',8:'B',9:'C',10:'B',
+    11:'B',12:'B',13:'B',14:'B',15:'B',16:'B',17:'B',18:'B',19:'B',20:'B',
+    21:'C',22:'B',23:'B',24:'B',25:'B',26:'B',27:'B',28:'B'
+  };
+
+  let score = 0, answered = 0;
+
+  function ans(btn, qn, chosen) {
+    const card = document.getElementById('qc' + qn);
+    if (card.classList.contains('ok') || card.classList.contains('bad')) return;
+
+    const correct = ANSWERS[qn];
+    const opts = card.querySelectorAll('.opt');
+    const letters = ['A','B','C','D'];
+
+    opts.forEach((o, i) => {
+      o.disabled = true;
+      if (letters[i] === correct) o.classList.add(chosen !== correct ? 'reveal-correct' : 'correct');
+    });
+
+    const badge = document.getElementById('b' + qn);
+    const exp = document.getElementById('e' + qn);
+
+    if (chosen === correct) {
+      btn.classList.add('correct');
+      card.classList.add('ok');
+      badge.className = 'badge ok show';
+      badge.textContent = '✓ Correct';
+      score++;
+    } else {
+      btn.classList.add('wrong');
+      card.classList.add('bad');
+      badge.className = 'badge bad show';
+      badge.textContent = '✗ Incorrect';
+    }
+
+    exp.classList.add('show');
+    answered++;
+    updateBar();
+
+    if (answered === TOTAL) setTimeout(showResult, 700);
+  }
+
+  function updateBar() {
+    document.getElementById('sbScore').textContent = score + ' / ' + answered;
+    document.getElementById('sbFill').style.width = (answered / TOTAL * 100) + '%';
+    document.getElementById('sbCount').textContent = answered + '/' + TOTAL;
+  }
+
+  function showResult() {
+    const pct = Math.round(score / TOTAL * 100);
+    const ring = document.getElementById('finalRing');
+    ring.style.setProperty('--p', pct);
+    document.getElementById('finalPct').textContent = pct + '%';
+    document.getElementById('finalOf').textContent = score + '/' + TOTAL;
+
+    let grade, msg;
+    if (pct >= 90) { grade = '🏆 Delta Expert'; msg = 'Exceptional command of Delta Lake internals and production patterns.'; }
+    else if (pct >= 75) { grade = '⭐ Proficient'; msg = 'Strong Delta Lake knowledge with solid practical understanding.'; }
+    else if (pct >= 60) { grade = '📈 Intermediate'; msg = 'Good foundation — review the detailed explanations to strengthen weak areas.'; }
+    else if (pct >= 40) { grade = '📚 Developing'; msg = 'Keep studying the fundamentals — focus on transaction log internals and ACID.'; }
+    else { grade = '🌱 Just Starting'; msg = 'Read through all explanations carefully — Delta Lake will click with practice.'; }
+
+    document.getElementById('finalGrade').textContent = grade;
+    document.getElementById('finalMsg').textContent = msg;
+    const box = document.getElementById('finalBox');
+    box.classList.add('show');
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function resetAll() {
+    score = 0; answered = 0;
+    updateBar();
+    document.getElementById('sbScore').textContent = '0 / 0';
+    document.getElementById('finalBox').classList.remove('show');
+
+    for (let i = 1; i <= TOTAL; i++) {
+      const card = document.getElementById('qc' + i);
+      card.classList.remove('ok','bad');
+      card.querySelectorAll('.opt').forEach(o => {
+        o.classList.remove('correct','wrong','reveal-correct');
+        o.disabled = false;
+      });
+      const b = document.getElementById('b' + i);
+      b.className = 'badge';
+      b.textContent = '';
+      document.getElementById('e' + i).classList.remove('show');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
