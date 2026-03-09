@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spark: 100 GB File Execution Deep Dive</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050810;
+  --panel: #0b0f1a;
+  --card: #0f1521;
+  --border: #1e2a3a;
+  --border2: #243040;
+  --blue: #3b82f6;
+  --cyan: #06b6d4;
+  --green: #10b981;
+  --amber: #f59e0b;
+  --red: #ef4444;
+  --purple: #8b5cf6;
+  --pink: #ec4899;
+  --text: #e2e8f0;
+  --muted: #64748b;
+  --dim: #1e2a3a;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Barlow', sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Scanline overlay */
+body::after {
+  content:'';
+  position:fixed; inset:0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  pointer-events:none; z-index:9999;
+}
+
+/* ── HEADER ── */
+header {
+  padding: 48px 40px 32px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+header::before {
+  content:'';
+  position:absolute; inset:0;
+  background: radial-gradient(ellipse 70% 80% at 50% -20%, rgba(59,130,246,0.12) 0%, transparent 70%);
+}
+.hdr-tag {
+  font-family:'JetBrains Mono', monospace;
+  font-size:10px; letter-spacing:4px; color:var(--cyan);
+  text-transform:uppercase; margin-bottom:12px;
+}
+header h1 {
+  font-family:'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 8vw, 6rem);
+  line-height:0.95; letter-spacing:2px;
+  color: var(--text);
+  position:relative;
+}
+header h1 span { color: var(--cyan); }
+.hdr-sub {
+  margin-top:14px;
+  font-family:'JetBrains Mono', monospace;
+  font-size:12px; color:var(--muted); letter-spacing:2px;
+}
+.hdr-specs {
+  display:flex; gap:32px; flex-wrap:wrap;
+  margin-top:24px;
+}
+.hdr-spec {
+  display:flex; flex-direction:column; gap:3px;
+}
+.hdr-spec-val {
+  font-family:'JetBrains Mono', monospace;
+  font-size:1.4rem; font-weight:700; color:var(--amber);
+}
+.hdr-spec-label {
+  font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--muted);
+}
+
+/* ── LAYOUT ── */
+.page { max-width:1200px; margin:0 auto; padding:0 32px 80px; }
+
+/* ── SECTION ── */
+.section { margin-top:56px; }
+.sec-title {
+  font-family:'Bebas Neue', sans-serif;
+  font-size:2rem; letter-spacing:3px; color:var(--text);
+  border-left:4px solid var(--cyan); padding-left:16px;
+  margin-bottom:6px;
+}
+.sec-sub { font-size:13px; color:var(--muted); margin-bottom:28px; padding-left:20px; }
+
+/* ── CLUSTER OVERVIEW CARDS ── */
+.cluster-grid {
+  display:grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap:2px;
+  background: var(--border);
+  border-radius:12px;
+  overflow:hidden;
+  border: 1px solid var(--border);
+}
+.cluster-card {
+  background: var(--card);
+  padding:24px 20px;
+}
+.cluster-card.driver { background: linear-gradient(135deg, #0f1521 0%, #0a1020 100%); border-right:2px solid var(--amber); }
+.cluster-card.workers { background: #0a0d16; }
+.cluster-card.cm { background: linear-gradient(135deg, #0f1521 0%, #0a1020 100%); border-left:2px solid var(--purple); }
+
+.cc-label {
+  font-family:'JetBrains Mono', monospace;
+  font-size:9px; letter-spacing:4px; text-transform:uppercase;
+  margin-bottom:10px;
+}
+.cc-label.amber { color:var(--amber); }
+.cc-label.purple { color:var(--purple); }
+.cc-label.cyan { color:var(--cyan); }
+.cc-name {
+  font-family:'Bebas Neue', sans-serif;
+  font-size:1.6rem; letter-spacing:2px; color:var(--text); margin-bottom:16px;
+}
+.mem-bar-wrap { margin:8px 0; }
+.mem-bar-label {
+  display:flex; justify-content:space-between;
+  font-family:'JetBrains Mono', monospace;
+  font-size:10px; color:var(--muted); margin-bottom:4px;
+}
+.mem-bar {
+  height:6px; background:var(--dim); border-radius:99px; overflow:hidden;
+}
+.mem-fill {
+  height:100%; border-radius:99px;
+  animation: fillBar 1.5s ease both;
+}
+@keyframes fillBar { from{width:0} }
+.fill-amber { background: linear-gradient(90deg, var(--amber), #fbbf24); }
+.fill-blue  { background: linear-gradient(90deg, var(--blue), var(--cyan)); }
+.fill-green { background: linear-gradient(90deg, var(--green), #34d399); }
+.fill-purple{ background: linear-gradient(90deg, var(--purple), #a78bfa); }
+.fill-red   { background: linear-gradient(90deg, var(--red), #f87171); }
+
+.mem-spec {
+  display:flex; justify-content:space-between;
+  font-size:11px; margin-top:4px;
+}
+.mem-spec-key { color:var(--muted); }
+.mem-spec-val { font-family:'JetBrains Mono', monospace; font-weight:600; }
+.mem-spec-val.amber { color:var(--amber); }
+.mem-spec-val.blue { color:var(--blue); }
+.mem-spec-val.green { color:var(--green); }
+.mem-spec-val.purple { color:var(--purple); }
+.mem-spec-val.red { color:var(--red); }
+
+/* Workers grid inside */
+.workers-inner {
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+  padding:0;
+}
+.worker-card {
+  background: var(--panel);
+  border:1px solid var(--border2);
+  border-radius:8px;
+  padding:14px 12px;
+}
+.wc-label {
+  font-family:'JetBrains Mono', monospace;
+  font-size:8px; letter-spacing:3px; text-transform:uppercase;
+  color:var(--cyan); margin-bottom:6px;
+}
+.wc-name { font-weight:700; font-size:13px; margin-bottom:10px; }
+.exec-row {
+  background: rgba(59,130,246,0.08);
+  border:1px solid rgba(59,130,246,0.2);
+  border-radius:5px;
+  padding:8px 10px;
+  margin-bottom:6px;
+}
+.exec-label {
+  font-family:'JetBrains Mono', monospace;
+  font-size:8px; letter-spacing:2px; color:var(--blue);
+  margin-bottom:4px;
+}
+.slots-row {
+  display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;
+}
+.slot {
+  width:18px; height:18px; border-radius:3px;
+  background: rgba(16,185,129,0.2);
+  border:1px solid rgba(16,185,129,0.4);
+  display:flex; align-items:center; justify-content:center;
+  font-size:7px; color:var(--green); font-weight:700;
+}
+
+/* ── PARTITION PLAN ── */
+.partition-section {
+  background: var(--card);
+  border:1px solid var(--border2);
+  border-radius:12px;
+  padding:28px;
+}
+.part-row {
+  display:grid;
+  grid-template-columns: 140px 1fr 160px;
+  gap:16px; align-items:center;
+  padding:12px 0;
+  border-bottom:1px solid var(--border);
+}
+.part-row:last-child { border-bottom:none; }
+.part-key {
+  font-family:'JetBrains Mono', monospace;
+  font-size:11px; color:var(--muted); letter-spacing:2px;
+}
+.part-val {
+  font-family:'JetBrains Mono', monospace;
+  font-size:15px; font-weight:700;
+}
+.part-desc { font-size:12px; color:var(--muted); }
+.part-badge {
+  padding:4px 12px; border-radius:20px;
+  font-family:'JetBrains Mono', monospace;
+  font-size:10px; font-weight:600; letter-spacing:1px;
+  text-align:center;
+}
+.badge-cyan { background:rgba(6,182,212,0.15); color:var(--cyan); border:1px solid rgba(6,182,212,0.3); }
+.badge-green { background:rgba(16,185,129,0.15); color:var(--green); border:1px solid rgba(16,185,129,0.3); }
+.badge-amber { background:rgba(245,158,11,0.15); color:var(--amber); border:1px solid rgba(245,158,11,0.3); }
+.badge-blue { background:rgba(59,130,246,0.15); color:var(--blue); border:1px solid rgba(59,130,246,0.3); }
+.badge-purple { background:rgba(139,92,246,0.15); color:var(--purple); border:1px solid rgba(139,92,246,0.3); }
+.badge-red { background:rgba(239,68,68,0.15); color:var(--red); border:1px solid rgba(239,68,68,0.3); }
+
+/* ── EXECUTION TIMELINE ── */
+.timeline {
+  position:relative;
+  padding-left:40px;
+}
+.timeline::before {
+  content:''; position:absolute; left:12px; top:0; bottom:0;
+  width:2px; background: linear-gradient(180deg, var(--cyan), var(--blue), var(--purple));
+  border-radius:99px;
+}
+.tl-step {
+  position:relative;
+  margin-bottom:28px;
+  animation: slideIn 0.4s ease both;
+}
+@keyframes slideIn { from{opacity:0;transform:translateX(-10px)} }
+.tl-dot {
+  position:absolute; left:-34px; top:16px;
+  width:16px; height:16px; border-radius:50%;
+  border:2px solid;
+  display:flex; align-items:center; justify-content:center;
+  font-size:7px; font-weight:700;
+  background: var(--bg);
+}
+.tl-dot.cyan { border-color:var(--cyan); color:var(--cyan); }
+.tl-dot.blue { border-color:var(--blue); color:var(--blue); }
+.tl-dot.green { border-color:var(--green); color:var(--green); }
+.tl-dot.amber { border-color:var(--amber); color:var(--amber); }
+.tl-dot.purple { border-color:var(--purple); color:var(--purple); }
+.tl-dot.pink { border-color:var(--pink); color:var(--pink); }
+.tl-dot.red { border-color:var(--red); color:var(--red); }
+
+.tl-card {
+  background:var(--card);
+  border:1px solid var(--border2);
+  border-radius:10px;
+  overflow:hidden;
+}
+.tl-card-head {
+  padding:14px 18px 12px;
+  display:flex; align-items:center; gap:12px;
+  border-bottom:1px solid var(--border);
+}
+.tl-step-num {
+  font-family:'JetBrains Mono', monospace;
+  font-size:10px; letter-spacing:2px; color:var(--muted);
+  flex-shrink:0;
+}
+.tl-title { font-size:15px; font-weight:700; }
+.tl-body { padding:16px 18px; }
+.tl-body p { font-size:13px; line-height:1.7; color:#94a3b8; margin-bottom:10px; }
+.tl-body p:last-child { margin-bottom:0; }
+.tl-body strong { color:var(--text); font-weight:600; }
+.tl-body code {
+  font-family:'JetBrains Mono', monospace;
+  font-size:11px; background:rgba(255,255,255,0.06);
+  padding:1px 6px; border-radius:3px; color:var(--cyan);
+}
+
+/* Memory breakdown table inside steps */
+.mem-table {
+  width:100%; border-collapse:collapse;
+  margin:12px 0;
+  font-family:'JetBrains Mono', monospace;
+  font-size:11px;
+}
+.mem-table th {
+  text-align:left; padding:6px 10px;
+  background:rgba(255,255,255,0.04);
+  color:var(--muted); font-weight:500;
+  letter-spacing:2px; font-size:9px;
+  border-bottom:1px solid var(--border);
+}
+.mem-table td {
+  padding:8px 10px;
+  border-bottom:1px solid rgba(30,42,58,0.6);
+  vertical-align:top;
+}
+.mem-table tr:last-child td { border-bottom:none; }
+.mem-table .tkey { color:var(--muted); }
+.mem-table .tval { font-weight:700; }
+.mem-table .tdesc { color:#64748b; font-size:10px; }
+
+/* ── PARTITION VISUAL ── */
+.partition-visual {
+  display:flex; flex-wrap:wrap; gap:4px;
+  margin:12px 0;
+}
+.pv-block {
+  width:28px; height:28px;
+  border-radius:4px;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'JetBrains Mono', monospace;
+  font-size:7px; font-weight:700;
+  border:1px solid;
+  transition:transform 0.2s;
+  cursor:default;
+  animation: popIn 0.3s ease both;
+}
+@keyframes popIn { from{opacity:0;transform:scale(0.7)} }
+.pv-block.blue { background:rgba(59,130,246,0.15); border-color:rgba(59,130,246,0.4); color:var(--blue); }
+.pv-block.green { background:rgba(16,185,129,0.15); border-color:rgba(16,185,129,0.4); color:var(--green); }
+.pv-block.amber { background:rgba(245,158,11,0.15); border-color:rgba(245,158,11,0.4); color:var(--amber); }
+.pv-block.purple { background:rgba(139,92,246,0.15); border-color:rgba(139,92,246,0.4); color:var(--purple); }
+.pv-block:hover { transform:scale(1.15); }
+
+/* ── STAGE DIAGRAM ── */
+.stage-flow {
+  display:flex; gap:0; align-items:stretch;
+  background:var(--card); border:1px solid var(--border2);
+  border-radius:12px; overflow:hidden; flex-wrap:wrap;
+}
+.stage-block {
+  flex:1; min-width:200px;
+  padding:20px;
+  border-right:1px solid var(--border2);
+  position:relative;
+}
+.stage-block:last-child { border-right:none; }
+.stage-block::after {
+  content:'→';
+  position:absolute; right:-14px; top:50%; transform:translateY(-50%);
+  color:var(--muted); font-size:18px; z-index:10;
+}
+.stage-block:last-child::after { display:none; }
+.sb-label {
+  font-family:'JetBrains Mono', monospace;
+  font-size:8px; letter-spacing:3px; text-transform:uppercase;
+  margin-bottom:8px;
+}
+.sb-name { font-weight:700; font-size:14px; margin-bottom:6px; }
+.sb-ops {
+  font-family:'JetBrains Mono', monospace;
+  font-size:10px; color:var(--muted); line-height:1.8;
+}
+.sb-tasks {
+  margin-top:12px; padding:8px;
+  background:rgba(255,255,255,0.03);
+  border-radius:5px;
+  font-size:11px;
+}
+.sb-tasks-label { font-family:'JetBrains Mono', monospace; font-size:8px; letter-spacing:2px; color:var(--muted); margin-bottom:4px; }
+
+/* ── MEMORY ZONE ── */
+.mem-zone-grid {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+.mem-zone {
+  background:var(--card);
+  border:1px solid var(--border2);
+  border-radius:10px; padding:20px;
+}
+.mz-title {
+  font-family:'JetBrains Mono', monospace;
+  font-size:9px; letter-spacing:3px; text-transform:uppercase;
+  margin-bottom:12px;
+}
+.mz-bar-stack { display:flex; flex-direction:column; gap:8px; }
+.mz-bar-item {}
+.mz-bar-top {
+  display:flex; justify-content:space-between;
+  font-size:11px; margin-bottom:4px;
+}
+.mz-bar-top .name { color:var(--text); }
+.mz-bar-top .val { font-family:'JetBrains Mono', monospace; font-weight:600; }
+.mz-bar-bg { height:8px; background:var(--dim); border-radius:99px; overflow:hidden; }
+.mz-fill { height:100%; border-radius:99px; }
+
+/* ── SUMMARY TABLE ── */
+.summary-table {
+  width:100%; border-collapse:collapse;
+}
+.summary-table th {
+  background:var(--panel);
+  padding:12px 16px; text-align:left;
+  font-family:'JetBrains Mono', monospace;
+  font-size:9px; letter-spacing:3px; text-transform:uppercase;
+  color:var(--muted); border-bottom:2px solid var(--border2);
+}
+.summary-table td {
+  padding:12px 16px;
+  border-bottom:1px solid var(--border);
+  font-size:13px; vertical-align:top;
+}
+.summary-table tr:last-child td { border-bottom:none; }
+.summary-table tr:hover td { background:rgba(255,255,255,0.02); }
+.mono { font-family:'JetBrains Mono', monospace; font-weight:700; font-size:12px; }
+
+/* ── GLOW ACCENTS ── */
+.glow-cyan { text-shadow:0 0 20px rgba(6,182,212,0.5); }
+.glow-amber { text-shadow:0 0 20px rgba(245,158,11,0.5); }
+
+/* Alert box */
+.alert {
+  padding:14px 18px;
+  border-radius:8px;
+  margin:12px 0;
+  font-size:12px; line-height:1.6;
+  display:flex; gap:10px; align-items:flex-start;
+}
+.alert.info { background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3); color:#93c5fd; }
+.alert.warn { background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); color:#fcd34d; }
+.alert.success { background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); color:#6ee7b7; }
+.alert-icon { flex-shrink:0; font-size:14px; }
+
+/* Responsive */
+@media(max-width:768px) {
+  .cluster-grid { grid-template-columns:1fr; }
+  .workers-inner { grid-template-columns:1fr 1fr; }
+  .mem-zone-grid { grid-template-columns:1fr; }
+  .part-row { grid-template-columns:1fr; gap:6px; }
+  header { padding:32px 20px 24px; }
+  .page { padding:0 16px 60px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-tag">Apache Spark · Execution Deep Dive</div>
+  <h1>100 GB FILE<br><span class="glow-cyan">EXECUTION</span></h1>
+  <p class="hdr-sub">// end-to-end · partitioning · memory · stages · tasks · slots</p>
+  <div class="hdr-specs">
+    <div class="hdr-spec">
+      <div class="hdr-spec-val">100 GB</div>
+      <div class="hdr-spec-label">Input Data</div>
+    </div>
+    <div class="hdr-spec">
+      <div class="hdr-spec-val">800</div>
+      <div class="hdr-spec-label">Partitions</div>
+    </div>
+    <div class="hdr-spec">
+      <div class="hdr-spec-val">4</div>
+      <div class="hdr-spec-label">Worker Nodes</div>
+    </div>
+    <div class="hdr-spec">
+      <div class="hdr-spec-val">32</div>
+      <div class="hdr-spec-label">Total Slots</div>
+    </div>
+    <div class="hdr-spec">
+      <div class="hdr-spec-val">~25</div>
+      <div class="hdr-spec-label">Task Waves</div>
+    </div>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- ═══ CLUSTER SPEC ═══ -->
+  <div class="section">
+    <div class="sec-title">CLUSTER SPECIFICATION</div>
+    <div class="sec-sub">Assumed hardware layout — 1 Driver + 4 Workers, each with 2 Executors</div>
+
+    <div class="cluster-grid">
+
+      <!-- DRIVER -->
+      <div class="cluster-card driver">
+        <div class="cc-label amber">Driver Node</div>
+        <div class="cc-name">MASTER-01</div>
+
+        <div class="mem-bar-wrap">
+          <div class="mem-bar-label"><span>Total RAM</span><span style="color:var(--amber)">16 GB</span></div>
+          <div class="mem-bar"><div class="mem-fill fill-amber" style="width:100%"></div></div>
+        </div>
+        <div class="mem-spec"><span class="mem-spec-key">JVM Heap</span><span class="mem-spec-val amber">4 GB</span></div>
+        <div class="mem-spec"><span class="mem-spec-key">Driver Memory</span><span class="mem-spec-val amber">4 GB</span></div>
+        <div class="mem-spec"><span class="mem-spec-key">Off-heap / OS</span><span class="mem-spec-val">8 GB</span></div>
+
+        <div style="margin-top:16px">
+          <div class="mem-bar-wrap">
+            <div class="mem-bar-label"><span>DAG + Metadata</span><span style="color:var(--blue)">~500 MB</span></div>
+            <div class="mem-bar"><div class="mem-fill fill-blue" style="width:12.5%"></div></div>
+          </div>
+          <div class="mem-bar-wrap">
+            <div class="mem-bar-label"><span>Task Tracking</span><span style="color:var(--green)">~200 MB</span></div>
+            <div class="mem-bar"><div class="mem-fill fill-green" style="width:5%"></div></div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px; padding:10px; background:rgba(245,158,11,0.07); border-radius:6px; border:1px solid rgba(245,158,11,0.2);">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--amber); margin-bottom:6px">RESPONSIBILITIES</div>
+          <div style="font-size:11px; color:#94a3b8; line-height:1.8">
+            ▸ Build DAG from user code<br>
+            ▸ Split DAG → Stages<br>
+            ▸ Send Tasks to Executors<br>
+            ▸ Collect results / metrics<br>
+            ▸ Coordinate shuffles
+          </div>
+        </div>
+        <div style="margin-top:10px; font-size:11px; color:var(--muted)">CPU Cores: <span style="color:var(--text);font-weight:600">4 cores</span></div>
+      </div>
+
+      <!-- WORKERS -->
+      <div class="cluster-card workers">
+        <div class="cc-label cyan" style="text-align:center; margin-bottom:16px">4 × Worker Nodes — Each: 64 GB RAM · 16 vCPU · 2 Executors · 4 Slots/Executor</div>
+        <div class="workers-inner">
+
+          <!-- Worker 1 -->
+          <div class="worker-card">
+            <div class="wc-label">Worker 01</div>
+            <div class="wc-name">node-w01</div>
+            <div style="font-size:10px; color:var(--muted); margin-bottom:10px">64 GB · 16 vCPU</div>
+            <div class="exec-row">
+              <div class="exec-label">EXECUTOR A · 24 GB heap</div>
+              <div style="font-size:10px; color:var(--muted)">Storage: 14.4 GB | Exec: 9.6 GB</div>
+              <div class="slots-row">
+                <div class="slot">S1</div><div class="slot">S2</div><div class="slot">S3</div><div class="slot">S4</div>
+              </div>
+            </div>
+            <div class="exec-row">
+              <div class="exec-label">EXECUTOR B · 24 GB heap</div>
+              <div style="font-size:10px; color:var(--muted)">Storage: 14.4 GB | Exec: 9.6 GB</div>
+              <div class="slots-row">
+                <div class="slot">S5</div><div class="slot">S6</div><div class="slot">S7</div><div class="slot">S8</div>
+              </div>
+            </div>
+            <div style="font-size:10px; color:var(--muted); margin-top:8px">OS/overhead: 16 GB</div>
+          </div>
+
+          <!-- Worker 2 -->
+          <div class="worker-card">
+            <div class="wc-label">Worker 02</div>
+            <div class="wc-name">node-w02</div>
+            <div style="font-size:10px; color:var(--muted); margin-bottom:10px">64 GB · 16 vCPU</div>
+            <div class="exec-row">
+              <div class="exec-label">EXECUTOR C · 24 GB heap</div>
+              <div style="font-size:10px; color:var(--muted)">Storage: 14.4 GB | Exec: 9.6 GB</div>
+              <div class="slots-row">
+                <div class="slot">S1</div><div class="slot">S2</div><div class="slot">S3</div><div class="slot">S4</div>
+              </div>
+            </div>
+            <div class="exec-row">
+              <div class="exec-label">EXECUTOR D · 24 GB heap</div>
+              <div style="font-size:10px; color:var(--muted)">Storage: 14.4 GB | Exec: 9.6 GB</div>
+              <div class="slots-row">
+                <div class="slot">S5</div><div class="slot">S6</div><div class="slot">S7</div><div class="slot">S8</div>
+              </div>
+            </div>
+            <div style="font-size:10px; color:var(--muted); margin-top:8px">OS/overhead: 16 GB</div>
+          </div>
+
+          <!-- Worker 3 -->
+          <div class="worker-card">
+            <div class="wc-label">Worker 03</div>
+            <div class="wc-name">node-w03</div>
+            <div style="font-size:10px; color:var(--muted); margin-bottom:10px">64 GB · 16 vCPU</div>
+            <div class="exec-row">
+              <div class="exec-label">EXECUTOR E · 24 GB heap</div>
+              <div style="font-size:10px; color:var(--muted)">Storage: 14.4 GB | Exec: 9.6 GB</div>
+              <div class="slots-row">
+                <div class="slot">S1</div><div class="slot">S2</div><div class="slot">S3</div><div class="slot">S4</div>
+              </div>
+            </div>
+            <div class="exec-row">
+              <div class="exec-label">EXECUTOR F · 24 GB heap</div>
+              <div style="font-size:10px; color:var(--muted)">Storage: 14.4 GB | Exec: 9.6 GB</div>
+              <div class="slots-row">
+                <div class="slot">S5</div><div class="slot">S6</div><div class="slot">S7</div><div class="slot">S8</div>
+              </div>
+            </div>
+            <div style="font-size:10px; color:var(--muted); margin-top:8px">OS/overhead: 16 GB</div>
+          </div>
+
+          <!-- Worker 4 -->
+          <div class="worker-card">
+            <div class="wc-label">Worker 04</div>
+            <div class="wc-name">node-w04</div>
+            <div style="font-size:10px; color:var(--muted); margin-bottom:10px">64 GB · 16 vCPU</div>
+            <div class="exec-row">
+              <div class="exec-label">EXECUTOR G · 24 GB heap</div>
+              <div style="font-size:10px; color:var(--muted)">Storage: 14.4 GB | Exec: 9.6 GB</div>
+              <div class="slots-row">
+                <div class="slot">S1</div><div class="slot">S2</div><div class="slot">S3</div><div class="slot">S4</div>
+              </div>
+            </div>
+            <div class="exec-row">
+              <div class="exec-label">EXECUTOR H · 24 GB heap</div>
+              <div style="font-size:10px; color:var(--muted)">Storage: 14.4 GB | Exec: 9.6 GB</div>
+              <div class="slots-row">
+                <div class="slot">S5</div><div class="slot">S6</div><div class="slot">S7</div><div class="slot">S8</div>
+              </div>
+            </div>
+            <div style="font-size:10px; color:var(--muted); margin-top:8px">OS/overhead: 16 GB</div>
+          </div>
+
+        </div><!-- /workers-inner -->
+      </div>
+
+      <!-- CLUSTER MANAGER -->
+      <div class="cluster-card cm">
+        <div class="cc-label purple">Cluster Manager</div>
+        <div class="cc-name">YARN / K8s</div>
+        <div style="font-size:12px; color:var(--muted); line-height:1.7; margin-bottom:14px">Allocates Workers to this Spark application on resource request from Driver</div>
+
+        <div style="padding:10px; background:rgba(139,92,246,0.07); border-radius:6px; border:1px solid rgba(139,92,246,0.2); margin-bottom:12px">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--purple); margin-bottom:6px">ALLOCATION</div>
+          <div style="font-size:11px; color:#94a3b8; line-height:1.9">
+            Executors: <b style="color:var(--text)">8</b><br>
+            Cores/exec: <b style="color:var(--text)">4</b><br>
+            Mem/exec: <b style="color:var(--text)">24 GB</b><br>
+            Total slots: <b style="color:var(--green)">32</b>
+          </div>
+        </div>
+
+        <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--muted); margin-bottom:6px">SPARK CONFIG</div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#475569; line-height:2.0">
+          --num-executors 8<br>
+          --executor-cores 4<br>
+          --executor-memory 24g<br>
+          --driver-memory 4g
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ PARTITION MATH ═══ -->
+  <div class="section">
+    <div class="sec-title">PARTITION CALCULATION</div>
+    <div class="sec-sub">How 100 GB gets sliced into manageable chunks</div>
+
+    <div class="partition-section">
+      <div class="part-row">
+        <div class="part-key">INPUT SIZE</div>
+        <div>
+          <div class="part-val" style="color:var(--cyan)">100 GB</div>
+          <div class="part-desc">Raw file on HDFS/S3 (Parquet, CSV, ORC…). Spark reads metadata first — no full scan yet.</div>
+        </div>
+        <div class="part-badge badge-cyan">RAW INPUT</div>
+      </div>
+      <div class="part-row">
+        <div class="part-key">BLOCK SIZE</div>
+        <div>
+          <div class="part-val" style="color:var(--amber)">128 MB</div>
+          <div class="part-desc">Default HDFS block / Spark split size (<code>spark.sql.files.maxPartitionBytes = 128MB</code>). Each block → 1 partition candidate.</div>
+        </div>
+        <div class="part-badge badge-amber">128 MB / PART</div>
+      </div>
+      <div class="part-row">
+        <div class="part-key">PARTITIONS</div>
+        <div>
+          <div class="part-val" style="color:var(--green)">100 × 1024 MB ÷ 128 MB = <span style="font-size:2rem">800</span></div>
+          <div class="part-desc">800 partitions total. Each partition is ~128 MB of raw data. Spark processes them in parallel waves.</div>
+        </div>
+        <div class="part-badge badge-green">800 PARTITIONS</div>
+      </div>
+      <div class="part-row">
+        <div class="part-key">TOTAL SLOTS</div>
+        <div>
+          <div class="part-val" style="color:var(--blue)">4 workers × 2 executors × 4 cores = <span style="font-size:2rem">32</span></div>
+          <div class="part-desc">32 tasks can run simultaneously. 800 partitions ÷ 32 slots = <strong>25 waves</strong> (task scheduling rounds).</div>
+        </div>
+        <div class="part-badge badge-blue">32 PARALLEL</div>
+      </div>
+      <div class="part-row">
+        <div class="part-key">TASK WAVES</div>
+        <div>
+          <div class="part-val" style="color:var(--purple)">800 ÷ 32 = <span style="font-size:2rem">25 waves</span></div>
+          <div class="part-desc">In each wave, 32 Tasks run concurrently (one per slot). All 25 waves must complete Stage 1 before Stage 2 begins.</div>
+        </div>
+        <div class="part-badge badge-purple">25 ROUNDS</div>
+      </div>
+      <div class="part-row">
+        <div class="part-key">MEM / TASK</div>
+        <div>
+          <div class="part-val" style="color:var(--red)">9.6 GB exec mem ÷ 4 tasks = <span style="font-size:2rem">~2.4 GB</span></div>
+          <div class="part-desc">Each Task gets ~2.4 GB of executor memory for processing (60% of 24 GB heap goes to execution pool, split across 4 tasks).</div>
+        </div>
+        <div class="part-badge badge-red">2.4 GB / TASK</div>
+      </div>
+    </div>
+
+    <!-- Partition visual -->
+    <div style="margin-top:20px; background:var(--card); border:1px solid var(--border2); border-radius:10px; padding:20px;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:3px; color:var(--muted); margin-bottom:12px">800 PARTITIONS — COLOUR = ASSIGNED EXECUTOR (hover)</div>
+      <div class="partition-visual" id="pv"></div>
+      <div style="display:flex; gap:20px; flex-wrap:wrap; margin-top:12px;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:2px;background:rgba(59,130,246,0.3);border:1px solid rgba(59,130,246,0.5)"></div>Exec A/C/E/G (Workers 1–4 primary)</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:2px;background:rgba(16,185,129,0.3);border:1px solid rgba(16,185,129,0.5)"></div>Exec B/D/F/H (Workers 1–4 secondary)</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:2px;background:rgba(245,158,11,0.3);border:1px solid rgba(245,158,11,0.5)"></div>Wave 13–18</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:2px;background:rgba(139,92,246,0.3);border:1px solid rgba(139,92,246,0.5)"></div>Wave 19–25</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ STAGES ═══ -->
+  <div class="section">
+    <div class="sec-title">STAGE BREAKDOWN</div>
+    <div class="sec-sub">Assume query: read → filter → groupBy → aggregate → write</div>
+
+    <div class="stage-flow">
+      <div class="stage-block">
+        <div class="sb-label" style="color:var(--cyan)">STAGE 1</div>
+        <div class="sb-name">Scan + Narrow Ops</div>
+        <div class="sb-ops">
+          df.read(parquet)<br>
+          .filter(col > X)<br>
+          .withColumn(...)
+        </div>
+        <div class="sb-tasks">
+          <div class="sb-tasks-label">TASKS</div>
+          <span style="color:var(--green); font-weight:700; font-size:18px">800</span>
+          <span style="font-size:11px; color:var(--muted)"> tasks</span><br>
+          <span style="font-size:11px; color:var(--muted)">25 waves × 32 parallel</span>
+        </div>
+        <div style="margin-top:8px; font-size:11px; color:var(--muted)">No shuffle. Narrow transform. Each task reads 1 partition (128 MB) from HDFS/S3.</div>
+      </div>
+      <div class="stage-block">
+        <div class="sb-label" style="color:var(--amber)">SHUFFLE</div>
+        <div class="sb-name">Data Exchange</div>
+        <div class="sb-ops">
+          groupBy triggers<br>
+          full shuffle →<br>
+          network transfer
+        </div>
+        <div class="sb-tasks">
+          <div class="sb-tasks-label">SHUFFLE PARTITIONS</div>
+          <span style="color:var(--amber); font-weight:700; font-size:18px">200</span>
+          <span style="font-size:11px; color:var(--muted)"> (default)</span><br>
+          <span style="font-size:11px; color:var(--muted)">spark.sql.shuffle.partitions</span>
+        </div>
+        <div style="margin-top:8px; font-size:11px; color:var(--muted)">Stage boundary. Each Executor writes shuffle files to local disk. Driver orchestrates the redistribution.</div>
+      </div>
+      <div class="stage-block">
+        <div class="sb-label" style="color:var(--purple)">STAGE 2</div>
+        <div class="sb-name">Aggregate + Write</div>
+        <div class="sb-ops">
+          .groupBy(key)<br>
+          .agg(sum, count)<br>
+          .write.parquet(...)
+        </div>
+        <div class="sb-tasks">
+          <div class="sb-tasks-label">TASKS</div>
+          <span style="color:var(--purple); font-weight:700; font-size:18px">200</span>
+          <span style="font-size:11px; color:var(--muted)"> tasks</span><br>
+          <span style="font-size:11px; color:var(--muted)">~7 waves × 32 slots</span>
+        </div>
+        <div style="margin-top:8px; font-size:11px; color:var(--muted)">Reads shuffled partitions. Aggregates within each partition. Writes 200 output files to sink.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ EXECUTION TIMELINE ═══ -->
+  <div class="section">
+    <div class="sec-title">STEP-BY-STEP EXECUTION</div>
+    <div class="sec-sub">Every phase from code submission to final write</div>
+
+    <div class="timeline">
+
+      <!-- Step 1 -->
+      <div class="tl-step">
+        <div class="tl-dot cyan">1</div>
+        <div class="tl-card">
+          <div class="tl-card-head">
+            <div class="tl-step-num">STEP 01</div>
+            <div class="tl-title" style="color:var(--cyan)">SparkSession Creation + Resource Request</div>
+          </div>
+          <div class="tl-body">
+            <p>Your <code>SparkSession.builder.getOrCreate()</code> launches the <strong>Driver JVM</strong> on master-01 with <strong>4 GB heap</strong>. The Driver contacts the <strong>Cluster Manager (YARN)</strong> requesting: <code>--num-executors 8 --executor-memory 24g --executor-cores 4</code>.</p>
+            <table class="mem-table">
+              <tr><th>Component</th><th>Memory Allocated</th><th>Note</th></tr>
+              <tr><td class="tkey">Driver JVM heap</td><td class="tval" style="color:var(--amber)">4 GB</td><td class="tdesc">DAG, metadata, broadcast vars, result collection</td></tr>
+              <tr><td class="tkey">Driver overhead</td><td class="tval">1.2 GB</td><td class="tdesc">10-15% JVM overhead, off-heap buffers</td></tr>
+              <tr><td class="tkey">OS / other</td><td class="tval">~10.8 GB</td><td class="tdesc">Remaining of 16 GB machine RAM</td></tr>
+            </table>
+            <div class="alert info"><div class="alert-icon">ℹ</div>At this point ZERO data has been read. Spark is lazy — nothing executes until an <strong>action</strong> (.count, .show, .write) is called.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="tl-step">
+        <div class="tl-dot purple">2</div>
+        <div class="tl-card">
+          <div class="tl-card-head">
+            <div class="tl-step-num">STEP 02</div>
+            <div class="tl-title" style="color:var(--purple)">Executor Launch on All 4 Workers</div>
+          </div>
+          <div class="tl-body">
+            <p>YARN instructs each Worker Node to start <strong>2 Executor JVMs</strong>. Each Executor claims <strong>24 GB heap</strong> from the node's 64 GB RAM. Workers reserve 16 GB for OS/HDFS DataNode overhead.</p>
+            <table class="mem-table">
+              <tr><th>Memory Zone</th><th>Size (per Executor)</th><th>Purpose</th></tr>
+              <tr><td class="tkey">Reserved (Spark internal)</td><td class="tval" style="color:var(--red)">300 MB</td><td class="tdesc">spark.memory.fraction excludes this first</td></tr>
+              <tr><td class="tkey">Unified Memory Pool (60%)</td><td class="tval" style="color:var(--blue)">14.2 GB</td><td class="tdesc">Execution + Storage share dynamically</td></tr>
+              <tr><td class="tkey">→ Execution Memory (50%)</td><td class="tval" style="color:var(--green)">9.6 GB</td><td class="tdesc">Sorting, hashing, joins, aggregations</td></tr>
+              <tr><td class="tkey">→ Storage Memory (50%)</td><td class="tval" style="color:var(--cyan)">9.6 GB</td><td class="tdesc">Cached RDDs/DataFrames, broadcast vars</td></tr>
+              <tr><td class="tkey">User Memory (40%)</td><td class="tval" style="color:var(--amber)">9.48 GB</td><td class="tdesc">UDFs, user data structures, internal metadata</td></tr>
+              <tr><td class="tkey">JVM Overhead</td><td class="tval" style="color:var(--muted)">~3.6 GB</td><td class="tdesc">10-15% extra requested from YARN on top of heap</td></tr>
+            </table>
+            <p>Total cluster execution capacity: <strong style="color:var(--green)">8 executors × 9.6 GB = 76.8 GB execution memory</strong>. With 32 slots, each running task gets <strong style="color:var(--amber)">~2.4 GB</strong> execution memory to work with.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="tl-step">
+        <div class="tl-dot blue">3</div>
+        <div class="tl-card">
+          <div class="tl-card-head">
+            <div class="tl-step-num">STEP 03</div>
+            <div class="tl-title" style="color:var(--blue)">DAG Construction (Lazy — No Data Yet)</div>
+          </div>
+          <div class="tl-body">
+            <p>As you write <code>df.read → .filter → .groupBy → .agg</code>, the Driver's <strong>DAG Scheduler</strong> builds a logical plan in memory. This is just a graph of operations — no partition is opened.</p>
+            <p>When you call <code>.write.parquet(...)</code> (an action), the DAG is finalized. The optimizer (Catalyst) rewrites it: pushes filters down, selects scan columns, estimates row counts. The physical plan is compiled to <strong>RDD operations</strong>.</p>
+            <div style="background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.2); border-radius:8px; padding:14px; margin:10px 0; font-family:'JetBrains Mono',monospace; font-size:10px; line-height:2; color:#93c5fd;">
+              Logical Plan:<br>
+              &nbsp;&nbsp;Write[parquet, /output]<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;Aggregate[key → sum(val), count(*)]<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Filter[col > X]<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Scan[parquet, /data/100gb/]<br><br>
+              → After optimization → 2 Stages + 1 Shuffle<br>
+              → Stage 1: Scan + Filter (800 tasks)<br>
+              → Stage 2: Aggregate + Write (200 tasks)
+            </div>
+            <div class="alert info"><div class="alert-icon">ℹ</div>Driver memory used so far: <strong>~200 MB</strong> for the DAG, 800 partition descriptors, and task metadata. Very lightweight.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="tl-step">
+        <div class="tl-dot green">4</div>
+        <div class="tl-card">
+          <div class="tl-card-head">
+            <div class="tl-step-num">STEP 04</div>
+            <div class="tl-title" style="color:var(--green)">Stage 1 — 800 Tasks Dispatched in 25 Waves</div>
+          </div>
+          <div class="tl-body">
+            <p>The Task Scheduler sends <strong>32 Tasks at a time</strong> (one per slot) to Executors. Each Task is serialized (JVM closure) and sent over the network to the Executor. The Task processes <strong>one 128 MB partition</strong>: opens the HDFS block, decodes Parquet columns, applies the filter, computes the new column.</p>
+            <table class="mem-table">
+              <tr><th>Phase</th><th>Per-Task Memory</th><th>Detail</th></tr>
+              <tr><td class="tkey">Parquet decode buffer</td><td class="tval" style="color:var(--blue)">128–200 MB</td><td class="tdesc">Raw partition inflated from compressed Parquet</td></tr>
+              <tr><td class="tkey">Filter + project</td><td class="tval" style="color:var(--green)">50–80 MB</td><td class="tdesc">Columnar batch processing (Tungsten/Arrow)</td></tr>
+              <tr><td class="tkey">Shuffle write buffer</td><td class="tval" style="color:var(--amber)">32–64 MB</td><td class="tdesc">Pre-sort + hash partition into 200 buckets</td></tr>
+              <tr><td class="tkey">Peak execution mem</td><td class="tval" style="color:var(--cyan)">~400 MB</td><td class="tdesc">Well within 2.4 GB per task allocation</td></tr>
+            </table>
+            <p>After each Task finishes it <strong>writes shuffle data to local disk</strong> on the Worker (External Shuffle Service). 800 Tasks × 200 shuffle buckets = up to <strong>160,000 shuffle files</strong> (Spark merges with sort-based shuffle).</p>
+            <div class="alert success"><div class="alert-icon">✓</div>Wave 1: Tasks 1–32 run. Wave 2: Tasks 33–64. … Wave 25: Tasks 769–800. After all 25 waves, Stage 1 is complete.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 5 -->
+      <div class="tl-step">
+        <div class="tl-dot amber">5</div>
+        <div class="tl-card">
+          <div class="tl-card-head">
+            <div class="tl-step-num">STEP 05</div>
+            <div class="tl-title" style="color:var(--amber)">Shuffle — Network Data Exchange</div>
+          </div>
+          <div class="tl-body">
+            <p>This is the most expensive phase. All <strong>200 shuffle partitions</strong> must be pulled from all 8 Executors across the network before Stage 2 can begin. Each Stage 2 task fetches its slice from every Stage 1 Executor.</p>
+            <table class="mem-table">
+              <tr><th>Metric</th><th>Value</th><th>Note</th></tr>
+              <tr><td class="tkey">Shuffle data size</td><td class="tval" style="color:var(--amber)">~50–70 GB</td><td class="tdesc">Filtered/projected data, smaller than 100 GB raw</td></tr>
+              <tr><td class="tkey">Shuffle per partition</td><td class="tval">~300 MB</td><td class="tdesc">70 GB ÷ 200 shuffle partitions</td></tr>
+              <tr><td class="tkey">Shuffle fetch buffer</td><td class="tval" style="color:var(--red)">~300 MB</td><td class="tdesc">Per Stage 2 task, held in execution memory</td></tr>
+              <tr><td class="tkey">Network pressure</td><td class="tval">High</td><td class="tdesc">All 8 executors simultaneously push/pull data</td></tr>
+            </table>
+            <div class="alert warn"><div class="alert-icon">⚠</div><div>If shuffle data doesn't fit in execution memory (9.6 GB per executor), Spark spills to local disk. Spill = slower but no OOM crash. Monitor with Spark UI → Stages → "Shuffle spill (disk)".</div></div>
+            <p>The Driver coordinates shuffle metadata (which Executor holds which bucket). Executors use <strong>Netty-based HTTP</strong> to fetch shuffle blocks from each other's External Shuffle Service.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 6 -->
+      <div class="tl-step">
+        <div class="tl-dot pink">6</div>
+        <div class="tl-card">
+          <div class="tl-card-head">
+            <div class="tl-step-num">STEP 06</div>
+            <div class="tl-title" style="color:var(--pink)">Stage 2 — 200 Tasks: Aggregate + Write</div>
+          </div>
+          <div class="tl-body">
+            <p>200 Tasks are dispatched (7 waves of 32, final wave = 8 tasks). Each Task reads its shuffle partition (~300 MB of pre-grouped data), applies <code>sum()</code> and <code>count()</code>, and writes one Parquet output file.</p>
+            <table class="mem-table">
+              <tr><th>Phase</th><th>Memory Use</th><th>Detail</th></tr>
+              <tr><td class="tkey">Shuffle fetch buffer</td><td class="tval" style="color:var(--blue)">~300 MB</td><td class="tdesc">Data fetched from all Stage 1 executors for this key range</td></tr>
+              <tr><td class="tkey">Hash aggregation</td><td class="tval" style="color:var(--green)">~200 MB</td><td class="tdesc">HashMap of key → (sum, count) in execution mem</td></tr>
+              <tr><td class="tkey">Write buffer</td><td class="tval" style="color:var(--amber)">~64 MB</td><td class="tdesc">Parquet row group buffer before flushing to S3/HDFS</td></tr>
+              <tr><td class="tkey">Peak per task</td><td class="tval" style="color:var(--cyan)">~600 MB</td><td class="tdesc">Comfortable within 2.4 GB execution allocation</td></tr>
+            </table>
+            <p>Output: <strong>200 Parquet files</strong> written to the sink (S3/HDFS), each ~5–10 MB of aggregated results. Total output is dramatically smaller than 100 GB input.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 7 -->
+      <div class="tl-step">
+        <div class="tl-dot red">7</div>
+        <div class="tl-card">
+          <div class="tl-card-head">
+            <div class="tl-step-num">STEP 07</div>
+            <div class="tl-title" style="color:var(--red)">Job Complete — Resource Release</div>
+          </div>
+          <div class="tl-body">
+            <p>All 200 Stage 2 Tasks complete. Driver receives the final commit acknowledgement. The Driver marks the job as <strong>SUCCEEDED</strong> in the Spark UI and returns control to your application.</p>
+            <p>If <code>spark.dynamicAllocation.enabled = true</code>, idle Executors are released back to YARN within <code>executorIdleTimeout</code> (default 60s). Their 24 GB × 8 = <strong>192 GB of cluster RAM</strong> is freed for other applications.</p>
+            <div class="alert success"><div class="alert-icon">✓</div>
+              <div>
+                Total Tasks Executed: <strong>800 + 200 = 1,000</strong><br>
+                Total Slots Used: <strong>32 concurrent max</strong><br>
+                Total Waves: <strong>~32 waves across both stages</strong><br>
+                Peak Cluster Memory Used: <strong>~192 GB execution + storage</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /timeline -->
+  </div>
+
+  <!-- ═══ MEMORY LAYOUT PER EXECUTOR ═══ -->
+  <div class="section">
+    <div class="sec-title">EXECUTOR MEMORY MAP</div>
+    <div class="sec-sub">How 24 GB heap is divided inside one Executor JVM</div>
+
+    <div class="mem-zone-grid">
+      <div class="mem-zone">
+        <div class="mz-title" style="color:var(--cyan)">24 GB Executor Heap Breakdown</div>
+        <div class="mz-bar-stack">
+          <div class="mz-bar-item">
+            <div class="mz-bar-top"><span class="name">🔒 Reserved (Spark)</span><span class="val" style="color:var(--red)">300 MB</span></div>
+            <div class="mz-bar-bg"><div class="mz-fill fill-red" style="width:1.2%"></div></div>
+          </div>
+          <div class="mz-bar-item">
+            <div class="mz-bar-top"><span class="name">⚡ Execution Memory</span><span class="val" style="color:var(--green)">9.6 GB (40%)</span></div>
+            <div class="mz-bar-bg"><div class="mz-fill fill-green" style="width:40%"></div></div>
+          </div>
+          <div class="mz-bar-item">
+            <div class="mz-bar-top"><span class="name">💾 Storage Memory</span><span class="val" style="color:var(--cyan)">9.6 GB (40%)</span></div>
+            <div class="mz-bar-bg"><div class="mz-fill fill-blue" style="width:40%"></div></div>
+          </div>
+          <div class="mz-bar-item">
+            <div class="mz-bar-top"><span class="name">👤 User Memory</span><span class="val" style="color:var(--amber)">4.5 GB (18.8%)</span></div>
+            <div class="mz-bar-bg"><div class="mz-fill fill-amber" style="width:18.8%"></div></div>
+          </div>
+        </div>
+        <div style="margin-top:16px; font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted); line-height:2">
+          spark.memory.fraction = 0.6<br>
+          spark.memory.storageFraction = 0.5<br>
+          Execution + Storage = unified pool (can borrow)
+        </div>
+      </div>
+
+      <div class="mem-zone">
+        <div class="mz-title" style="color:var(--amber)">Per-Task Execution Memory (Stage 1)</div>
+        <div style="font-size:12px; color:var(--muted); margin-bottom:14px">9.6 GB execution pool shared across 4 concurrent tasks</div>
+        <div class="mz-bar-stack">
+          <div class="mz-bar-item">
+            <div class="mz-bar-top"><span class="name">Task 1 — Parquet decode</span><span class="val" style="color:var(--blue)">~400 MB peak</span></div>
+            <div class="mz-bar-bg"><div class="mz-fill fill-blue" style="width:16.7%"></div></div>
+          </div>
+          <div class="mz-bar-item">
+            <div class="mz-bar-top"><span class="name">Task 2 — Filter + project</span><span class="val" style="color:var(--green)">~400 MB peak</span></div>
+            <div class="mz-bar-bg"><div class="mz-fill fill-green" style="width:16.7%"></div></div>
+          </div>
+          <div class="mz-bar-item">
+            <div class="mz-bar-top"><span class="name">Task 3 — Shuffle sort</span><span class="val" style="color:var(--amber)">~400 MB peak</span></div>
+            <div class="mz-bar-bg"><div class="mz-fill fill-amber" style="width:16.7%"></div></div>
+          </div>
+          <div class="mz-bar-item">
+            <div class="mz-bar-top"><span class="name">Task 4 — Shuffle write</span><span class="val" style="color:var(--purple)">~400 MB peak</span></div>
+            <div class="mz-bar-bg"><div class="mz-fill fill-purple" style="width:16.7%"></div></div>
+          </div>
+          <div class="mz-bar-item">
+            <div class="mz-bar-top"><span class="name">Free execution headroom</span><span class="val" style="color:var(--muted)">~8.0 GB</span></div>
+            <div class="mz-bar-bg"><div class="mz-fill" style="width:33.2%;background:rgba(255,255,255,0.08)"></div></div>
+          </div>
+        </div>
+        <div class="alert success" style="margin-top:14px"><div class="alert-icon">✓</div>4 tasks × 400 MB = 1.6 GB used of 9.6 GB available. Plenty of headroom. No spill expected in Stage 1.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SUMMARY ═══ -->
+  <div class="section">
+    <div class="sec-title">FULL SUMMARY</div>
+    <div class="sec-sub">Everything in one table</div>
+    <div style="background:var(--card); border:1px solid var(--border2); border-radius:12px; overflow:hidden;">
+      <table class="summary-table">
+        <tr>
+          <th>Component</th><th>Value</th><th>Explanation</th>
+        </tr>
+        <tr><td>Input Data</td><td class="mono" style="color:var(--cyan)">100 GB</td><td>Raw file on HDFS/S3</td></tr>
+        <tr><td>Partition Size</td><td class="mono" style="color:var(--amber)">128 MB</td><td>spark.sql.files.maxPartitionBytes</td></tr>
+        <tr><td>Total Partitions</td><td class="mono" style="color:var(--green)">800</td><td>100 × 1024 ÷ 128 = 800 chunks</td></tr>
+        <tr><td>Worker Nodes</td><td class="mono">4</td><td>Each: 64 GB RAM, 16 vCPU</td></tr>
+        <tr><td>Executors</td><td class="mono" style="color:var(--blue)">8 total</td><td>2 per Worker × 4 Workers</td></tr>
+        <tr><td>Executor Heap</td><td class="mono" style="color:var(--blue)">24 GB</td><td>Per executor JVM heap</td></tr>
+        <tr><td>Slots (Cores)</td><td class="mono" style="color:var(--green)">32</td><td>8 executors × 4 cores each</td></tr>
+        <tr><td>Concurrent Tasks</td><td class="mono" style="color:var(--green)">32</td><td>One task per slot</td></tr>
+        <tr><td>Task Waves (Stage 1)</td><td class="mono" style="color:var(--purple)">25</td><td>800 ÷ 32 = 25 rounds</td></tr>
+        <tr><td>Driver Memory</td><td class="mono" style="color:var(--amber)">4 GB</td><td>DAG, metadata, results</td></tr>
+        <tr><td>Exec Memory / Executor</td><td class="mono" style="color:var(--green)">9.6 GB</td><td>40% of 24 GB unified pool</td></tr>
+        <tr><td>Storage Memory / Executor</td><td class="mono" style="color:var(--cyan)">9.6 GB</td><td>Cache / broadcast</td></tr>
+        <tr><td>Memory per Task</td><td class="mono" style="color:var(--amber)">~2.4 GB</td><td>9.6 GB ÷ 4 tasks (dynamic)</td></tr>
+        <tr><td>Shuffle Partitions</td><td class="mono" style="color:var(--amber)">200</td><td>Default; tune for data size</td></tr>
+        <tr><td>Total Tasks Executed</td><td class="mono" style="color:var(--cyan)">1,000</td><td>800 (Stage 1) + 200 (Stage 2)</td></tr>
+        <tr><td>Peak Cluster RAM Used</td><td class="mono" style="color:var(--red)">~200 GB</td><td>8 exec × 24 GB + driver + OS</td></tr>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// Generate partition visual — 800 blocks, 4 colours by wave group
+const pv = document.getElementById('pv');
+const colors = ['blue','green','amber','purple'];
+for(let i=0;i<800;i++){
+  const div = document.createElement('div');
+  div.className = 'pv-block ' + colors[Math.floor(i/200)];
+  div.style.animationDelay = (i*0.002)+'s';
+  const wave = Math.floor(i/32)+1;
+  const slot = (i%32)+1;
+  div.title = `P${i+1} | Wave ${wave} | Slot ${slot} | ~128MB`;
+  div.textContent = i<32 ? String(i+1) : '';
+  pv.appendChild(div);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apache Spark — Film Studio Analogy</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0e0e12;
+    --paper: #f5f0e8;
+    --cream: #ede8dc;
+    --gold: #c9922a;
+    --gold2: #e8b84b;
+    --rust: #b84c2a;
+    --teal: #2a7c8a;
+    --sage: #5a7a5a;
+    --lavender: #6a5a8a;
+    --border: #c4baa8;
+    --muted: #7a7060;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grain texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.5;
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 56px 32px 36px;
+    text-align: center;
+    border-bottom: 2px solid var(--border);
+    position: relative;
+    background: var(--cream);
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 14px;
+  }
+
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.4rem, 6vw, 5rem);
+    font-weight: 900;
+    line-height: 1.0;
+    letter-spacing: -1px;
+    color: var(--ink);
+  }
+
+  header h1 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .subtitle {
+    margin-top: 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--muted);
+  }
+
+  .film-strip {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin: 24px auto 0;
+    width: fit-content;
+  }
+
+  .film-hole {
+    width: 18px;
+    height: 12px;
+    border: 2px solid var(--border);
+    border-radius: 3px;
+    margin: 0 4px;
+    background: var(--paper);
+  }
+
+  /* ── ANALOGY SECTION ── */
+  .section {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 32px;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .section-desc {
+    font-size: 0.95rem;
+    color: var(--muted);
+    margin-bottom: 32px;
+    font-style: italic;
+  }
+
+  /* ── ANALOGY CARDS ── */
+  .analogy-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 56px;
+  }
+
+  .a-card {
+    border: 1.5px solid var(--border);
+    background: white;
+    border-radius: 4px;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: default;
+    position: relative;
+  }
+
+  .a-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(14,14,18,0.12);
+  }
+
+  .a-card-top {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .a-icon {
+    font-size: 2rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .a-labels {
+    flex: 1;
+  }
+
+  .a-spark {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+
+  .a-term {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .a-film {
+    font-size: 0.82rem;
+    font-weight: 500;
+    margin-top: 2px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    display: inline-block;
+  }
+
+  .a-body {
+    padding: 16px 20px;
+    font-size: 0.88rem;
+    line-height: 1.65;
+    color: #333;
+  }
+
+  .a-body strong { color: var(--ink); font-weight: 600; }
+
+  /* Color accents per card */
+  .c-gold  { background: rgba(201,146,42,0.1); color: #7a5010; }
+  .c-rust  { background: rgba(184,76,42,0.1); color: #7a2a10; }
+  .c-teal  { background: rgba(42,124,138,0.1); color: #10505a; }
+  .c-sage  { background: rgba(90,122,90,0.1); color: #2a4a2a; }
+  .c-lav   { background: rgba(106,90,138,0.1); color: #3a2a5a; }
+  .c-ink   { background: rgba(14,14,18,0.08); color: #333; }
+
+  .stripe-gold  { border-top: 3px solid var(--gold); }
+  .stripe-rust  { border-top: 3px solid var(--rust); }
+  .stripe-teal  { border-top: 3px solid var(--teal); }
+  .stripe-sage  { border-top: 3px solid var(--sage); }
+  .stripe-lav   { border-top: 3px solid var(--lavender); }
+  .stripe-ink   { border-top: 3px solid var(--ink); }
+
+  /* ── DIVIDER ── */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 0 0 48px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── DIAGRAM ── */
+  .diagram-wrap {
+    background: var(--ink);
+    border-radius: 8px;
+    padding: 40px 32px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 56px;
+  }
+
+  .diagram-wrap::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 10% 20%, rgba(201,146,42,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 90% 80%, rgba(42,124,138,0.07) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .diagram-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--paper);
+    text-align: center;
+    margin-bottom: 6px;
+    position: relative;
+  }
+
+  .diagram-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(245,240,232,0.35);
+    text-align: center;
+    margin-bottom: 36px;
+  }
+
+  /* SVG Diagram */
+  .svg-container {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  svg {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+  }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 28px;
+    position: relative;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(245,240,232,0.55);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── FLOW SECTION ── */
+  .flow-section {
+    background: var(--cream);
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    padding: 32px;
+    margin-bottom: 56px;
+  }
+
+  .flow-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    color: var(--ink);
+  }
+
+  .flow-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .flow-step {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    padding: 16px 0;
+    border-bottom: 1px dashed var(--border);
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .flow-step:last-child { border-bottom: none; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .flow-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--border);
+    line-height: 1;
+    min-width: 36px;
+  }
+
+  .flow-content h4 {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+
+  .flow-content p {
+    font-size: 0.9rem;
+    color: #444;
+    line-height: 1.6;
+  }
+
+  .flow-content p strong { color: var(--ink); }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    padding: 24px;
+    border-top: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Apache Spark · Conceptual Guide</div>
+  <h1>Spark is a<br><em>Film Studio</em></h1>
+  <p class="subtitle">Architecture · Analogy · Diagram</p>
+  <div class="film-strip">
+    <div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div>
+    <div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div>
+    <div class="film-hole"></div><div class="film-hole"></div>
+  </div>
+</header>
+
+<div class="section">
+
+  <!-- ANALOGY CARDS -->
+  <div class="section-title">The Analogy</div>
+  <p class="section-desc">Apache Spark runs a distributed computation the same way a film studio produces a blockbuster — structured hierarchy, delegated work, parallel crews.</p>
+
+  <div class="analogy-grid">
+
+    <div class="a-card stripe-gold">
+      <div class="a-card-top">
+        <div class="a-icon">🎬</div>
+        <div class="a-labels">
+          <div class="a-spark">Spark Concept</div>
+          <div class="a-term">Driver</div>
+          <span class="a-film c-gold">Film Director</span>
+        </div>
+      </div>
+      <div class="a-body">
+        The <strong>Director</strong> has the full creative vision and script. They don't build sets or act — they <em>plan, orchestrate, and coordinate</em> everyone else. In Spark, the Driver hosts your <code>main()</code>, builds the DAG of operations, and tells the Cluster Manager what resources are needed.
+      </div>
+    </div>
+
+    <div class="a-card stripe-teal">
+      <div class="a-card-top">
+        <div class="a-icon">🏢</div>
+        <div class="a-labels">
+          <div class="a-spark">Spark Concept</div>
+          <div class="a-term">Cluster Manager</div>
+          <span class="a-film c-teal">Studio Executive / Talent Agency</span>
+        </div>
+      </div>
+      <div class="a-body">
+        The <strong>Studio Executive</strong> controls all resources — soundstages, budgets, crew pools. When the Director says "I need 4 film crews," the executive assigns them. In Spark, the Cluster Manager (YARN, Kubernetes, Standalone) allocates Workers and Executors to your application.
+      </div>
+    </div>
+
+    <div class="a-card stripe-rust">
+      <div class="a-card-top">
+        <div class="a-icon">🏗️</div>
+        <div class="a-labels">
+          <div class="a-spark">Spark Concept</div>
+          <div class="a-term">Worker Node</div>
+          <span class="a-film c-rust">Soundstage / Studio Lot</span>
+        </div>
+      </div>
+      <div class="a-body">
+        A <strong>Soundstage</strong> is a physical location with space, power, and facilities. Multiple film crews (Executors) can work inside it simultaneously. In Spark, a Worker Node is a physical or virtual machine that hosts one or more Executors, providing CPU and RAM.
+      </div>
+    </div>
+
+    <div class="a-card stripe-sage">
+      <div class="a-card-top">
+        <div class="a-icon">🎥</div>
+        <div class="a-labels">
+          <div class="a-spark">Spark Concept</div>
+          <div class="a-term">Executor</div>
+          <span class="a-film c-sage">Film Crew</span>
+        </div>
+      </div>
+      <div class="a-body">
+        A <strong>Film Crew</strong> is a dedicated team on a soundstage — camera operators, lighting, sound. They do the actual shooting work, scene by scene. In Spark, an Executor is a JVM process launched on a Worker that runs Tasks and stores cached data (RDD/DataFrame partitions).
+      </div>
+    </div>
+
+    <div class="a-card stripe-lav">
+      <div class="a-card-top">
+        <div class="a-icon">☕</div>
+        <div class="a-labels">
+          <div class="a-spark">Spark Concept</div>
+          <div class="a-term">JVM</div>
+          <span class="a-film c-lav">Production Van / Truck</span>
+        </div>
+      </div>
+      <div class="a-body">
+        The <strong>Production Van</strong> is the self-contained environment each crew operates out of — tools, power supply, monitors, communication gear. The JVM is the runtime container for each Executor: it manages memory (heap), garbage collection, and provides the execution environment for Spark's Scala/Java bytecode.
+      </div>
+    </div>
+
+    <div class="a-card stripe-gold">
+      <div class="a-card-top">
+        <div class="a-icon">🗂️</div>
+        <div class="a-labels">
+          <div class="a-spark">Spark Concept</div>
+          <div class="a-term">DAG</div>
+          <span class="a-film c-gold">Storyboard / Shot List</span>
+        </div>
+      </div>
+      <div class="a-body">
+        The <strong>Storyboard</strong> maps every scene in sequence before filming begins — dependencies, order, what must be done before what. Spark's DAG (Directed Acyclic Graph) is the full logical plan of your transformations. It's built lazily and optimized before any computation runs.
+      </div>
+    </div>
+
+    <div class="a-card stripe-rust">
+      <div class="a-card-top">
+        <div class="a-icon">🎞️</div>
+        <div class="a-labels">
+          <div class="a-spark">Spark Concept</div>
+          <div class="a-term">Stage</div>
+          <span class="a-film c-rust">Shooting Scene / Act</span>
+        </div>
+      </div>
+      <div class="a-body">
+        A <strong>Scene</strong> groups all the shots that can be filmed in one continuous setup without moving to a new location. Spark Stages are groups of Tasks that can run without a shuffle (data reorganization). Stage boundaries occur at wide transformations like <code>groupBy</code> or <code>join</code> — just like when actors move to a new location.
+      </div>
+    </div>
+
+    <div class="a-card stripe-teal">
+      <div class="a-card-top">
+        <div class="a-icon">📸</div>
+        <div class="a-labels">
+          <div class="a-spark">Spark Concept</div>
+          <div class="a-term">Task</div>
+          <span class="a-film c-teal">Single Shot / Take</span>
+        </div>
+      </div>
+      <div class="a-body">
+        A <strong>Shot</strong> is one camera take — one specific action on one specific piece of film. Tasks are the smallest unit of work in Spark: each Task processes <em>one partition</em> of data inside one Stage. Hundreds of Tasks run in parallel across Executors, just like a crew films many shots simultaneously on different cameras.
+      </div>
+    </div>
+
+    <div class="a-card stripe-ink">
+      <div class="a-card-top">
+        <div class="a-icon">💺</div>
+        <div class="a-labels">
+          <div class="a-spark">Spark Concept</div>
+          <div class="a-term">Slot</div>
+          <span class="a-film c-ink">Camera Operator</span>
+        </div>
+      </div>
+      <div class="a-body">
+        A <strong>Camera Operator</strong> is one person who can run one shot at a time. You can't have more simultaneous shots than operators. A Slot = 1 CPU core in an Executor = 1 Task at a time. Total parallelism = Workers × Executors × Cores. More slots → more shots happening at once.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DIAGRAM -->
+  <div class="section-title">Architecture Diagram</div>
+  <p class="section-desc">How all components relate — from your code to physical machines.</p>
+
+  <div class="diagram-wrap">
+    <div class="diagram-title">Apache Spark — Component Architecture</div>
+    <div class="diagram-sub">Driver · Cluster Manager · Workers · Executors · JVM · DAG → Stages → Tasks → Slots</div>
+
+    <div class="svg-container">
+      <svg viewBox="0 0 900 660" xmlns="http://www.w3.org/2000/svg" font-family="DM Mono, monospace">
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="rgba(245,240,232,0.4)"/>
+          </marker>
+          <marker id="arr-gold" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#c9922a"/>
+          </marker>
+          <marker id="arr-teal" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#2a7c8a"/>
+          </marker>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <!-- grid pattern -->
+          <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+            <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(245,240,232,0.04)" stroke-width="1"/>
+          </pattern>
+        </defs>
+
+        <!-- Background grid -->
+        <rect width="900" height="660" fill="url(#grid)"/>
+
+        <!-- ── YOUR CODE ── -->
+        <rect x="330" y="14" width="240" height="46" rx="6" fill="none" stroke="rgba(245,240,232,0.2)" stroke-dasharray="5,3"/>
+        <text x="450" y="32" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="9" letter-spacing="3">YOUR APPLICATION</text>
+        <text x="450" y="50" text-anchor="middle" fill="rgba(245,240,232,0.7)" font-size="12" font-weight="500">spark = SparkSession.builder...</text>
+
+        <!-- Arrow down to Driver -->
+        <line x1="450" y1="60" x2="450" y2="84" stroke="rgba(245,240,232,0.3)" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- ── DRIVER ── -->
+        <rect x="280" y="86" width="340" height="110" rx="8" fill="rgba(201,146,42,0.15)" stroke="#c9922a" stroke-width="1.5"/>
+        <text x="450" y="106" text-anchor="middle" fill="#e8b84b" font-size="9" letter-spacing="4" text-transform="uppercase">DRIVER</text>
+        <text x="450" y="124" text-anchor="middle" fill="rgba(245,240,232,0.9)" font-size="13" font-weight="600">🎬 Film Director</text>
+
+        <!-- DAG inside driver -->
+        <rect x="296" y="134" width="155" height="52" rx="5" fill="rgba(201,146,42,0.1)" stroke="rgba(201,146,42,0.4)" stroke-width="1"/>
+        <text x="373" y="151" text-anchor="middle" fill="#c9922a" font-size="8" letter-spacing="2">DAG SCHEDULER</text>
+        <text x="373" y="165" text-anchor="middle" fill="rgba(245,240,232,0.7)" font-size="9">🗂 Storyboard</text>
+        <text x="373" y="178" text-anchor="middle" fill="rgba(245,240,232,0.45)" font-size="8">Logical plan of ops</text>
+
+        <!-- Task Scheduler inside driver -->
+        <rect x="461" y="134" width="145" height="52" rx="5" fill="rgba(201,146,42,0.1)" stroke="rgba(201,146,42,0.4)" stroke-width="1"/>
+        <text x="533" y="151" text-anchor="middle" fill="#c9922a" font-size="8" letter-spacing="2">TASK SCHEDULER</text>
+        <text x="533" y="165" text-anchor="middle" fill="rgba(245,240,232,0.7)" font-size="9">📋 Shot List</text>
+        <text x="533" y="178" text-anchor="middle" fill="rgba(245,240,232,0.45)" font-size="8">Dispatches tasks</text>
+
+        <!-- Arrow Driver → Cluster Manager -->
+        <line x1="450" y1="196" x2="450" y2="226" stroke="#c9922a" stroke-width="1.5" marker-end="url(#arr-gold)" stroke-dasharray="4,2"/>
+        <text x="468" y="215" fill="rgba(245,240,232,0.4)" font-size="8" letter-spacing="1">requests resources</text>
+
+        <!-- ── CLUSTER MANAGER ── -->
+        <rect x="280" y="228" width="340" height="64" rx="8" fill="rgba(42,124,138,0.15)" stroke="#2a7c8a" stroke-width="1.5"/>
+        <text x="450" y="248" text-anchor="middle" fill="#2a7c8a" font-size="9" letter-spacing="4">CLUSTER MANAGER</text>
+        <text x="450" y="266" text-anchor="middle" fill="rgba(245,240,232,0.9)" font-size="13" font-weight="600">🏢 Studio Executive</text>
+        <text x="450" y="282" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="9">YARN · Kubernetes · Standalone · Mesos</text>
+
+        <!-- Arrows to Workers -->
+        <line x1="350" y1="292" x2="205" y2="340" stroke="#2a7c8a" stroke-width="1.5" marker-end="url(#arr-teal)"/>
+        <line x1="450" y1="292" x2="450" y2="340" stroke="#2a7c8a" stroke-width="1.5" marker-end="url(#arr-teal)"/>
+        <line x1="550" y1="292" x2="695" y2="340" stroke="#2a7c8a" stroke-width="1.5" marker-end="url(#arr-teal)"/>
+        <text x="285" y="320" fill="rgba(245,240,232,0.35)" font-size="8">allocates workers</text>
+
+        <!-- ── WORKER 1 ── -->
+        <rect x="30" y="342" width="330" height="290" rx="8" fill="rgba(184,76,42,0.08)" stroke="rgba(184,76,42,0.5)" stroke-width="1.5"/>
+        <text x="195" y="364" text-anchor="middle" fill="rgba(184,76,42,0.8)" font-size="9" letter-spacing="4">WORKER NODE 1</text>
+        <text x="195" y="381" text-anchor="middle" fill="rgba(245,240,232,0.7)" font-size="11">🏗 Soundstage A · machine-01</text>
+
+        <!-- Executor 1a inside Worker 1 -->
+        <rect x="44" y="392" width="140" height="224" rx="6" fill="rgba(106,90,138,0.12)" stroke="rgba(106,90,138,0.5)" stroke-width="1"/>
+        <text x="114" y="410" text-anchor="middle" fill="rgba(106,90,138,0.9)" font-size="8" letter-spacing="2">EXECUTOR 1A</text>
+        <text x="114" y="425" text-anchor="middle" fill="rgba(245,240,232,0.65)" font-size="10">🎥 Film Crew A</text>
+        <!-- JVM 1a -->
+        <rect x="52" y="433" width="124" height="34" rx="4" fill="rgba(245,240,232,0.06)" stroke="rgba(245,240,232,0.15)" stroke-width="1"/>
+        <text x="114" y="447" text-anchor="middle" fill="rgba(245,240,232,0.5)" font-size="8" letter-spacing="2">JVM ☕</text>
+        <text x="114" y="460" text-anchor="middle" fill="rgba(245,240,232,0.3)" font-size="7">Production Van</text>
+        <!-- Slots 1a -->
+        <text x="114" y="484" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="7" letter-spacing="2">SLOTS (CORES)</text>
+        <rect x="56" y="490" width="50" height="22" rx="3" fill="rgba(90,122,90,0.3)" stroke="rgba(90,122,90,0.6)" stroke-width="1"/>
+        <text x="81" y="505" text-anchor="middle" fill="#5a7a5a" font-size="8">💺 Slot 1</text>
+        <rect x="114" y="490" width="50" height="22" rx="3" fill="rgba(90,122,90,0.3)" stroke="rgba(90,122,90,0.6)" stroke-width="1"/>
+        <text x="139" y="505" text-anchor="middle" fill="#5a7a5a" font-size="8">💺 Slot 2</text>
+        <!-- Tasks in 1a -->
+        <text x="114" y="528" text-anchor="middle" fill="rgba(245,240,232,0.35)" font-size="7" letter-spacing="2">TASKS RUNNING</text>
+        <rect x="56" y="534" width="50" height="30" rx="3" fill="rgba(42,124,138,0.2)" stroke="rgba(42,124,138,0.5)" stroke-width="1"/>
+        <text x="81" y="548" text-anchor="middle" fill="#2a7c8a" font-size="7">📸 Task</text>
+        <text x="81" y="559" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="6">part-00001</text>
+        <rect x="114" y="534" width="50" height="30" rx="3" fill="rgba(42,124,138,0.2)" stroke="rgba(42,124,138,0.5)" stroke-width="1"/>
+        <text x="139" y="548" text-anchor="middle" fill="#2a7c8a" font-size="7">📸 Task</text>
+        <text x="139" y="559" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="6">part-00002</text>
+        <!-- Cached data -->
+        <rect x="56" y="572" width="108" height="34" rx="3" fill="rgba(201,146,42,0.1)" stroke="rgba(201,146,42,0.3)" stroke-width="1"/>
+        <text x="110" y="587" text-anchor="middle" fill="rgba(201,146,42,0.8)" font-size="7" letter-spacing="1">CACHED PARTITIONS</text>
+        <text x="110" y="599" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="7">RDD/DataFrame blocks</text>
+
+        <!-- Executor 1b inside Worker 1 -->
+        <rect x="200" y="392" width="148" height="224" rx="6" fill="rgba(106,90,138,0.12)" stroke="rgba(106,90,138,0.5)" stroke-width="1"/>
+        <text x="274" y="410" text-anchor="middle" fill="rgba(106,90,138,0.9)" font-size="8" letter-spacing="2">EXECUTOR 1B</text>
+        <text x="274" y="425" text-anchor="middle" fill="rgba(245,240,232,0.65)" font-size="10">🎥 Film Crew B</text>
+        <rect x="208" y="433" width="132" height="34" rx="4" fill="rgba(245,240,232,0.06)" stroke="rgba(245,240,232,0.15)" stroke-width="1"/>
+        <text x="274" y="447" text-anchor="middle" fill="rgba(245,240,232,0.5)" font-size="8" letter-spacing="2">JVM ☕</text>
+        <text x="274" y="460" text-anchor="middle" fill="rgba(245,240,232,0.3)" font-size="7">Production Van</text>
+        <text x="274" y="484" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="7" letter-spacing="2">SLOTS (CORES)</text>
+        <rect x="212" y="490" width="50" height="22" rx="3" fill="rgba(90,122,90,0.3)" stroke="rgba(90,122,90,0.6)" stroke-width="1"/>
+        <text x="237" y="505" text-anchor="middle" fill="#5a7a5a" font-size="8">💺 Slot 1</text>
+        <rect x="272" y="490" width="50" height="22" rx="3" fill="rgba(90,122,90,0.3)" stroke="rgba(90,122,90,0.6)" stroke-width="1"/>
+        <text x="297" y="505" text-anchor="middle" fill="#5a7a5a" font-size="8">💺 Slot 2</text>
+        <text x="274" y="528" text-anchor="middle" fill="rgba(245,240,232,0.35)" font-size="7" letter-spacing="2">TASKS RUNNING</text>
+        <rect x="212" y="534" width="50" height="30" rx="3" fill="rgba(42,124,138,0.2)" stroke="rgba(42,124,138,0.5)" stroke-width="1"/>
+        <text x="237" y="548" text-anchor="middle" fill="#2a7c8a" font-size="7">📸 Task</text>
+        <text x="237" y="559" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="6">part-00003</text>
+        <rect x="272" y="534" width="50" height="30" rx="3" fill="rgba(42,124,138,0.2)" stroke="rgba(42,124,138,0.5)" stroke-width="1"/>
+        <text x="297" y="548" text-anchor="middle" fill="#2a7c8a" font-size="7">📸 Task</text>
+        <text x="297" y="559" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="6">part-00004</text>
+        <rect x="212" y="572" width="116" height="34" rx="3" fill="rgba(201,146,42,0.1)" stroke="rgba(201,146,42,0.3)" stroke-width="1"/>
+        <text x="270" y="587" text-anchor="middle" fill="rgba(201,146,42,0.8)" font-size="7" letter-spacing="1">CACHED PARTITIONS</text>
+        <text x="270" y="599" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="7">RDD/DataFrame blocks</text>
+
+        <!-- ── WORKER 2 ── -->
+        <rect x="390" y="342" width="130" height="290" rx="8" fill="rgba(184,76,42,0.08)" stroke="rgba(184,76,42,0.5)" stroke-width="1.5"/>
+        <text x="455" y="364" text-anchor="middle" fill="rgba(184,76,42,0.8)" font-size="9" letter-spacing="4">WORKER 2</text>
+        <text x="455" y="381" text-anchor="middle" fill="rgba(245,240,232,0.7)" font-size="10">🏗 Stage B</text>
+        <rect x="400" y="392" width="110" height="224" rx="6" fill="rgba(106,90,138,0.12)" stroke="rgba(106,90,138,0.5)" stroke-width="1"/>
+        <text x="455" y="410" text-anchor="middle" fill="rgba(106,90,138,0.9)" font-size="8" letter-spacing="2">EXECUTOR 2</text>
+        <text x="455" y="425" text-anchor="middle" fill="rgba(245,240,232,0.65)" font-size="10">🎥 Crew C</text>
+        <rect x="408" y="433" width="94" height="34" rx="4" fill="rgba(245,240,232,0.06)" stroke="rgba(245,240,232,0.15)" stroke-width="1"/>
+        <text x="455" y="447" text-anchor="middle" fill="rgba(245,240,232,0.5)" font-size="8" letter-spacing="2">JVM ☕</text>
+        <text x="455" y="460" text-anchor="middle" fill="rgba(245,240,232,0.3)" font-size="7">Prod. Van</text>
+        <text x="455" y="483" text-anchor="middle" fill="rgba(245,240,232,0.35)" font-size="7" letter-spacing="1">SLOTS</text>
+        <rect x="410" y="490" width="44" height="22" rx="3" fill="rgba(90,122,90,0.3)" stroke="rgba(90,122,90,0.6)" stroke-width="1"/>
+        <text x="432" y="505" text-anchor="middle" fill="#5a7a5a" font-size="7">💺 S1</text>
+        <rect x="460" y="490" width="44" height="22" rx="3" fill="rgba(90,122,90,0.3)" stroke="rgba(90,122,90,0.6)" stroke-width="1"/>
+        <text x="482" y="505" text-anchor="middle" fill="#5a7a5a" font-size="7">💺 S2</text>
+        <text x="455" y="528" text-anchor="middle" fill="rgba(245,240,232,0.35)" font-size="7" letter-spacing="1">TASKS</text>
+        <rect x="410" y="534" width="44" height="30" rx="3" fill="rgba(42,124,138,0.2)" stroke="rgba(42,124,138,0.5)" stroke-width="1"/>
+        <text x="432" y="548" text-anchor="middle" fill="#2a7c8a" font-size="7">📸 T5</text>
+        <text x="432" y="559" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="6">p-005</text>
+        <rect x="460" y="534" width="44" height="30" rx="3" fill="rgba(42,124,138,0.2)" stroke="rgba(42,124,138,0.5)" stroke-width="1"/>
+        <text x="482" y="548" text-anchor="middle" fill="#2a7c8a" font-size="7">📸 T6</text>
+        <text x="482" y="559" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="6">p-006</text>
+        <rect x="410" y="572" width="94" height="34" rx="3" fill="rgba(201,146,42,0.1)" stroke="rgba(201,146,42,0.3)" stroke-width="1"/>
+        <text x="457" y="587" text-anchor="middle" fill="rgba(201,146,42,0.8)" font-size="7" letter-spacing="1">CACHE</text>
+        <text x="457" y="599" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="7">partitions</text>
+
+        <!-- ── WORKER 3 ── -->
+        <rect x="540" y="342" width="330" height="290" rx="8" fill="rgba(184,76,42,0.08)" stroke="rgba(184,76,42,0.5)" stroke-width="1.5"/>
+        <text x="705" y="364" text-anchor="middle" fill="rgba(184,76,42,0.8)" font-size="9" letter-spacing="4">WORKER NODE 3</text>
+        <text x="705" y="381" text-anchor="middle" fill="rgba(245,240,232,0.7)" font-size="11">🏗 Soundstage C · machine-03</text>
+
+        <!-- Executor 3a -->
+        <rect x="552" y="392" width="145" height="224" rx="6" fill="rgba(106,90,138,0.12)" stroke="rgba(106,90,138,0.5)" stroke-width="1"/>
+        <text x="624" y="410" text-anchor="middle" fill="rgba(106,90,138,0.9)" font-size="8" letter-spacing="2">EXECUTOR 3A</text>
+        <text x="624" y="425" text-anchor="middle" fill="rgba(245,240,232,0.65)" font-size="10">🎥 Film Crew D</text>
+        <rect x="560" y="433" width="129" height="34" rx="4" fill="rgba(245,240,232,0.06)" stroke="rgba(245,240,232,0.15)" stroke-width="1"/>
+        <text x="624" y="447" text-anchor="middle" fill="rgba(245,240,232,0.5)" font-size="8" letter-spacing="2">JVM ☕</text>
+        <text x="624" y="460" text-anchor="middle" fill="rgba(245,240,232,0.3)" font-size="7">Production Van</text>
+        <text x="624" y="483" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="7" letter-spacing="2">SLOTS</text>
+        <rect x="562" y="490" width="50" height="22" rx="3" fill="rgba(90,122,90,0.3)" stroke="rgba(90,122,90,0.6)" stroke-width="1"/>
+        <text x="587" y="505" text-anchor="middle" fill="#5a7a5a" font-size="8">💺 Slot 1</text>
+        <rect x="622" y="490" width="50" height="22" rx="3" fill="rgba(90,122,90,0.3)" stroke="rgba(90,122,90,0.6)" stroke-width="1"/>
+        <text x="647" y="505" text-anchor="middle" fill="#5a7a5a" font-size="8">💺 Slot 2</text>
+        <text x="624" y="528" text-anchor="middle" fill="rgba(245,240,232,0.35)" font-size="7" letter-spacing="2">TASKS</text>
+        <rect x="562" y="534" width="50" height="30" rx="3" fill="rgba(42,124,138,0.2)" stroke="rgba(42,124,138,0.5)" stroke-width="1"/>
+        <text x="587" y="548" text-anchor="middle" fill="#2a7c8a" font-size="7">📸 Task</text>
+        <text x="587" y="559" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="6">part-00007</text>
+        <rect x="622" y="534" width="50" height="30" rx="3" fill="rgba(42,124,138,0.2)" stroke="rgba(42,124,138,0.5)" stroke-width="1"/>
+        <text x="647" y="548" text-anchor="middle" fill="#2a7c8a" font-size="7">📸 Task</text>
+        <text x="647" y="559" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="6">part-00008</text>
+        <rect x="562" y="572" width="110" height="34" rx="3" fill="rgba(201,146,42,0.1)" stroke="rgba(201,146,42,0.3)" stroke-width="1"/>
+        <text x="617" y="587" text-anchor="middle" fill="rgba(201,146,42,0.8)" font-size="7" letter-spacing="1">CACHED PARTITIONS</text>
+        <text x="617" y="599" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="7">RDD/DataFrame blocks</text>
+
+        <!-- Executor 3b -->
+        <rect x="710" y="392" width="148" height="224" rx="6" fill="rgba(106,90,138,0.12)" stroke="rgba(106,90,138,0.5)" stroke-width="1"/>
+        <text x="784" y="410" text-anchor="middle" fill="rgba(106,90,138,0.9)" font-size="8" letter-spacing="2">EXECUTOR 3B</text>
+        <text x="784" y="425" text-anchor="middle" fill="rgba(245,240,232,0.65)" font-size="10">🎥 Film Crew E</text>
+        <rect x="718" y="433" width="132" height="34" rx="4" fill="rgba(245,240,232,0.06)" stroke="rgba(245,240,232,0.15)" stroke-width="1"/>
+        <text x="784" y="447" text-anchor="middle" fill="rgba(245,240,232,0.5)" font-size="8" letter-spacing="2">JVM ☕</text>
+        <text x="784" y="460" text-anchor="middle" fill="rgba(245,240,232,0.3)" font-size="7">Production Van</text>
+        <text x="784" y="483" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="7" letter-spacing="2">SLOTS</text>
+        <rect x="720" y="490" width="50" height="22" rx="3" fill="rgba(90,122,90,0.3)" stroke="rgba(90,122,90,0.6)" stroke-width="1"/>
+        <text x="745" y="505" text-anchor="middle" fill="#5a7a5a" font-size="8">💺 Slot 1</text>
+        <rect x="780" y="490" width="50" height="22" rx="3" fill="rgba(90,122,90,0.3)" stroke="rgba(90,122,90,0.6)" stroke-width="1"/>
+        <text x="805" y="505" text-anchor="middle" fill="#5a7a5a" font-size="8">💺 Slot 2</text>
+        <text x="784" y="528" text-anchor="middle" fill="rgba(245,240,232,0.35)" font-size="7" letter-spacing="2">TASKS</text>
+        <rect x="720" y="534" width="50" height="30" rx="3" fill="rgba(42,124,138,0.2)" stroke="rgba(42,124,138,0.5)" stroke-width="1"/>
+        <text x="745" y="548" text-anchor="middle" fill="#2a7c8a" font-size="7">📸 Task</text>
+        <text x="745" y="559" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="6">part-00009</text>
+        <rect x="780" y="534" width="50" height="30" rx="3" fill="rgba(42,124,138,0.2)" stroke="rgba(42,124,138,0.5)" stroke-width="1"/>
+        <text x="805" y="548" text-anchor="middle" fill="#2a7c8a" font-size="7">📸 Task</text>
+        <text x="805" y="559" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="6">part-00010</text>
+        <rect x="720" y="572" width="116" height="34" rx="3" fill="rgba(201,146,42,0.1)" stroke="rgba(201,146,42,0.3)" stroke-width="1"/>
+        <text x="778" y="587" text-anchor="middle" fill="rgba(201,146,42,0.8)" font-size="7" letter-spacing="1">CACHED PARTITIONS</text>
+        <text x="778" y="599" text-anchor="middle" fill="rgba(245,240,232,0.4)" font-size="7">RDD/DataFrame blocks</text>
+
+        <!-- DAG → Stage callout on right side -->
+        <rect x="10" y="86" width="240" height="110" rx="6" fill="rgba(0,0,0,0.3)" stroke="rgba(245,240,232,0.1)" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="130" y="106" text-anchor="middle" fill="rgba(245,240,232,0.5)" font-size="8" letter-spacing="3">DAG BREAKDOWN</text>
+        <!-- Stage 1 -->
+        <rect x="18" y="114" width="100" height="38" rx="4" fill="rgba(184,76,42,0.2)" stroke="rgba(184,76,42,0.5)" stroke-width="1"/>
+        <text x="68" y="128" text-anchor="middle" fill="rgba(184,76,42,0.9)" font-size="8" letter-spacing="2">STAGE 1</text>
+        <text x="68" y="143" text-anchor="middle" fill="rgba(245,240,232,0.55)" font-size="7">🎞 map · filter</text>
+        <!-- Stage 2 -->
+        <rect x="130" y="114" width="112" height="38" rx="4" fill="rgba(184,76,42,0.2)" stroke="rgba(184,76,42,0.5)" stroke-width="1"/>
+        <text x="186" y="128" text-anchor="middle" fill="rgba(184,76,42,0.9)" font-size="8" letter-spacing="2">STAGE 2</text>
+        <text x="186" y="143" text-anchor="middle" fill="rgba(245,240,232,0.55)" font-size="7">🎞 groupBy · agg</text>
+        <!-- Arrow between stages -->
+        <line x1="118" y1="133" x2="130" y2="133" stroke="rgba(245,240,232,0.3)" stroke-width="1" marker-end="url(#arr)"/>
+        <text x="124" y="128" text-anchor="middle" fill="rgba(245,240,232,0.3)" font-size="6">shuffle</text>
+        <!-- Stage labels -->
+        <text x="130" y="170" text-anchor="middle" fill="rgba(245,240,232,0.3)" font-size="7">Each stage = set of tasks per partition</text>
+        <text x="130" y="183" text-anchor="middle" fill="rgba(245,240,232,0.3)" font-size="7">Stage boundary = shuffle (wide transform)</text>
+
+        <!-- Connecting line from DAG box to Driver -->
+        <line x1="250" y1="141" x2="280" y2="141" stroke="rgba(245,240,232,0.15)" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arr)"/>
+      </svg>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#c9922a"></div>Driver</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#2a7c8a"></div>Cluster Manager</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(184,76,42,0.7)"></div>Worker Node</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(106,90,138,0.7)"></div>Executor</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(245,240,232,0.2)"></div>JVM</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#5a7a5a"></div>Slot (CPU Core)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(42,124,138,0.6)"></div>Task</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(201,146,42,0.5)"></div>DAG / Stage</div>
+    </div>
+  </div>
+
+  <!-- EXECUTION FLOW -->
+  <div class="section-title">Execution Flow</div>
+  <p class="section-desc">From your code to a result — how Spark orchestrates it all.</p>
+
+  <div class="flow-section">
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-content">
+          <h4>You write transformations (lazy)</h4>
+          <p>Your code calls <strong>map, filter, groupBy</strong> on DataFrames. Nothing runs yet — Spark just records the plan into a <strong>DAG</strong> (Storyboard).</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-content">
+          <h4>Action triggers execution</h4>
+          <p>You call <strong>.count(), .show(), .write()</strong>. The <strong>Driver</strong> (Director) submits the DAG to the DAG Scheduler which splits it into <strong>Stages</strong> at shuffle boundaries.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-content">
+          <h4>Cluster Manager allocates resources</h4>
+          <p>The <strong>Cluster Manager</strong> (Studio Executive) receives the resource request and assigns <strong>Worker Nodes</strong> (Soundstages) to the application.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-content">
+          <h4>Executors launch on Workers</h4>
+          <p>Each Worker starts one or more <strong>Executors</strong> (Film Crews) — JVM processes that register back with the Driver and await tasks.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">5</div>
+        <div class="flow-content">
+          <h4>Tasks dispatched to Slots</h4>
+          <p>The Task Scheduler sends <strong>Tasks</strong> (individual shots) to available <strong>Slots</strong> (Camera Operators = CPU cores). Each Task processes one data partition. All Tasks in a Stage run in parallel.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">6</div>
+        <div class="flow-content">
+          <h4>Shuffle → next Stage</h4>
+          <p>Wide transformations (groupBy, join) require a <strong>shuffle</strong> — data is exchanged between Executors across the network. This marks a <strong>Stage boundary</strong>. Then Stage 2 Tasks begin on the shuffled data.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">7</div>
+        <div class="flow-content">
+          <h4>Results returned to Driver</h4>
+          <p>Final results are collected by the <strong>Driver</strong> (or written to storage). Executors are released. The Director calls "That's a wrap!" 🎬</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>Apache Spark · Film Studio Analogy · Architecture Reference</footer>
+
+</body>
+</html>
