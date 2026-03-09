@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GCP Cloud Composer – Interview MCQs</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; color: #1a202c; min-height: 100vh; }
+    header { background: linear-gradient(135deg, #1a73e8, #0d47a1); color: white; padding: 24px 20px 20px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.2); }
+    header h1 { font-size: 1.25rem; font-weight: 700; }
+    header p { font-size: 0.82rem; opacity: 0.85; margin-top: 4px; }
+    .progress-bar-wrap { background: rgba(255,255,255,0.25); border-radius: 999px; height: 6px; margin-top: 12px; overflow: hidden; }
+    .progress-bar-fill { background: #a8d8ff; height: 100%; border-radius: 999px; transition: width 0.4s ease; width: 0%; }
+    .score-badge { display: inline-block; background: rgba(255,255,255,0.2); border-radius: 20px; padding: 3px 14px; font-size: 0.8rem; margin-top: 8px; }
+    main { max-width: 760px; margin: 0 auto; padding: 20px 16px 80px; }
+    .question-card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 5px solid #1a73e8; transition: box-shadow 0.2s; }
+    .question-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+    .q-number { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #1a73e8; margin-bottom: 8px; }
+    .q-text { font-size: 1rem; font-weight: 600; line-height: 1.55; margin-bottom: 16px; color: #1a202c; }
+    .options { display: flex; flex-direction: column; gap: 10px; }
+    .option-btn { display: flex; align-items: flex-start; gap: 10px; background: #f7faff; border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; cursor: pointer; font-size: 0.93rem; text-align: left; transition: all 0.2s; color: #2d3748; line-height: 1.45; width: 100%; }
+    .option-btn:hover:not(:disabled) { border-color: #1a73e8; background: #ebf3ff; }
+    .option-btn .opt-label { font-weight: 700; color: #1a73e8; min-width: 20px; flex-shrink: 0; }
+    .option-btn.correct { background: #e6f9ec; border-color: #28a745; color: #155724; }
+    .option-btn.correct .opt-label { color: #28a745; }
+    .option-btn.wrong { background: #fdecea; border-color: #dc3545; color: #721c24; }
+    .option-btn.wrong .opt-label { color: #dc3545; }
+    .option-btn:disabled { cursor: default; }
+    .explanation { display: none; margin-top: 14px; background: #f0f7ff; border-radius: 10px; padding: 14px; font-size: 0.88rem; color: #334155; line-height: 1.6; border-left: 4px solid #1a73e8; }
+    .explanation.show { display: block; }
+    .explanation strong { color: #0d47a1; display: block; margin-bottom: 4px; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .result-panel { display: none; background: white; border-radius: 16px; padding: 28px 20px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    .result-panel.show { display: block; }
+    .result-panel .emoji { font-size: 3rem; }
+    .result-panel h2 { font-size: 1.4rem; font-weight: 800; margin: 10px 0 6px; color: #1a202c; }
+    .result-panel p { color: #64748b; font-size: 0.95rem; }
+    .result-panel .big-score { font-size: 2.5rem; font-weight: 900; color: #1a73e8; margin: 14px 0 4px; }
+    .reset-btn { margin-top: 18px; background: #1a73e8; color: white; border: none; border-radius: 10px; padding: 13px 30px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    .reset-btn:hover { background: #0d47a1; }
+    @media (max-width: 480px) {
+      header h1 { font-size: 1.05rem; }
+      .q-text { font-size: 0.95rem; }
+      .option-btn { font-size: 0.88rem; padding: 10px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>&#9729;&#65039; GCP Cloud Composer &#8211; MCQ Quiz</h1>
+  <p>20 Interview Questions with Explanations</p>
+  <div class="score-badge" id="scoreBadge">Score: 0 / 20</div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progressBar"></div>
+  </div>
+</header>
+
+<main id="quizContainer"></main>
+
+<script>
+const questions = [
+  {
+    q: "What is Google Cloud Composer primarily based on?",
+    options: ["Apache Spark", "Apache Airflow", "Apache Kafka", "Apache Beam"],
+    answer: 1,
+    explanation: "Cloud Composer is a fully managed workflow orchestration service built on Apache Airflow. It lets you author, schedule, and monitor pipelines using Python-based DAGs (Directed Acyclic Graphs)."
+  },
+  {
+    q: "In Cloud Composer, what does 'DAG' stand for?",
+    options: ["Data Aggregation Graph", "Directed Acyclic Graph", "Dynamic Allocation Gateway", "Distributed Agent Group"],
+    answer: 1,
+    explanation: "DAG stands for Directed Acyclic Graph. In Airflow/Composer, a DAG is a collection of tasks with directional dependencies that describe a workflow without any cycles."
+  },
+  {
+    q: "Which GCP service manages the underlying Kubernetes cluster for Cloud Composer?",
+    options: ["Cloud Run", "App Engine", "Google Kubernetes Engine (GKE)", "Compute Engine"],
+    answer: 2,
+    explanation: "Cloud Composer environments run on Google Kubernetes Engine (GKE). Composer provisions and manages the GKE cluster, allowing Airflow workers to scale as containers."
+  },
+  {
+    q: "Where are DAG files stored in a Cloud Composer environment?",
+    options: ["BigQuery", "Cloud SQL", "Google Cloud Storage (GCS) bucket", "Firestore"],
+    answer: 2,
+    explanation: "DAG files are stored in a Google Cloud Storage (GCS) bucket that is automatically created with each Composer environment. Airflow periodically syncs DAGs from this bucket."
+  },
+  {
+    q: "What database does Cloud Composer use to store Airflow metadata (task states, connections, variables)?",
+    options: ["Bigtable", "Firestore", "Cloud SQL (PostgreSQL)", "Spanner"],
+    answer: 2,
+    explanation: "Cloud Composer uses Cloud SQL with a PostgreSQL instance to store Airflow metadata, including DAG run history, task states, variables, and connections."
+  },
+  {
+    q: "Which operator would you use in Cloud Composer to run a BigQuery SQL query?",
+    options: ["BigQueryInsertJobOperator", "PythonOperator", "BashOperator", "DataflowOperator"],
+    answer: 0,
+    explanation: "BigQueryInsertJobOperator (or BigQueryOperator in older versions) is the dedicated Airflow operator for executing SQL queries in BigQuery directly from a Cloud Composer DAG."
+  },
+  {
+    q: "What is the purpose of 'Airflow Variables' in Cloud Composer?",
+    options: ["To define DAG schedules", "To store key-value pairs accessible across DAGs", "To manage GKE node pools", "To configure Cloud SQL connections"],
+    answer: 1,
+    explanation: "Airflow Variables are global key-value pairs stored in the metadata database. They allow DAGs to read dynamic configuration without hardcoding values, useful for environment-specific settings."
+  },
+  {
+    q: "In Cloud Composer 2, what is a key improvement over Composer 1 regarding infrastructure?",
+    options: ["Uses App Engine instead of GKE", "Supports workload autoscaling with GKE Autopilot", "Removes need for GCS bucket", "Replaces Cloud SQL with Bigtable"],
+    answer: 1,
+    explanation: "Cloud Composer 2 uses GKE Autopilot, enabling fine-grained workload autoscaling. Resources are allocated per workload component (scheduler, workers, web server), reducing costs and improving efficiency."
+  },
+  {
+    q: "What scheduling interval expression represents 'every day at midnight' in a Composer DAG?",
+    options: ["@hourly", "@weekly", "@daily or '0 0 * * *'", "@monthly"],
+    answer: 2,
+    explanation: "@daily (or its cron equivalent '0 0 * * *') schedules a DAG to run once every day at midnight UTC. Composer/Airflow supports both cron expressions and presets like @daily, @weekly."
+  },
+  {
+    q: "Which component in Airflow is responsible for monitoring and triggering DAG runs?",
+    options: ["Worker", "Webserver", "Scheduler", "Executor"],
+    answer: 2,
+    explanation: "The Airflow Scheduler monitors all DAGs and triggers task instances when their dependencies are met and the scheduled interval arrives. It is the core orchestration component."
+  },
+  {
+    q: "What is a 'Sensor' in Cloud Composer/Airflow?",
+    options: ["A metric alert in Cloud Monitoring", "An operator that waits for a condition before proceeding", "A GKE node auto-scaler", "A Pub/Sub message listener"],
+    answer: 1,
+    explanation: "A Sensor is a special type of operator that keeps polling/waiting until a specific condition is true (e.g., a file appears in GCS, or a Pub/Sub message arrives) before allowing downstream tasks to run."
+  },
+  {
+    q: "Which executor is recommended for production Cloud Composer environments for parallel task execution?",
+    options: ["SequentialExecutor", "LocalExecutor", "CeleryExecutor or KubernetesExecutor", "DebugExecutor"],
+    answer: 2,
+    explanation: "CeleryExecutor and KubernetesExecutor support distributed, parallel task execution across multiple workers. SequentialExecutor runs tasks one at a time and is unsuitable for production."
+  },
+  {
+    q: "How can you pass data between tasks in Cloud Composer?",
+    options: ["Using global Python variables", "Via XComs (cross-communications)", "By writing to Cloud SQL directly", "Using Airflow Variables only"],
+    answer: 1,
+    explanation: "XComs (cross-communications) allow tasks to exchange small amounts of data by pushing and pulling values to/from the metadata database. Use task_instance.xcom_push() and xcom_pull()."
+  },
+  {
+    q: "What is the role of an Airflow 'Connection' in Cloud Composer?",
+    options: ["To connect GKE nodes to each other", "To store credentials and endpoints for external systems", "To link DAGs in sequence", "To manage GCS bucket permissions"],
+    answer: 1,
+    explanation: "Airflow Connections store configuration and credentials (host, login, password, port) for external services like BigQuery, GCS, databases, and APIs, so operators can authenticate without hardcoded secrets."
+  },
+  {
+    q: "Which IAM role gives a user read-only access to the Airflow UI in Cloud Composer?",
+    options: ["roles/composer.admin", "roles/composer.environmentAndStorageObjectViewer", "roles/composer.worker", "roles/editor"],
+    answer: 1,
+    explanation: "roles/composer.environmentAndStorageObjectViewer grants read-only access to Composer environments and their GCS buckets, allowing users to view DAGs and logs in the Airflow UI without modifying anything."
+  },
+  {
+    q: "What does setting 'catchup=False' in a DAG definition do?",
+    options: ["Disables logging", "Prevents Airflow from backfilling missed DAG runs", "Stops the DAG from running in parallel", "Clears all past DAG run history"],
+    answer: 1,
+    explanation: "When catchup=False, Airflow won't run historical DAG instances for periods that were missed (e.g., if the DAG was paused). Only future scheduled runs will execute, avoiding unintended backfill runs."
+  },
+  {
+    q: "Which GCP service can be used to trigger a Cloud Composer DAG externally via REST API?",
+    options: ["Cloud Tasks", "Cloud Scheduler + Composer REST API", "Pub/Sub only", "Dataflow"],
+    answer: 1,
+    explanation: "Cloud Composer exposes an Airflow REST API. Cloud Scheduler (or any HTTP client) can send authenticated POST requests to trigger DAG runs programmatically using the Composer web server endpoint."
+  },
+  {
+    q: "What is the purpose of the 'plugins' folder in a Cloud Composer environment?",
+    options: ["To store DAG Python files", "To add custom operators, hooks, sensors, and macros", "To configure GKE node pools", "To install PyPI packages"],
+    answer: 1,
+    explanation: "The plugins folder (in the environment's GCS bucket) allows you to extend Airflow by adding custom operators, hooks, sensors, macros, and views. Airflow automatically loads them at startup."
+  },
+  {
+    q: "How do you install additional Python packages in Cloud Composer?",
+    options: ["By editing /etc/pip.conf on GKE nodes", "Via the PyPI packages tab in the Composer environment settings", "By uploading a requirements.txt to the DAGs folder", "Using BashOperator to run pip install"],
+    answer: 1,
+    explanation: "In Cloud Composer, you install Python packages through the GCP Console (or gcloud CLI) under the environment's 'PyPI packages' configuration. Composer handles installing them on all Airflow components safely."
+  },
+  {
+    q: "Which operator allows one DAG to trigger another DAG in Cloud Composer?",
+    options: ["SubDagOperator only", "TriggerDagRunOperator", "DagChainOperator", "DAG nesting via imports"],
+    answer: 1,
+    explanation: "TriggerDagRunOperator allows one DAG to programmatically trigger another DAG run. This supports modular, event-driven pipeline design where a parent DAG can orchestrate child DAGs in Cloud Composer."
+  }
+];
+
+let score = 0, answered = 0;
+
+function buildQuiz() {
+  const container = document.getElementById('quizContainer');
+  container.innerHTML = '';
+  questions.forEach((item, idx) => {
+    const card = document.createElement('div');
+    card.className = 'question-card';
+
+    const qNum = document.createElement('div');
+    qNum.className = 'q-number';
+    qNum.textContent = 'Question ' + (idx + 1) + ' of ' + questions.length;
+
+    const qText = document.createElement('div');
+    qText.className = 'q-text';
+    qText.textContent = item.q;
+
+    const opts = document.createElement('div');
+    opts.className = 'options';
+
+    const exp = document.createElement('div');
+    exp.className = 'explanation';
+    exp.innerHTML = '<strong>&#128161; Explanation</strong>' + item.explanation;
+
+    ['A','B','C','D'].forEach((lbl, oIdx) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.innerHTML = '<span class="opt-label">' + lbl + '</span><span>' + item.options[oIdx] + '</span>';
+      btn.addEventListener('click', function() {
+        opts.querySelectorAll('.option-btn').forEach(function(b) { b.disabled = true; });
+        exp.classList.add('show');
+        if (oIdx === item.answer) {
+          btn.classList.add('correct');
+          score++;
+        } else {
+          btn.classList.add('wrong');
+          opts.querySelectorAll('.option-btn')[item.answer].classList.add('correct');
+        }
+        answered++;
+        document.getElementById('progressBar').style.width = (answered / questions.length * 100) + '%';
+        document.getElementById('scoreBadge').textContent = 'Score: ' + score + ' / ' + questions.length;
+        if (answered === questions.length) setTimeout(showResult, 600);
+      });
+      opts.appendChild(btn);
+    });
+
+    card.appendChild(qNum);
+    card.appendChild(qText);
+    card.appendChild(opts);
+    card.appendChild(exp);
+    container.appendChild(card);
+  });
+
+  const rp = document.createElement('div');
+  rp.className = 'result-panel';
+  rp.id = 'resultPanel';
+  rp.innerHTML = '<div class="emoji" id="rEmoji"></div><h2 id="rTitle"></h2><p>Your final score</p><div class="big-score" id="rScore"></div><p id="rMsg"></p><button class="reset-btn" onclick="resetQuiz()">&#128260; Retake Quiz</button>';
+  container.appendChild(rp);
+}
+
+function showResult() {
+  const panel = document.getElementById('resultPanel');
+  panel.classList.add('show');
+  document.getElementById('rScore').textContent = score + ' / ' + questions.length;
+  var e = '&#128517;', t = 'Keep Practicing!', m = 'Review the explanations and try again.';
+  if (score >= 18) { e = '&#127942;'; t = 'Outstanding!'; m = 'You\'re ready to ace that GCP interview!'; }
+  else if (score >= 14) { e = '&#127881;'; t = 'Great Job!'; m = 'Strong understanding of Cloud Composer!'; }
+  else if (score >= 10) { e = '&#128077;'; t = 'Good Effort!'; m = 'A bit more practice and you\'ll nail it!'; }
+  document.getElementById('rEmoji').innerHTML = e;
+  document.getElementById('rTitle').textContent = t;
+  document.getElementById('rMsg').textContent = m;
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetQuiz() {
+  score = 0; answered = 0;
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('scoreBadge').textContent = 'Score: 0 / 20';
+  buildQuiz();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+buildQuiz();
+</script>
+</body>
+</html>

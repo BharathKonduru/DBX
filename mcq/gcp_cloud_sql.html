@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GCP Cloud SQL — Interview MCQs</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f1e;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1e3a5f;
+    --accent: #1a73e8;
+    --accent2: #34a853;
+    --accent3: #ea4335;
+    --text: #e8edf5;
+    --muted: #7a8fa8;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 48px;
+  }
+  header {
+    background: linear-gradient(135deg, #0a0f1e 0%, #0d1f3c 60%, #0f2952 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 20px 22px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: 50%; transform: translateX(-50%);
+    width: 340px; height: 340px;
+    background: radial-gradient(circle, rgba(26,115,232,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(26,115,232,0.13);
+    border: 1px solid rgba(26,115,232,0.35);
+    border-radius: 20px; padding: 5px 14px;
+    font-family: var(--mono); font-size: 10px;
+    color: #5ba8ff; letter-spacing: 1.5px;
+    text-transform: uppercase; margin-bottom: 14px;
+  }
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(19px, 5vw, 28px);
+    font-weight: 700; color: #fff;
+    line-height: 1.2; letter-spacing: -0.5px;
+  }
+  h1 span { color: var(--accent); }
+  .subtitle { margin-top: 7px; font-size: 13px; color: var(--muted); font-weight: 300; }
+
+  .progress-wrap { max-width: 580px; margin: 18px auto 0; padding: 0 20px; }
+  .progress-info {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 6px;
+  }
+  .progress-track { height: 4px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 4px; transition: width 0.5s ease; width: 0%; }
+
+  .score-row {
+    max-width: 580px; margin: 12px auto 0; padding: 0 20px;
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+  }
+  .chip {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 11px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px; padding: 4px 12px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .dot.c { background: var(--accent2); }
+  .dot.w { background: var(--accent3); }
+  .dot.u { background: var(--muted); }
+
+  main { max-width: 580px; margin: 22px auto 0; padding: 0 14px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px; margin-bottom: 18px; overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .card.ok { border-color: var(--accent2); }
+  .card.bad { border-color: var(--accent3); }
+
+  .card-head {
+    display: flex; align-items: flex-start; gap: 13px;
+    padding: 17px 17px 13px;
+  }
+  .qnum {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    color: var(--accent);
+    background: rgba(26,115,232,0.12);
+    border: 1px solid rgba(26,115,232,0.25);
+    border-radius: 7px; padding: 4px 8px;
+    white-space: nowrap; flex-shrink: 0; margin-top: 2px;
+  }
+  .qtext { font-size: 14.5px; font-weight: 500; line-height: 1.55; }
+
+  .opts { padding: 0 17px 17px; display: flex; flex-direction: column; gap: 8px; }
+  .opt {
+    display: flex; align-items: flex-start; gap: 11px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px; padding: 11px 13px;
+    cursor: pointer; transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent; user-select: none;
+  }
+  .opt:hover:not(.disabled) { background: rgba(26,115,232,0.09); border-color: rgba(26,115,232,0.3); }
+  .opt.sel-ok { background: rgba(52,168,83,0.12); border-color: var(--accent2); }
+  .opt.sel-bad { background: rgba(234,67,53,0.12); border-color: var(--accent3); }
+  .opt.show-ok { background: rgba(52,168,83,0.07); border-color: rgba(52,168,83,0.35); }
+  .opt.disabled { cursor: default; pointer-events: none; }
+  .olabel {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    background: rgba(255,255,255,0.05);
+    border-radius: 5px; padding: 3px 7px;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .opt.sel-ok .olabel { color: var(--accent2); background: rgba(52,168,83,0.18); }
+  .opt.sel-bad .olabel { color: var(--accent3); background: rgba(234,67,53,0.18); }
+  .opt.show-ok .olabel { color: var(--accent2); }
+  .otext { font-size: 13.5px; line-height: 1.5; }
+
+  .exp {
+    margin: 0 17px 17px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px; padding: 13px 15px;
+    display: none;
+    animation: fadein 0.3s ease;
+  }
+  .exp.show { display: block; }
+  .exp.ok { border-left-color: var(--accent2); }
+  .exp.bad { border-left-color: var(--accent3); }
+  @keyframes fadein { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+  .etag {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 7px;
+  }
+  .etag.c { color: var(--accent2); }
+  .etag.w { color: var(--accent3); }
+  .etext { font-size: 13px; color: #b0c4da; line-height: 1.65; }
+
+  .reset-wrap { text-align: center; margin-top: 26px; }
+  .reset-btn {
+    font-family: var(--mono); font-size: 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted); padding: 10px 28px;
+    border-radius: 30px; cursor: pointer;
+    transition: all 0.2s; letter-spacing: 0.5px;
+  }
+  .reset-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  footer {
+    text-align: center; margin-top: 36px;
+    font-family: var(--mono); font-size: 10px;
+    color: rgba(122,143,168,0.45); letter-spacing: 0.5px;
+  }
+  @media(max-width:380px){ .qtext{font-size:13.5px;} .otext{font-size:13px;} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="badge">☁ Google Cloud Platform</div>
+  <h1>Cloud <span>SQL</span> Interview MCQs</h1>
+  <p class="subtitle">20 Questions · Tap an option to reveal the answer &amp; explanation</p>
+  <div class="progress-wrap">
+    <div class="progress-info">
+      <span id="plabel">0 / 20 answered</span>
+      <span id="ppct">0%</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="pfill"></div></div>
+  </div>
+  <div class="score-row">
+    <div class="chip"><span class="dot c"></span><span id="nc">0 Correct</span></div>
+    <div class="chip"><span class="dot w"></span><span id="nw">0 Wrong</span></div>
+    <div class="chip"><span class="dot u"></span><span id="nl">20 Left</span></div>
+  </div>
+</header>
+
+<main id="quiz"></main>
+
+<div class="reset-wrap"><button class="reset-btn" onclick="reset()">↺ Reset Quiz</button></div>
+<footer>GCP Cloud SQL · Interview Prep · 2025</footer>
+
+<script>
+const QS = [
+  {
+    q:"Which database engines does Google Cloud SQL support?",
+    opts:["MySQL, PostgreSQL, and SQL Server","MySQL, Oracle, and PostgreSQL","MySQL, MongoDB, and SQL Server","PostgreSQL, Oracle, and SQLite"],
+    a:0,
+    exp:"Cloud SQL supports three managed database engines: MySQL, PostgreSQL, and Microsoft SQL Server. Engines like Oracle, MongoDB, or SQLite are not available as Cloud SQL managed services."
+  },
+  {
+    q:"What is the maximum storage capacity for a Cloud SQL instance?",
+    opts:["10 TB","30 TB","64 TB","100 TB"],
+    a:2,
+    exp:"Cloud SQL instances support up to 64 TB of storage per instance, for both SSD and HDD options. Storage can also be configured to auto-grow as data increases."
+  },
+  {
+    q:"Which Cloud SQL feature automatically increases storage as data grows, without downtime?",
+    opts:["Auto-scale","Storage auto-resize","Elastic storage","Dynamic provisioning"],
+    a:1,
+    exp:"Storage auto-resize automatically increases disk capacity when usage nears the configured limit, preventing failures from full disks — all without requiring instance restarts or downtime."
+  },
+  {
+    q:"What is the primary purpose of the Cloud SQL Auth Proxy?",
+    opts:["Encrypt data at rest","Provide IAM-based auth and SSL tunneling without managing certs manually","Replicate data across regions","Load balance between instances"],
+    a:1,
+    exp:"The Cloud SQL Auth Proxy provides secure connectivity using IAM authorization and manages SSL certificates automatically. It eliminates the need to whitelist IPs or configure SSL certs yourself, making secure connections much simpler."
+  },
+  {
+    q:"Which replication type does Cloud SQL High Availability (HA) use?",
+    opts:["Asynchronous replication to a read replica","Synchronous replication to a standby in a different zone","Multi-region replication via Spanner","Manual failover scripts"],
+    a:1,
+    exp:"Cloud SQL HA uses synchronous replication to a standby instance in a different zone. This guarantees zero data loss (RPO = 0) and enables automatic failover, typically within ~30 seconds of a primary zone failure."
+  },
+  {
+    q:"Which connection type is recommended for production Cloud SQL access?",
+    opts:["Public IP with SSL","Private IP using VPC peering","Dynamic public IP","Direct TCP with no SSL"],
+    a:1,
+    exp:"Private IP via VPC peering is the best practice for production because traffic stays entirely within Google's internal network, never traversing the public internet. This offers better security and lower latency than public IP connections."
+  },
+  {
+    q:"What happens automatically during a Cloud SQL HA failover?",
+    opts:["Data is lost and a new instance is restored from backup","The standby is promoted to primary and DNS is updated automatically","Manual intervention is required to promote the standby","The primary restarts in a different zone"],
+    a:1,
+    exp:"In an HA setup, Cloud SQL automatically promotes the synchronous standby to become the new primary, updates the DNS record, and redirects connections — all without any manual steps. Downtime is typically around 30 seconds."
+  },
+  {
+    q:"How can a Cloud Run service securely connect to Cloud SQL?",
+    opts:["Direct TCP via public IP only","Via Cloud SQL Auth Proxy using Unix sockets","Through Cloud VPN exclusively","Using Cloud Endpoints"],
+    a:1,
+    exp:"Cloud Run has native integration with Cloud SQL using the Cloud SQL Auth Proxy over Unix domain sockets. This provides IAM-authenticated, SSL-encrypted connectivity without requiring IP allowlisting or certificate management."
+  },
+  {
+    q:"Cloud SQL read replicas are primarily used for:",
+    opts:["Automatic failover when the primary fails","Offloading read traffic and analytics workloads","Replacing automated backups","Enabling multi-region writes"],
+    a:1,
+    exp:"Read replicas replicate data asynchronously from the primary and serve SELECT queries, helping to scale read-heavy or reporting workloads. Importantly, they do NOT automatically take over if the primary fails — that is the job of HA standbys."
+  },
+  {
+    q:"What is the key difference between a Cloud SQL read replica and an HA standby?",
+    opts:["They are identical in function","A read replica serves reads but won't auto-failover; a HA standby auto-fails over but doesn't serve reads","An HA standby serves reads; a read replica handles failover","Both serve reads and both auto-failover"],
+    a:1,
+    exp:"Read replicas accept read traffic to scale your app but won't become primary automatically. HA standbys are invisible to applications (they accept no queries) but automatically promote on failure. They serve complementary purposes."
+  },
+  {
+    q:"Which Cloud SQL feature allows recovery to any specific second within the retention window?",
+    opts:["Full backup restore","On-demand snapshot","Point-in-Time Recovery (PITR)","Export to Cloud Storage"],
+    a:2,
+    exp:"Point-in-Time Recovery (PITR) uses transaction logs — binary logs for MySQL and WAL for PostgreSQL — to replay changes incrementally, allowing recovery to any specific moment in time within your configured retention window."
+  },
+  {
+    q:"What is the default and maximum automated backup retention period in Cloud SQL?",
+    opts:["Default 3 days, max 7 days","Default 7 days, max 365 days","Default 1 day, max 30 days","Default 14 days, max 60 days"],
+    a:1,
+    exp:"Cloud SQL retains automated backups for 7 days by default. You can extend this up to 365 days (1 year) for compliance and long-term recovery needs. PITR logs are retained separately and can be configured independently."
+  },
+  {
+    q:"Which Cloud SQL IAM role grants full administrative access to instances?",
+    opts:["roles/cloudsql.viewer","roles/cloudsql.editor","roles/cloudsql.admin","roles/cloudsql.client"],
+    a:2,
+    exp:"roles/cloudsql.admin grants complete control: creating, deleting, and configuring Cloud SQL instances, users, and databases. roles/cloudsql.client is used only for connecting to instances via the Auth Proxy, not for administration."
+  },
+  {
+    q:"What pricing dimensions does Cloud SQL charge for?",
+    opts:["Storage only","Pay per query executed","vCPU, RAM (per hour), storage, and network egress","Flat monthly fee per instance"],
+    a:2,
+    exp:"Cloud SQL billing is multi-dimensional: you pay for vCPUs and RAM (per hour or second), storage (per GB/month for SSD or HDD), network egress, and optionally for HA, backups, and read replicas. There is no flat fee or per-query pricing."
+  },
+  {
+    q:"What is a Cloud SQL external replica used for?",
+    opts:["Replicating data to Cloud SQL FROM an on-premises MySQL database","Exporting data to BigQuery in real-time","Creating off-site backups","Connecting Cloud SQL to external REST APIs"],
+    a:0,
+    exp:"An external replica (external master configuration) lets Cloud SQL act as a replica of an on-premises or externally hosted MySQL database. This is widely used for zero-downtime database migrations to Cloud SQL."
+  },
+  {
+    q:"What does the Cloud SQL maintenance window setting control?",
+    opts:["When users can access the instance","The preferred day and hour for automatic maintenance updates","How often backups are taken","Network bandwidth throttling"],
+    a:1,
+    exp:"The maintenance window lets you specify a preferred day of the week and hour for automatic maintenance events like OS patches and minor version updates. Configuring this helps schedule maintenance during low-traffic periods to minimize business impact."
+  },
+  {
+    q:"Which storage type offers the best I/O performance for Cloud SQL?",
+    opts:["HDD storage","SSD storage","Persistent disk","Local SSD"],
+    a:1,
+    exp:"SSD (Solid State Drive) storage delivers significantly higher IOPS and lower latency compared to HDD. For production workloads with high transaction rates or low-latency requirements, SSD is strongly recommended despite the higher cost."
+  },
+  {
+    q:"Which Google service is purpose-built for migrating databases into Cloud SQL with minimal downtime?",
+    opts:["Cloud Dataflow","Google Database Migration Service (DMS)","Cloud Composer","Cloud Data Fusion"],
+    a:1,
+    exp:"Google Database Migration Service (DMS) is specifically designed for live, low-downtime migrations to Cloud SQL and AlloyDB from on-premises MySQL, PostgreSQL, SQL Server, or cloud databases like Amazon RDS, using continuous replication."
+  },
+  {
+    q:"Can you directly migrate from Cloud SQL MySQL to Cloud SQL PostgreSQL?",
+    opts:["Yes, with a one-click option in the console","No — different engines require tools like pgloader or Database Migration Service","Yes, using Cloud SQL's built-in replication","Only if both instances are in the same region"],
+    a:1,
+    exp:"MySQL and PostgreSQL are fundamentally different engines with distinct SQL dialects, data types, and features. Direct engine-to-engine migration within Cloud SQL is not possible. You need tools like pgloader, AWS SCT, or Google DMS and must handle SQL compatibility issues manually."
+  },
+  {
+    q:"Which Cloud SQL feature helps control costs by pausing the instance when not in use?",
+    opts:["Auto-scaling","Instance scheduling / Always Off for dev instances","Reserved instances","Committed use discounts only"],
+    a:1,
+    exp:"Cloud SQL supports instance scheduling (and the 'Always Off' setting for development/test instances), allowing you to automatically stop instances during off-hours. Stopped instances still incur storage costs but not compute costs, reducing overall spend for non-production workloads."
+  }
+];
+
+let state = Array(QS.length).fill(null);
+
+function render() {
+  const quiz = document.getElementById('quiz');
+  quiz.innerHTML = '';
+  const labels = ['A','B','C','D'];
+  QS.forEach((q,i) => {
+    const s = state[i];
+    const card = document.createElement('div');
+    card.className = 'card' + (s ? (s.ok ? ' ok' : ' bad') : '');
+    card.id = 'c'+i;
+
+    card.innerHTML = `<div class="card-head"><span class="qnum">Q${String(i+1).padStart(2,'0')}</span><span class="qtext">${q.q}</span></div>`;
+
+    const opts = document.createElement('div');
+    opts.className = 'opts';
+    q.opts.forEach((o,j) => {
+      const btn = document.createElement('div');
+      let cls = 'opt';
+      if (s) {
+        cls += ' disabled';
+        if (j === q.a) cls += ' show-ok';
+        if (j === s.chosen && s.ok) cls += ' sel-ok';
+        if (j === s.chosen && !s.ok) cls += ' sel-bad';
+      }
+      btn.className = cls;
+      btn.innerHTML = `<span class="olabel">${labels[j]}</span><span class="otext">${o}</span>`;
+      if (!s) btn.addEventListener('click', () => pick(i,j));
+      opts.appendChild(btn);
+    });
+    card.appendChild(opts);
+
+    const exp = document.createElement('div');
+    exp.className = 'exp' + (s ? ' show ' + (s.ok ? 'ok' : 'bad') : '');
+    if (s) exp.innerHTML = `<div class="etag ${s.ok?'c':'w'}">${s.ok ? '✓ Correct' : '✗ Incorrect'}</div><div class="etext">${q.exp}</div>`;
+    card.appendChild(exp);
+    quiz.appendChild(card);
+  });
+  updateScore();
+}
+
+function pick(qi, oi) {
+  state[qi] = { chosen: oi, ok: oi === QS[qi].a };
+  render();
+  setTimeout(() => document.getElementById('c'+qi).scrollIntoView({behavior:'smooth',block:'nearest'}), 80);
+}
+
+function updateScore() {
+  const ans = state.filter(s=>s).length;
+  const ok = state.filter(s=>s?.ok).length;
+  const bad = state.filter(s=>s&&!s.ok).length;
+  const left = QS.length - ans;
+  const pct = Math.round(ans/QS.length*100);
+  document.getElementById('plabel').textContent = `${ans} / ${QS.length} answered`;
+  document.getElementById('ppct').textContent = pct+'%';
+  document.getElementById('pfill').style.width = pct+'%';
+  document.getElementById('nc').textContent = ok+' Correct';
+  document.getElementById('nw').textContent = bad+' Wrong';
+  document.getElementById('nl').textContent = left+' Left';
+}
+
+function reset() {
+  state = Array(QS.length).fill(null);
+  render();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+render();
+</script>
+</body>
+</html>

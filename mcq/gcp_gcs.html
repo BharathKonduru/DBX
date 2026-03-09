@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GCS Interview MCQ Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --accent: #4285F4;
+    --accent2: #34A853;
+    --warn: #EA4335;
+    --gold: #FBBC05;
+    --text: #e8edf5;
+    --muted: #6b7a99;
+    --border: #1e2d47;
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(66,133,244,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(66,133,244,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px 16px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 36px 0 28px;
+  }
+
+  .gcs-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(66,133,244,0.12);
+    border: 1px solid rgba(66,133,244,0.3);
+    border-radius: 50px;
+    padding: 6px 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .gcs-badge::before {
+    content: '';
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+  }
+
+  h1 {
+    font-size: clamp(24px, 6vw, 40px);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, #e8edf5 30%, #4285F4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* Progress Bar */
+  .progress-wrap {
+    margin: 24px 0 8px;
+  }
+
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-family: 'Space Mono', monospace;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .progress-track {
+    height: 4px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #34A853);
+    border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+
+  /* Score Display */
+  .score-bar {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .score-pill {
+    padding: 6px 14px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    border: 1px solid;
+  }
+
+  .score-pill.correct { color: var(--accent2); border-color: rgba(52,168,83,0.3); background: rgba(52,168,83,0.08); }
+  .score-pill.wrong { color: var(--warn); border-color: rgba(234,67,53,0.3); background: rgba(234,67,53,0.08); }
+  .score-pill.skipped { color: var(--gold); border-color: rgba(251,188,5,0.3); background: rgba(251,188,5,0.08); }
+
+  /* Question Card */
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+    animation: slideIn 0.35s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .question-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), #34A853);
+  }
+
+  .q-number {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  .q-tag {
+    display: inline-block;
+    background: rgba(251,188,5,0.1);
+    border: 1px solid rgba(251,188,5,0.25);
+    color: var(--gold);
+    font-size: 10px;
+    font-family: 'Space Mono', monospace;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    margin-left: 8px;
+    text-transform: uppercase;
+  }
+
+  .q-text {
+    font-size: clamp(15px, 3.5vw, 17px);
+    font-weight: 600;
+    line-height: 1.55;
+    color: var(--text);
+    margin-bottom: 20px;
+  }
+
+  code {
+    font-family: 'Space Mono', monospace;
+    background: rgba(66,133,244,0.12);
+    color: #93c5fd;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.88em;
+  }
+
+  /* Options */
+  .options { display: flex; flex-direction: column; gap: 10px; }
+
+  .option-btn {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 16px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.18s ease;
+    width: 100%;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .option-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: rgba(66,133,244,0.08);
+    transform: translateX(3px);
+  }
+
+  .option-btn:disabled { cursor: default; }
+
+  .option-btn.selected-correct {
+    border-color: var(--accent2);
+    background: rgba(52,168,83,0.1);
+  }
+
+  .option-btn.selected-wrong {
+    border-color: var(--warn);
+    background: rgba(234,67,53,0.1);
+  }
+
+  .option-btn.reveal-correct {
+    border-color: var(--accent2);
+    background: rgba(52,168,83,0.06);
+  }
+
+  .option-label {
+    flex-shrink: 0;
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    border: 1.5px solid var(--muted);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    transition: all 0.18s;
+    margin-top: 1px;
+  }
+
+  .selected-correct .option-label { border-color: var(--accent2); color: var(--accent2); background: rgba(52,168,83,0.15); }
+  .selected-wrong .option-label { border-color: var(--warn); color: var(--warn); background: rgba(234,67,53,0.15); }
+  .reveal-correct .option-label { border-color: var(--accent2); color: var(--accent2); }
+
+  /* Explanation */
+  .explanation {
+    margin-top: 16px;
+    padding: 16px;
+    background: rgba(66,133,244,0.06);
+    border: 1px solid rgba(66,133,244,0.2);
+    border-radius: 10px;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: #b0c0e0;
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; } to { opacity: 1; }
+  }
+
+  .explanation.show { display: block; }
+
+  .explanation strong {
+    display: block;
+    color: var(--accent);
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  /* Navigation */
+  .nav-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    flex: 1;
+    min-width: 120px;
+    padding: 13px 20px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    transition: all 0.18s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+  }
+
+  .btn-primary:hover { background: #3575e3; transform: translateY(-1px); }
+
+  .btn-secondary {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  .btn-secondary:hover { border-color: var(--accent); color: var(--text); }
+
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* Question Navigator Dots */
+  .dot-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin: 20px 0;
+  }
+
+  .dot {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 10px;
+    font-family: 'Space Mono', monospace;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .dot:hover { border-color: var(--accent); }
+  .dot.active { border-color: var(--accent); background: rgba(66,133,244,0.2); color: var(--accent); }
+  .dot.dot-correct { border-color: var(--accent2); background: rgba(52,168,83,0.15); color: var(--accent2); }
+  .dot.dot-wrong { border-color: var(--warn); background: rgba(234,67,53,0.15); color: var(--warn); }
+
+  /* Results Screen */
+  .results-screen {
+    display: none;
+    text-align: center;
+    animation: slideIn 0.4s ease;
+  }
+
+  .results-screen.show { display: block; }
+
+  .score-ring {
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    margin: 24px auto;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: conic-gradient(var(--accent2) 0%, var(--accent2) var(--pct), var(--surface2) var(--pct));
+    position: relative;
+  }
+
+  .score-ring::before {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    border-radius: 50%;
+    background: var(--bg);
+  }
+
+  .score-inner {
+    position: relative;
+    z-index: 1;
+  }
+
+  .score-pct {
+    font-size: 32px;
+    font-weight: 800;
+    font-family: 'Space Mono', monospace;
+    color: var(--text);
+  }
+
+  .score-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .result-title {
+    font-size: 26px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #e8edf5, #4285F4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .result-sub { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .result-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 10px;
+  }
+
+  .result-stat .num {
+    font-size: 28px;
+    font-weight: 800;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .result-stat .lbl {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .green { color: var(--accent2); }
+  .red { color: var(--warn); }
+  .yellow { color: var(--gold); }
+
+  /* Review section */
+  .review-title {
+    font-size: 16px;
+    font-weight: 700;
+    text-align: left;
+    margin-bottom: 16px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+
+  .review-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+    text-align: left;
+  }
+
+  .review-item .rq { font-size: 13px; font-weight: 600; margin-bottom: 10px; line-height: 1.5; }
+  .review-item .ra {
+    font-size: 12px;
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 6px;
+  }
+
+  .review-item .re { font-size: 12.5px; color: #8899bb; line-height: 1.6; }
+
+  .restart-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 15px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 12px;
+    transition: all 0.2s;
+  }
+
+  .restart-btn:hover { background: #3575e3; transform: translateY(-2px); }
+
+  /* Quiz area wrapper */
+  #quiz-area { display: block; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="gcs-badge">Google Cloud Platform</div>
+    <h1>Cloud Storage<br>Interview MCQs</h1>
+    <p class="subtitle">20 Tricky & Ambiguous Questions</p>
+  </div>
+
+  <div id="quiz-area">
+    <div class="progress-wrap">
+      <div class="progress-meta">
+        <span id="prog-text">Question 1 of 20</span>
+        <span id="prog-pct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="score-bar">
+      <div class="score-pill correct" id="sc-correct">✓ 0 Correct</div>
+      <div class="score-pill wrong" id="sc-wrong">✗ 0 Wrong</div>
+      <div class="score-pill skipped" id="sc-skip">— 20 Left</div>
+    </div>
+
+    <div class="dot-nav" id="dot-nav"></div>
+
+    <div class="question-card" id="q-card">
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+        <span class="q-number" id="q-num">Q 01 / 20</span>
+        <span class="q-tag" id="q-tag">TRICK</span>
+      </div>
+      <p class="q-text" id="q-text"></p>
+      <div class="options" id="options"></div>
+      <div class="explanation" id="explanation">
+        <strong>💡 Explanation</strong>
+        <span id="exp-text"></span>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-secondary" id="btn-prev" onclick="navigate(-1)">← Prev</button>
+      <button class="btn btn-secondary" onclick="skipQ()">Skip</button>
+      <button class="btn btn-primary" id="btn-next" onclick="navigate(1)">Next →</button>
+    </div>
+
+    <div style="text-align:center;margin-top:24px">
+      <button class="btn btn-primary" onclick="showResults()" style="max-width:200px;background:#34A853">View Results ✓</button>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="results-screen" id="results-screen">
+    <div class="gcs-badge">Quiz Complete</div>
+    <div class="result-title" id="res-title">Well Done!</div>
+    <p class="result-sub" id="res-sub">Here's how you performed</p>
+
+    <div class="score-ring" id="score-ring">
+      <div class="score-inner">
+        <div class="score-pct" id="res-pct">0%</div>
+        <div class="score-label">Score</div>
+      </div>
+    </div>
+
+    <div class="result-grid">
+      <div class="result-stat"><div class="num green" id="r-correct">0</div><div class="lbl">Correct</div></div>
+      <div class="result-stat"><div class="num red" id="r-wrong">0</div><div class="lbl">Wrong</div></div>
+      <div class="result-stat"><div class="num yellow" id="r-skip">0</div><div class="lbl">Skipped</div></div>
+    </div>
+
+    <button class="restart-btn" onclick="restartQuiz()">↺ Restart Quiz</button>
+
+    <div class="review-title">Review All Questions</div>
+    <div id="review-list"></div>
+  </div>
+</div>
+
+<script>
+const questions = [
+  {
+    tag: "TRICK",
+    q: "What is the default storage class assigned when you create a Google Cloud Storage bucket without specifying one?",
+    opts: ["Nearline", "Coldline", "Standard", "Archive"],
+    ans: 2,
+    exp: "The default storage class is Standard. Many assume it might be 'Multi-Regional' (which was a legacy class), but GCS now uses Standard as the default for all new buckets. Standard is optimized for frequently accessed data with no minimum storage duration."
+  },
+  {
+    tag: "AMBIGUOUS",
+    q: "Which statement about Google Cloud Storage object versioning is TRUE?",
+    opts: [
+      "Versioning is enabled by default on all new buckets",
+      "Deleting a versioned object permanently removes all its versions",
+      "When versioning is enabled, a 'soft delete' marker is created instead of immediate deletion",
+      "You can enable versioning on a bucket that already contains objects"
+    ],
+    ans: 3,
+    exp: "Versioning can be enabled on existing buckets at any time — it doesn't require an empty bucket. It is NOT enabled by default. Deleting a versioned object creates a delete marker (not a 'soft delete'), making the object 'non-current' rather than erasing it. The tricky option is D — it's valid and often overlooked."
+  },
+  {
+    tag: "TRICK",
+    q: "You store a 1 GB file in Coldline storage and delete it after 45 days. How many days of storage are you billed for?",
+    opts: ["45 days", "60 days", "90 days", "120 days"],
+    ans: 2,
+    exp: "Coldline has a 90-day minimum storage duration. Even though you deleted the file at 45 days, you're billed for 90 days. This catches many candidates who confuse Coldline (90 days) with Nearline (30 days) and Archive (365 days)."
+  },
+  {
+    tag: "AMBIGUOUS",
+    q: "What happens when you apply a Retention Policy to a bucket and then try to delete an object before the retention period expires?",
+    opts: [
+      "The object is immediately deleted but logged",
+      "The delete operation fails with a 403 error",
+      "The object is moved to a quarantine folder",
+      "The object is soft-deleted and recoverable for 7 days"
+    ],
+    ans: 1,
+    exp: "GCS enforces retention policies by preventing deletion of objects before the retention period expires. Any attempt to delete such an object returns a 403 Forbidden error. This is a hard lock — not a soft delete — making it useful for compliance scenarios like WORM (Write Once Read Many) storage."
+  },
+  {
+    tag: "TRICK",
+    q: "A bucket has uniform bucket-level access (UBLA) enabled. What happens to existing ACLs on objects within that bucket?",
+    opts: [
+      "They are permanently deleted immediately",
+      "They remain but are not evaluated for access decisions",
+      "They are migrated to IAM policies automatically",
+      "UBLA cannot be enabled on buckets with existing ACLs"
+    ],
+    ans: 1,
+    exp: "When UBLA is enabled, existing ACLs are preserved in storage but are no longer evaluated for access decisions — only IAM policies matter. This is a critical distinction: the ACLs aren't deleted, they're just ignored. Once UBLA is disabled (if ever), those ACLs would become active again."
+  },
+  {
+    tag: "TRICK",
+    q: "Which of the following is NOT a valid location type for a GCS bucket?",
+    opts: ["Multi-region", "Dual-region", "Tri-region", "Region"],
+    ans: 2,
+    exp: "There is no 'Tri-region' location type in GCS. Valid location types are: Region (single region like us-central1), Dual-region (two specific regions like NAM4 = Iowa + South Carolina), and Multi-region (large geographic areas like US, EU, ASIA). Tri-region is a distractor."
+  },
+  {
+    tag: "AMBIGUOUS",
+    q: "You configure a lifecycle rule to delete objects older than 30 days. An object was created 35 days ago. When will GCS actually delete it?",
+    opts: [
+      "Immediately when the rule is saved",
+      "Within 24 hours of the condition being met",
+      "Exactly at midnight on day 30",
+      "At the next scheduled lifecycle evaluation run"
+    ],
+    ans: 1,
+    exp: "GCS lifecycle management doesn't run in real-time. Once an object meets the conditions, it will be deleted within 24 hours — not instantly and not at a precise time. Google explicitly states in documentation that lifecycle actions are not immediate. This trips up developers expecting immediate deletion."
+  },
+  {
+    tag: "TRICK",
+    q: "What is the maximum size of a single object that can be uploaded to GCS using a simple (non-resumable) upload?",
+    opts: ["5 MB", "100 MB", "5 GB", "There is no limit"],
+    ans: 0,
+    exp: "Simple uploads (single-request, non-resumable) are limited to 5 MB. For objects larger than 5 MB, you must use resumable uploads or multipart uploads. Many confuse this with AWS S3's 5 GB limit for single PUT. Resumable uploads in GCS can handle objects up to 5 TB."
+  },
+  {
+    tag: "AMBIGUOUS",
+    q: "Which IAM role grants a service account permission to READ objects in a GCS bucket but NOT list the bucket contents?",
+    opts: [
+      "roles/storage.objectViewer",
+      "roles/storage.legacyObjectReader",
+      "roles/storage.objectGet",
+      "roles/storage.bucketReader"
+    ],
+    ans: 1,
+    exp: "roles/storage.legacyObjectReader grants only storage.objects.get — the ability to read individual objects by name — without granting storage.objects.list. In contrast, roles/storage.objectViewer includes both get AND list permissions. This distinction is important for fine-grained access where listing is undesirable."
+  },
+  {
+    tag: "TRICK",
+    q: "You perform a gsutil cp -r command to copy 1,000 small files from GCS to a VM in the same region. What would MOST improve transfer performance?",
+    opts: [
+      "Switching to gsutil -m cp -r (parallel composite uploads)",
+      "Compressing files before transfer",
+      "Using gsutil -m cp -r (parallel transfer)",
+      "Enabling Transfer Acceleration"
+    ],
+    ans: 2,
+    exp: "The -m flag enables multi-threaded/parallel transfers, which dramatically improves performance for many small files by running multiple operations concurrently. Note: 'Transfer Acceleration' is an AWS concept, not a GCS feature. Option A is wrong because 'parallel composite uploads' applies to uploads of large single files, not downloads of many files."
+  },
+  {
+    tag: "AMBIGUOUS",
+    q: "A signed URL is generated for a GCS object with a 1-hour expiry. The bucket owner then revokes the service account's key used to sign the URL. What happens when someone tries to use that URL after the key is revoked?",
+    opts: [
+      "The URL still works until the 1-hour expiry",
+      "The URL immediately stops working",
+      "The URL works but access is logged as suspicious",
+      "It depends on whether the bucket has UBLA enabled"
+    ],
+    ans: 1,
+    exp: "Revoking the signing service account key immediately invalidates all signed URLs created with that key. GCS validates the signing credentials at access time, so the URL stops working the moment the key is revoked — even if the 1-hour window hasn't elapsed. This is an important security consideration for signed URL management."
+  },
+  {
+    tag: "TRICK",
+    q: "What is the difference between a GCS 'folder' and an actual directory in a file system?",
+    opts: [
+      "GCS folders have metadata; file system directories don't",
+      "GCS folders are objects with a trailing slash; there's no actual directory hierarchy",
+      "GCS folders support POSIX permissions; file system directories don't",
+      "There is no difference — GCS supports native directories"
+    ],
+    ans: 1,
+    exp: "GCS is a flat object store. 'Folders' are a UI/tool abstraction — they're either zero-byte objects ending with '/' or implied by the '/' delimiter in object names. There is no real directory hierarchy in the underlying object storage. All objects are stored at the 'top level' with their full path as the key name."
+  },
+  {
+    tag: "AMBIGUOUS",
+    q: "You need to move 100 TB of data from on-premises to GCS as fast as possible. Which option is FASTEST assuming your internet bandwidth is 1 Gbps?",
+    opts: [
+      "gsutil -m cp with parallel composite upload",
+      "Storage Transfer Service",
+      "Transfer Appliance",
+      "BigQuery Data Transfer Service"
+    ],
+    ans: 2,
+    exp: "At 1 Gbps, uploading 100 TB over the internet would take ~222 hours (~9+ days). Transfer Appliance is a physical device shipped to your data center, loaded offline, and physically sent to Google — bypassing network entirely. For large datasets where network transfer would take days or weeks, Transfer Appliance is faster. BigQuery DTS is not for raw GCS data movement."
+  },
+  {
+    tag: "TRICK",
+    q: "Two GCS buckets exist: bucket-A (Standard, us-central1) and bucket-B (Nearline, us-east1). You copy an object from bucket-A to bucket-B. What is the storage class of the copied object in bucket-B?",
+    opts: [
+      "Standard (inherited from source)",
+      "Nearline (inherited from destination bucket)",
+      "It depends on the object's metadata",
+      "You must explicitly set the class during copy"
+    ],
+    ans: 1,
+    exp: "When copying an object between buckets, the object inherits the destination bucket's default storage class — not the source object's class. So the copy in bucket-B will be Nearline. This surprises many who expect the original storage class to be preserved. You can override this by explicitly setting the storage class during copy."
+  },
+  {
+    tag: "AMBIGUOUS",
+    q: "What does enabling 'Requester Pays' on a GCS bucket mean?",
+    opts: [
+      "The bucket owner pays for all egress charges",
+      "Requesters must provide their own billing project for API calls and egress",
+      "Uploaders are charged for storage costs instead of the bucket owner",
+      "Enables per-request billing instead of monthly billing"
+    ],
+    ans: 1,
+    exp: "With Requester Pays, the person or project making the API request provides their billing project, which is charged for network egress and operations costs (not storage). The bucket owner still pays for storage. This is useful when you want to share data publicly but not absorb the egress costs for large datasets."
+  },
+  {
+    tag: "TRICK",
+    q: "You create a bucket in the EU multi-region. Where exactly is your data stored?",
+    opts: [
+      "Only in Frankfurt, Germany",
+      "In at least two data centers within the EU geographic region",
+      "Across all EU countries with Google infrastructure",
+      "In the US and EU for redundancy"
+    ],
+    ans: 1,
+    exp: "The EU multi-region stores data redundantly across at least two geographic locations within the EU multi-region boundary. However, Google does not guarantee data is stored in ALL EU countries or specific countries within EU. The EU multi-region does NOT span outside Europe. Dual-region gives you more specific control over which two regions are used."
+  },
+  {
+    tag: "AMBIGUOUS",
+    q: "You want to make all objects in a bucket publicly readable on the internet. Which is the CORRECT approach when Uniform Bucket-Level Access is enabled?",
+    opts: [
+      "Set each object's ACL to allUsers:READ",
+      "Grant roles/storage.objectViewer to allUsers at the bucket IAM level",
+      "Set the bucket's default ACL to public-read",
+      "Enable public access on individual objects via the GCS console"
+    ],
+    ans: 1,
+    exp: "With UBLA enabled, ACLs are disabled — options A, C, and D don't work. The correct way is to grant the IAM role roles/storage.objectViewer to the special identity 'allUsers' at the bucket level. This gives read access to everyone on the internet. allUsers is a special GCS identifier meaning 'anyone, including unauthenticated users'."
+  },
+  {
+    tag: "TRICK",
+    q: "An object is stored in Standard storage class and has not been accessed for 400 days. Does GCS automatically transition it to a cheaper storage class?",
+    opts: [
+      "Yes, after 90 days it moves to Nearline automatically",
+      "Yes, after 365 days it moves to Archive automatically",
+      "No, GCS never auto-transitions storage classes without a lifecycle rule",
+      "Yes, but only if Autoclass is enabled on the bucket"
+    ],
+    ans: 2,
+    exp: "GCS does NOT automatically change an object's storage class based on access patterns unless you've explicitly configured an Autoclass feature OR a lifecycle rule. Without one of these, the object stays in Standard forever regardless of access frequency. Autoclass is a specific feature you must opt into — it's not on by default."
+  },
+  {
+    tag: "AMBIGUOUS",
+    q: "What is the purpose of a GCS 'Bucket Lock' (Retention Policy lock)?",
+    opts: [
+      "Prevents unauthorized users from deleting the bucket",
+      "Makes the retention policy itself permanent and irremovable",
+      "Locks object permissions to prevent ACL changes",
+      "Prevents the bucket from being renamed"
+    ],
+    ans: 1,
+    exp: "Bucket Lock (locking a retention policy) makes the retention policy PERMANENT — it cannot be deleted, shortened, or removed even by the bucket owner or project owner. This is designed for regulatory compliance (SEC, FINRA, etc.) requiring immutable WORM storage. Without locking, a retention policy can be changed or removed. Once locked, the only way to 'undo' it is to delete and recreate the bucket."
+  },
+  {
+    tag: "TRICK",
+    q: "You use a Customer-Managed Encryption Key (CMEK) in Cloud KMS to encrypt a GCS bucket. You then delete the KMS key. What happens to the objects in the bucket?",
+    opts: [
+      "Objects are automatically re-encrypted with Google-managed keys",
+      "Objects are permanently lost since they can't be decrypted",
+      "Objects remain but become permanently inaccessible",
+      "GCS creates a backup of the key before deletion"
+    ],
+    ans: 2,
+    exp: "If the CMEK key is deleted, the encrypted objects in GCS become permanently inaccessible — they still physically exist in storage but cannot be decrypted without the key. GCS does NOT fall back to Google-managed encryption, nor does it maintain key backups. Cloud KMS does have a 24-hour scheduled deletion window before actual key destruction, which serves as the only safeguard."
+  }
+];
+
+let current = 0;
+let answers = new Array(20).fill(null); // null = unanswered, -1 = skipped, 0-3 = selected
+
+function renderDots() {
+  const nav = document.getElementById('dot-nav');
+  nav.innerHTML = '';
+  questions.forEach((_, i) => {
+    const d = document.createElement('button');
+    d.className = 'dot';
+    d.textContent = i + 1;
+    if (i === current) d.classList.add('active');
+    if (answers[i] !== null && answers[i] !== -1) {
+      d.classList.add(answers[i] === questions[i].ans ? 'dot-correct' : 'dot-wrong');
+    }
+    d.onclick = () => { current = i; renderQuestion(); };
+    nav.appendChild(d);
+  });
+}
+
+function updateScoreBar() {
+  let correct = 0, wrong = 0, left = 0;
+  answers.forEach((a, i) => {
+    if (a === null || a === -1) left++;
+    else if (a === questions[i].ans) correct++;
+    else wrong++;
+  });
+  document.getElementById('sc-correct').textContent = `✓ ${correct} Correct`;
+  document.getElementById('sc-wrong').textContent = `✗ ${wrong} Wrong`;
+  document.getElementById('sc-skip').textContent = `— ${left} Left`;
+}
+
+function renderQuestion() {
+  const q = questions[current];
+  document.getElementById('q-num').textContent = `Q ${String(current+1).padStart(2,'0')} / 20`;
+  document.getElementById('q-tag').textContent = q.tag;
+  document.getElementById('q-text').innerHTML = q.q;
+  document.getElementById('prog-text').textContent = `Question ${current+1} of 20`;
+  const pct = Math.round(((current+1)/20)*100);
+  document.getElementById('prog-pct').textContent = pct + '%';
+  document.getElementById('progress-fill').style.width = pct + '%';
+
+  const answered = answers[current] !== null && answers[current] !== -1;
+  const expDiv = document.getElementById('explanation');
+  document.getElementById('exp-text').textContent = q.exp;
+
+  const optContainer = document.getElementById('options');
+  optContainer.innerHTML = '';
+  const labels = ['A','B','C','D'];
+
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    if (answered) {
+      btn.disabled = true;
+      if (i === q.ans) btn.classList.add('reveal-correct');
+      if (answers[current] === i && i !== q.ans) btn.classList.add('selected-wrong');
+      if (answers[current] === i && i === q.ans) btn.classList.add('selected-correct');
+    }
+    btn.innerHTML = `<span class="option-label">${labels[i]}</span><span>${opt}</span>`;
+    btn.onclick = () => selectAnswer(i);
+    optContainer.appendChild(btn);
+  });
+
+  if (answered) {
+    expDiv.classList.add('show');
+  } else {
+    expDiv.classList.remove('show');
+  }
+
+  document.getElementById('btn-prev').disabled = current === 0;
+  document.getElementById('btn-next').disabled = current === 19;
+
+  renderDots();
+  updateScoreBar();
+}
+
+function selectAnswer(idx) {
+  if (answers[current] !== null && answers[current] !== -1) return;
+  answers[current] = idx;
+  renderQuestion();
+}
+
+function skipQ() {
+  answers[current] = -1;
+  if (current < 19) current++;
+  renderQuestion();
+}
+
+function navigate(dir) {
+  current = Math.max(0, Math.min(19, current + dir));
+  renderQuestion();
+}
+
+function showResults() {
+  document.getElementById('quiz-area').style.display = 'none';
+  const rs = document.getElementById('results-screen');
+  rs.classList.add('show');
+
+  let correct = 0, wrong = 0, skip = 0;
+  answers.forEach((a, i) => {
+    if (a === null || a === -1) skip++;
+    else if (a === questions[i].ans) correct++;
+    else wrong++;
+  });
+
+  const total = 20;
+  const pct = Math.round((correct / total) * 100);
+
+  document.getElementById('r-correct').textContent = correct;
+  document.getElementById('r-wrong').textContent = wrong;
+  document.getElementById('r-skip').textContent = skip;
+  document.getElementById('res-pct').textContent = pct + '%';
+
+  const ring = document.getElementById('score-ring');
+  ring.style.setProperty('--pct', pct + '%');
+
+  let title = pct >= 80 ? '🏆 Excellent!' : pct >= 60 ? '👍 Good Job!' : pct >= 40 ? '📚 Keep Learning' : '💪 Keep Practicing';
+  let sub = pct >= 80 ? 'You have strong GCS knowledge!' : pct >= 60 ? 'You know your GCS basics.' : 'Review the explanations and try again.';
+  document.getElementById('res-title').textContent = title;
+  document.getElementById('res-sub').textContent = sub;
+
+  // Build review
+  const rl = document.getElementById('review-list');
+  rl.innerHTML = '';
+  const labels = ['A','B','C','D'];
+  questions.forEach((q, i) => {
+    const a = answers[i];
+    const isCorrect = a === q.ans;
+    const isSkipped = a === null || a === -1;
+    const div = document.createElement('div');
+    div.className = 'review-item';
+    div.style.borderLeftColor = isCorrect ? 'var(--accent2)' : isSkipped ? 'var(--gold)' : 'var(--warn)';
+    div.style.borderLeftWidth = '3px';
+    div.innerHTML = `
+      <div class="rq"><span style="color:var(--muted);font-family:'Space Mono',monospace;font-size:11px">Q${i+1}</span> ${q.q}</div>
+      <div class="ra" style="color:${isCorrect?'var(--accent2)':isSkipped?'var(--gold)':'var(--warn)'}">
+        ${isSkipped ? '— Skipped' : `Your answer: ${labels[a]} · ${a === q.ans ? '✓ Correct' : `✗ Wrong · Correct: ${labels[q.ans]}`}`}
+      </div>
+      <div class="re">${q.exp}</div>
+    `;
+    rl.appendChild(div);
+  });
+}
+
+function restartQuiz() {
+  answers = new Array(20).fill(null);
+  current = 0;
+  document.getElementById('results-screen').classList.remove('show');
+  document.getElementById('quiz-area').style.display = 'block';
+  renderQuestion();
+}
+
+// Init
+renderQuestion();
+</script>
+</body>
+</html>

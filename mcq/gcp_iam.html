@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GCP IAM Interview MCQ Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #06080f;
+    --surface: #0d1117;
+    --surface2: #161b26;
+    --accent: #6366f1;
+    --accent2: #8b5cf6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --border: rgba(99,102,241,0.15);
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, #0d1117 0%, #13111f 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 20px;
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .header-inner { max-width: 720px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .brand-text .title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px; color: #fff; line-height: 1; }
+  .brand-text .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .score-pill { background: var(--surface2); border: 1px solid var(--border); border-radius: 50px; padding: 6px 14px; text-align: center; }
+  .score-pill .num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: var(--accent); line-height: 1; }
+  .score-pill .lbl { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+  /* PROGRESS */
+  .progress-wrap { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; }
+  .progress-inner { max-width: 720px; margin: 0 auto; }
+  .progress-bar { height: 3px; background: rgba(99,102,241,0.15); }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.4s ease; width: 0%; }
+  .progress-info { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; font-size: 11px; color: var(--muted); }
+
+  /* MAIN */
+  .main { max-width: 720px; margin: 0 auto; padding: 20px 16px 40px; }
+
+  /* DOTS NAV */
+  .dots-label { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+  .dots { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 24px; }
+  .dot { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; cursor: pointer; border: 1px solid rgba(99,102,241,0.2); background: transparent; color: var(--muted); transition: all 0.15s; font-family: 'Syne', sans-serif; }
+  .dot:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+  .dot.active { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 0 12px rgba(99,102,241,0.4); }
+  .dot.done-correct { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.4); color: var(--green); }
+  .dot.done-wrong { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: var(--red); }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  }
+  .card-header {
+    background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.05));
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .q-number { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; }
+  .difficulty { font-size: 10px; padding: 3px 10px; border-radius: 20px; font-weight: 600; letter-spacing: 0.04em; }
+  .diff-hard { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+  .diff-med { background: rgba(234,179,8,0.1); color: #fbbf24; border: 1px solid rgba(234,179,8,0.25); }
+  .diff-easy { background: rgba(34,197,94,0.1); color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
+
+  .card-body { padding: 20px; }
+  .q-topic { font-size: 10px; color: var(--accent2); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; font-weight: 600; }
+  .q-text { font-size: 15px; font-weight: 500; line-height: 1.7; color: #f1f5f9; margin-bottom: 20px; }
+  .q-text code { background: rgba(99,102,241,0.15); color: #a5b4fc; padding: 1px 5px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 13px; }
+
+  /* OPTIONS */
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .option {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 13px 15px;
+    border-radius: 10px;
+    border: 1px solid rgba(99,102,241,0.15);
+    background: rgba(255,255,255,0.02);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .option:hover:not(.disabled) { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.06); transform: translateX(2px); }
+  .option.selected { border-color: rgba(99,102,241,0.6); background: rgba(99,102,241,0.08); }
+  .option.correct { border-color: var(--green) !important; background: rgba(34,197,94,0.08) !important; }
+  .option.wrong { border-color: var(--red) !important; background: rgba(239,68,68,0.07) !important; }
+  .option.neutral { opacity: 0.35; }
+  .option.disabled { cursor: default; pointer-events: none; }
+
+  .opt-badge {
+    width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; font-family: 'Syne', sans-serif;
+    background: rgba(255,255,255,0.05); color: var(--muted);
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: all 0.15s; margin-top: 1px;
+  }
+  .option.selected .opt-badge { background: rgba(99,102,241,0.3); color: #a5b4fc; border-color: rgba(99,102,241,0.4); }
+  .option.correct .opt-badge { background: var(--green); color: #fff; border-color: var(--green); }
+  .option.wrong .opt-badge { background: var(--red); color: #fff; border-color: var(--red); }
+  .opt-text { font-size: 13px; line-height: 1.6; color: #cbd5e1; padding-top: 2px; }
+  .option.correct .opt-text { color: #86efac; }
+  .option.wrong .opt-text { color: #fca5a5; }
+
+  /* EXPLANATION */
+  .explanation {
+    margin-top: 16px;
+    border-radius: 10px;
+    overflow: hidden;
+    animation: slideIn 0.3s ease;
+    border: 1px solid rgba(99,102,241,0.2);
+  }
+  @keyframes slideIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .exp-header { background: linear-gradient(90deg, rgba(99,102,241,0.15), rgba(139,92,246,0.08)); padding: 10px 14px; display: flex; align-items: center; gap: 8px; }
+  .exp-icon { font-size: 14px; }
+  .exp-title { font-size: 11px; font-weight: 700; color: #a5b4fc; letter-spacing: 0.06em; text-transform: uppercase; }
+  .exp-result { margin-left: auto; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+  .exp-result.correct { background: rgba(34,197,94,0.15); color: var(--green); }
+  .exp-result.wrong { background: rgba(239,68,68,0.12); color: var(--red); }
+  .exp-body { padding: 14px; background: rgba(0,0,0,0.2); }
+  .exp-text { font-size: 13px; line-height: 1.75; color: #94a3b8; }
+  .exp-text code { background: rgba(99,102,241,0.15); color: #a5b4fc; padding: 1px 5px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; }
+  .exp-tip { margin-top: 10px; padding: 10px 12px; background: rgba(99,102,241,0.08); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; font-size: 12px; color: #a5b4fc; line-height: 1.6; }
+
+  /* ACTIONS */
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
+  .btn-reveal { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border: none; padding: 13px 28px; border-radius: 10px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s; letter-spacing: 0.04em; flex: 1; min-width: 140px; }
+  .btn-reveal:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; }
+  .btn-reveal:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(99,102,241,0.4); }
+  .btn-next { background: transparent; color: var(--accent); border: 1px solid rgba(99,102,241,0.4); padding: 13px 28px; border-radius: 10px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s; flex: 1; min-width: 140px; }
+  .btn-next:hover { background: rgba(99,102,241,0.08); border-color: var(--accent); }
+  .btn-reset { background: transparent; color: var(--red); border: 1px solid rgba(239,68,68,0.35); padding: 13px 28px; border-radius: 10px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+  .btn-reset:hover { background: rgba(239,68,68,0.07); }
+
+  /* SUMMARY */
+  .summary { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px 20px; margin-top: 8px; }
+  .summary h3 { font-family: 'Syne', sans-serif; font-size: 13px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
+  .summary-score { font-family: 'Syne', sans-serif; font-size: 48px; font-weight: 800; color: var(--accent); line-height: 1; }
+  .summary-score span { font-size: 20px; color: var(--muted); }
+  .summary-bar { height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; margin: 16px 0 8px; }
+  .summary-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.6s ease; }
+  .summary-stats { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  .stat-box { flex: 1; min-width: 80px; background: var(--surface2); border-radius: 10px; padding: 10px 12px; text-align: center; border: 1px solid var(--border); }
+  .stat-val { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; }
+  .stat-val.green { color: var(--green); }
+  .stat-val.red { color: var(--red); }
+  .stat-val.blue { color: var(--accent); }
+  .stat-lbl { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .summary-msg { margin-top: 14px; padding: 12px 14px; border-radius: 10px; font-size: 13px; line-height: 1.6; }
+  .msg-great { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); color: #86efac; }
+  .msg-ok { background: rgba(234,179,8,0.07); border: 1px solid rgba(234,179,8,0.2); color: #fde68a; }
+  .msg-low { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.2); color: #fca5a5; }
+
+  /* FOOTER */
+  .footer { text-align: center; font-size: 10px; color: #1e2535; letter-spacing: 0.08em; margin-top: 32px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.03); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-icon">🔐</div>
+      <div class="brand-text">
+        <div class="title">GCP IAM Quiz</div>
+        <div class="sub">20 Interview MCQ Questions</div>
+      </div>
+    </div>
+    <div class="score-pill">
+      <div class="num" id="scoreNum">0/20</div>
+      <div class="lbl" id="scoreLbl">Score</div>
+    </div>
+  </div>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-inner">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-info">
+      <span id="progressText">Question 1 of 20</span>
+      <span id="pctText">0% complete</span>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="dots-label">Jump to question</div>
+  <div class="dots" id="dotsContainer"></div>
+
+  <div class="card" id="questionCard">
+    <div class="card-header">
+      <span class="q-number" id="qNumber">Question 01</span>
+      <span class="difficulty" id="diffBadge"></span>
+    </div>
+    <div class="card-body">
+      <div class="q-topic" id="qTopic"></div>
+      <div class="q-text" id="qText"></div>
+      <div class="options" id="optionsEl"></div>
+      <div id="explanationEl"></div>
+    </div>
+  </div>
+
+  <div class="actions" id="actionsEl"></div>
+  <div id="summaryEl"></div>
+  <div class="footer">GCP IAM INTERVIEW PREPARATION QUIZ</div>
+</div>
+
+<script>
+const questions = [
+  {
+    topic: "IAM Fundamentals",
+    difficulty: "easy",
+    question: "Which of the following best describes a <code>Role</code> in Google Cloud IAM?",
+    options: [
+      "A named set of permissions that can be granted to identities",
+      "An individual user or service account that accesses GCP resources",
+      "A policy that denies specific permissions to a principal",
+      "A resource-level access control list (ACL)"
+    ],
+    answer: 0,
+    explanation: "In GCP IAM, a <strong>Role</strong> is a collection of permissions. You cannot grant permissions directly to a user — instead, you grant roles, which bundle the relevant permissions together. Roles exist at three levels: Basic, Predefined, and Custom.",
+    tip: "Key hierarchy: Permission → Role → Policy → Binding (Principal + Role)"
+  },
+  {
+    topic: "Resource Hierarchy",
+    difficulty: "medium",
+    question: "An IAM policy is set at the <code>Organization</code> level and another at the <code>Project</code> level for the same principal. Which policy takes effect?",
+    options: [
+      "Only the project-level policy, it always overrides org-level",
+      "Only the org-level policy, it always takes precedence",
+      "Both policies are unioned — the principal gets permissions from both",
+      "The most restrictive policy wins"
+    ],
+    answer: 2,
+    explanation: "GCP IAM uses a <strong>union</strong> (additive) model. Policies set at parent levels are <em>inherited</em> by child resources. The effective policy for a resource is the union of all policies at every level in the hierarchy (Org → Folder → Project → Resource). There is no 'most restrictive wins' in standard IAM — that only applies with Deny policies.",
+    tip: "IAM is ADDITIVE. Higher-level grants flow DOWN. You can never restrict inherited permissions using standard Allow policies alone."
+  },
+  {
+    topic: "Principal Types",
+    difficulty: "easy",
+    question: "Which principal type represents a non-human identity used by applications and VMs to authenticate to GCP APIs?",
+    options: [
+      "Google Group",
+      "Google Workspace Domain",
+      "Service Account",
+      "Cloud Identity User"
+    ],
+    answer: 2,
+    explanation: "A <strong>Service Account</strong> is a special type of Google account intended for non-human identities — applications, VMs, Cloud Functions, etc. They authenticate using keys or workload identity and are granted IAM roles just like human users. Service accounts are also resources themselves, so you can control who can use them.",
+    tip: "Service accounts serve dual roles: as an IDENTITY (principal that calls APIs) and as a RESOURCE (something you can grant access to)."
+  },
+  {
+    topic: "Basic Roles",
+    difficulty: "medium",
+    question: "A developer has <code>roles/editor</code> on a project. Which of the following actions can they NOT perform?",
+    options: [
+      "Create and delete most GCP resources",
+      "Read data from Cloud Storage buckets",
+      "Manage IAM policies and grant roles to others",
+      "Deploy applications to App Engine"
+    ],
+    answer: 2,
+    explanation: "The <code>roles/editor</code> basic role grants read and write access to most GCP resources but explicitly <strong>excludes IAM management permissions</strong>. Managing IAM policies (granting/revoking roles) requires <code>roles/owner</code> or specific IAM roles like <code>roles/resourcemanager.projectIamAdmin</code>. This is an important security boundary.",
+    tip: "Basic roles: Viewer (read) → Editor (read+write) → Owner (read+write+IAM). Only Owner can manage IAM bindings."
+  },
+  {
+    topic: "Custom Roles",
+    difficulty: "medium",
+    question: "You want to create a Custom Role that grants ONLY <code>compute.instances.list</code> and <code>compute.instances.get</code>. At which levels can Custom Roles be created?",
+    options: [
+      "Only at the Organization level",
+      "Only at the Project level",
+      "At the Organization level or Project level",
+      "At any level: Org, Folder, or Project"
+    ],
+    answer: 2,
+    explanation: "Custom Roles can only be created at the <strong>Organization level or Project level</strong>. Notably, you <strong>cannot</strong> create Custom Roles at the Folder level. This is a frequently tested limitation. Custom Roles defined at the Org level can be used across projects, while project-level Custom Roles are scoped to that project only.",
+    tip: "Custom Role scope: Org ✓  |  Folder ✗  |  Project ✓ — Folder level is NOT supported!"
+  },
+  {
+    topic: "Deny Policies",
+    difficulty: "hard",
+    question: "A user has <code>roles/storage.admin</code> granting <code>storage.buckets.delete</code>. An IAM Deny policy also denies <code>storage.buckets.delete</code> for that user. What is the outcome?",
+    options: [
+      "The Allow (role grant) takes precedence; user can delete buckets",
+      "The Deny policy takes precedence; user cannot delete buckets",
+      "The most recently applied policy wins",
+      "The result depends on whether the policy is at project or org level"
+    ],
+    answer: 1,
+    explanation: "IAM <strong>Deny policies always take precedence over Allow policies</strong>, regardless of level or order. This is the core purpose of the Deny policy feature — it provides a hard override. Even a project Owner cannot perform an action if an explicit Deny policy covers that permission. Deny evaluation happens BEFORE Allow evaluation.",
+    tip: "Evaluation order: 1) Deny policies checked first → if denied, STOP. 2) Allow policies checked → if allowed, PERMIT. 3) Default DENY."
+  },
+  {
+    topic: "Workload Identity",
+    difficulty: "hard",
+    question: "A GKE Pod needs to call Cloud Pub/Sub. What is the RECOMMENDED approach to grant it permissions without using service account keys?",
+    options: [
+      "Mount the service account JSON key as a Kubernetes secret",
+      "Use Workload Identity to link the K8s service account to a GCP service account",
+      "Grant the Compute Engine default service account Pub/Sub permissions",
+      "Use Application Default Credentials with an env variable pointing to the key"
+    ],
+    answer: 1,
+    explanation: "<strong>Workload Identity</strong> is the recommended and most secure way for GKE workloads to access GCP APIs. It eliminates the need for service account keys by binding a Kubernetes Service Account (KSA) to a Google Service Account (GSA). The pod then automatically gets a short-lived token. Storing JSON keys is a security anti-pattern as keys can be leaked or stolen.",
+    tip: "Key files = long-lived credentials = security risk. Workload Identity = short-lived tokens = best practice for GKE."
+  },
+  {
+    topic: "Conditions",
+    difficulty: "hard",
+    question: "IAM Conditions allow you to add attribute-based access control. Which of the following is a valid use of IAM Conditions?",
+    options: [
+      "Grant access only if the request IP is within a specific CIDR range",
+      "Grant a role only between 9 AM – 5 PM on weekdays",
+      "Grant access only to resources with a specific tag key-value pair",
+      "All of the above"
+    ],
+    answer: 3,
+    explanation: "<strong>IAM Conditions</strong> support multiple attribute types: <br>• <strong>Date/time</strong>: restrict access to certain hours or date ranges<br>• <strong>Resource attributes</strong>: restrict by resource name, type, or tags<br>• <strong>Request attributes</strong>: restrict by IP range or access level (via Access Context Manager)<br>All three examples in the options are valid IAM Condition use cases.",
+    tip: "IAM Conditions use the Common Expression Language (CEL). They make IAM bindings context-aware and time-bound."
+  },
+  {
+    topic: "Service Accounts",
+    difficulty: "medium",
+    question: "You delete a service account that is still referenced in an IAM policy binding. What happens to the binding?",
+    options: [
+      "The binding is automatically removed from the IAM policy",
+      "The binding remains but the principal shows as 'deleted:serviceAccount:...'",
+      "GCP prevents you from deleting a service account with active bindings",
+      "The permissions transfer to the project's default service account"
+    ],
+    answer: 1,
+    explanation: "When a service account is deleted, its IAM bindings are <strong>NOT automatically cleaned up</strong>. The binding remains in the policy with the principal ID showing as <code>deleted:serviceAccount:EMAIL?uid=UID</code>. This orphaned binding has no effect (the deleted identity can't authenticate), but it clutters policies and can cause confusion. If you later recreate a SA with the same email, it gets a new UID and does NOT inherit the old binding.",
+    tip: "Always clean up IAM bindings before or after deleting service accounts. Orphaned bindings are a common audit finding."
+  },
+  {
+    topic: "Predefined Roles",
+    difficulty: "medium",
+    question: "Which predefined role grants the ability to impersonate a service account (generate tokens on its behalf) but NOT to manage or delete it?",
+    options: [
+      "roles/iam.serviceAccountAdmin",
+      "roles/iam.serviceAccountTokenCreator",
+      "roles/iam.serviceAccountUser",
+      "roles/iam.serviceAccountViewer"
+    ],
+    answer: 1,
+    explanation: "<code>roles/iam.serviceAccountTokenCreator</code> allows principals to create short-lived credentials (OAuth2 tokens, OIDC tokens, sign JWTs) <em>as</em> the service account — essentially impersonating it. <code>roles/iam.serviceAccountUser</code> allows attaching/running as a SA (e.g., in Compute). <code>roles/iam.serviceAccountAdmin</code> allows managing and deleting SAs. These are distinct and commonly confused.",
+    tip: "TokenCreator = impersonate (get tokens as the SA). ServiceAccountUser = run workloads as the SA. Admin = manage the SA itself."
+  },
+  {
+    topic: "Policy Inheritance",
+    difficulty: "hard",
+    question: "A user is granted <code>roles/viewer</code> at the <strong>Organization</strong> level. A project admin wants to prevent this user from viewing resources in one specific project. Using only standard IAM (no Deny policies), can the admin achieve this?",
+    options: [
+      "Yes, by removing the user's role at the project level",
+      "Yes, by setting a more restrictive policy at the project level",
+      "No, inherited IAM permissions cannot be overridden by child policies alone",
+      "Yes, by using a project-level conditional binding that excludes the user"
+    ],
+    answer: 2,
+    explanation: "Standard IAM is <strong>additive only</strong>. A project admin cannot revoke permissions that were inherited from a parent (Org/Folder). The only way to block inherited permissions is using <strong>IAM Deny policies</strong> (a separate feature) or revoking the grant at the Org level. This is a critical security design consideration — over-permissioning at high levels propagates everywhere.",
+    tip: "To restrict inherited access, you MUST use IAM Deny policies or remove the grant at the source (org/folder level). Standard allow policies cannot restrict inheritance."
+  },
+  {
+    topic: "Audit Logging",
+    difficulty: "medium",
+    question: "Which type of Cloud Audit Log records when a user reads a Cloud Storage object?",
+    options: [
+      "Admin Activity audit logs",
+      "Data Access audit logs",
+      "System Event audit logs",
+      "Policy Denied audit logs"
+    ],
+    answer: 1,
+    explanation: "<strong>Data Access audit logs</strong> record API calls that read resource configuration or metadata, and that create, modify, or read user-provided data (like reading a GCS object). These logs are <em>disabled by default</em> due to their volume and cost. <strong>Admin Activity logs</strong> cover IAM changes, resource creation/deletion — always enabled. <strong>System Event logs</strong> cover GCP-internal actions. <strong>Policy Denied logs</strong> record when VPC-SC or IAM denies access.",
+    tip: "Data Access logs = DISABLED by default. Must explicitly enable them per service. Critical for compliance but can be expensive at scale."
+  },
+  {
+    topic: "Least Privilege",
+    difficulty: "easy",
+    question: "Which principle should guide the assignment of IAM roles to reduce the blast radius of a compromised account?",
+    options: [
+      "Separation of Duties",
+      "Defense in Depth",
+      "Principle of Least Privilege",
+      "Zero Trust Architecture"
+    ],
+    answer: 2,
+    explanation: "The <strong>Principle of Least Privilege</strong> states that each identity should only be granted the minimum permissions required to perform its intended function — and nothing more. This limits what an attacker can do if credentials are compromised. In GCP, this means preferring narrow Predefined or Custom roles over broad Basic roles (Viewer/Editor/Owner).",
+    tip: "Always prefer narrow predefined/custom roles over broad basic roles. Avoid roles/editor and roles/owner for service accounts."
+  },
+  {
+    topic: "Cross-Project Access",
+    difficulty: "hard",
+    question: "A service account in <strong>Project A</strong> needs to read from a BigQuery dataset in <strong>Project B</strong>. What is the correct IAM configuration?",
+    options: [
+      "Grant the SA roles/bigquery.dataViewer on Project A",
+      "Grant the SA roles/bigquery.dataViewer on Project B (or the specific dataset)",
+      "Create a new SA in Project B and share its key with Project A",
+      "Enable VPC Peering between Project A and Project B"
+    ],
+    answer: 1,
+    explanation: "GCP IAM is <strong>resource-centric</strong>. To grant a service account (from any project) access to a resource, you add the IAM binding on the <em>target resource</em> — in this case, the BigQuery dataset or Project B. The SA's home project (A) is irrelevant for access control. You simply add the SA's email as a principal on Project B's IAM policy with the appropriate role.",
+    tip: "IAM policies live on resources, not on principals. To grant cross-project access, add the binding on the TARGET resource/project."
+  },
+  {
+    topic: "Organization Policies",
+    difficulty: "hard",
+    question: "How do <strong>Organization Policies</strong> differ from <strong>IAM Policies</strong>?",
+    options: [
+      "Org Policies control WHO can access resources; IAM controls WHAT can be done",
+      "Org Policies control WHAT can be done (configuration); IAM controls WHO has access",
+      "They are identical but applied at different resource hierarchy levels",
+      "Org Policies only apply to billing accounts; IAM applies to compute resources"
+    ],
+    answer: 1,
+    explanation: "<strong>IAM Policies</strong> answer: 'Who (principal) can do what (permissions) on which resource?' — identity-based access control.<br><strong>Organization Policies</strong> answer: 'What is allowed/required in this org?' — resource configuration constraints. Examples: restrict VM locations, require OS Login, disable service account key creation. Org Policies apply to all principals regardless of IAM and cannot be bypassed by any IAM role.",
+    tip: "IAM = identity & access control. Org Policy = configuration governance. Both layers must be satisfied for an action to succeed."
+  },
+  {
+    topic: "Workload Identity Federation",
+    difficulty: "hard",
+    question: "Workload Identity Federation allows external workloads (AWS, GitHub Actions, on-prem) to access GCP. What does it ELIMINATE the need for?",
+    options: [
+      "IAM roles and bindings",
+      "Service Account JSON key files",
+      "OAuth 2.0 tokens",
+      "Cloud Identity accounts"
+    ],
+    answer: 1,
+    explanation: "<strong>Workload Identity Federation</strong> uses OIDC or SAML tokens from external identity providers (AWS, GitHub, Azure, on-prem) to exchange for short-lived GCP credentials. This completely eliminates the need to create, download, store, and rotate <strong>service account JSON key files</strong> — which are long-lived, hard to manage, and a significant security risk if leaked.",
+    tip: "No more downloading JSON keys! External IdP token → STS exchange → short-lived GCP token. Supported for AWS, GitHub, Azure, OIDC providers."
+  },
+  {
+    topic: "IAM Recommender",
+    difficulty: "medium",
+    question: "The IAM Recommender tool suggests removing a role from a principal. What data does it primarily use to generate this recommendation?",
+    options: [
+      "The principal's job title and department from HR systems",
+      "Actual permission usage from Cloud Audit Logs over the past 90 days",
+      "Security scanner results from Security Command Center",
+      "Manual risk assessments submitted by security teams"
+    ],
+    answer: 1,
+    explanation: "The <strong>IAM Recommender</strong> analyzes <strong>Cloud Audit Logs over the past 90 days</strong> to determine which permissions a principal has actually used. If a principal has a broad role (e.g., Editor) but only used a few specific permissions, the Recommender suggests replacing it with a narrower role or custom role — enforcing least privilege automatically at scale.",
+    tip: "IAM Recommender = ML-powered least privilege enforcement. It looks at 90 days of actual usage, not theoretical permissions."
+  },
+  {
+    topic: "Service Account Impersonation",
+    difficulty: "hard",
+    question: "What is the <strong>security risk</strong> of granting <code>roles/iam.serviceAccountTokenCreator</code> too broadly?",
+    options: [
+      "The grantee can delete the service account permanently",
+      "The grantee can act AS the service account and inherit all its permissions",
+      "The grantee can view the service account's private key",
+      "The grantee can add new members to the project"
+    ],
+    answer: 1,
+    explanation: "<code>roles/iam.serviceAccountTokenCreator</code> allows the holder to generate OAuth2/OIDC tokens <em>as</em> the target service account. This is effectively <strong>privilege escalation</strong> — if the SA has powerful roles (e.g., Project Owner), anyone with TokenCreator on that SA can impersonate it and wield those permissions. This role must be granted very carefully, as it essentially gives the grantee all of the SA's permissions.",
+    tip: "TokenCreator on a powerful SA = indirect access to all that SA's permissions. Audit this role regularly — it's a common privilege escalation vector."
+  },
+  {
+    topic: "VPC Service Controls",
+    difficulty: "hard",
+    question: "A team member has valid IAM permissions to access BigQuery but is blocked when accessing it from outside the office network. What GCP feature is likely enforcing this?",
+    options: [
+      "IAM Conditions with IP-based restrictions",
+      "VPC Service Controls (Service Perimeter)",
+      "Organization Policy constraints",
+      "Cloud Armor security policies"
+    ],
+    answer: 1,
+    explanation: "<strong>VPC Service Controls</strong> create a security perimeter around GCP services. Even with valid IAM permissions, requests that originate outside the defined perimeter (e.g., from home networks) are blocked. VPC-SC and IAM are independent, complementary layers — BOTH must allow the request. VPC-SC is designed to prevent data exfiltration and restrict access to trusted networks/identities.",
+    tip: "IAM = WHO can access. VPC-SC = WHERE requests must come FROM. Both layers must pass for access to succeed."
+  },
+  {
+    topic: "Policy Troubleshooting",
+    difficulty: "medium",
+    question: "A user reports they cannot perform an action despite believing they have the right permissions. Which GCP tool helps diagnose IAM permission issues in real-time?",
+    options: [
+      "Cloud Monitoring Alerting",
+      "Policy Analyzer",
+      "Policy Troubleshooter",
+      "Security Command Center"
+    ],
+    answer: 2,
+    explanation: "<strong>Policy Troubleshooter</strong> (in the IAM console) allows you to check whether a specific principal has a specific permission on a specific resource — and if not, explains <em>why</em> (e.g., no matching binding, policy exists but condition not met, Deny policy blocking). <strong>Policy Analyzer</strong> is different — it answers 'who has access to what' at scale across the org for audit and compliance purposes.",
+    tip: "Policy Troubleshooter = debug why a specific user can/cannot do X right now. Policy Analyzer = audit who has access across the org."
+  }
+];
+
+let current = 0;
+let selected = null;
+let revealed = false;
+let score = 0;
+let answers = {}; // {index: selectedOption}
+
+function formatText(str) {
+  return str.replace(/<code>(.*?)<\/code>/g, '<code>$1</code>').replace(/<strong>(.*?)<\/strong>/g, '<strong>$1</strong>').replace(/<em>(.*?)<\/em>/g, '<em>$1</em>').replace(/<br>/g, '<br>');
+}
+
+function getDiffClass(d) {
+  return d === 'hard' ? 'diff-hard' : d === 'medium' ? 'diff-med' : 'diff-easy';
+}
+function getDiffLabel(d) {
+  return d === 'hard' ? '🔴 Hard' : d === 'medium' ? '🟡 Medium' : '🟢 Easy';
+}
+
+function render() {
+  const q = questions[current];
+  const totalAnswered = Object.keys(answers).length;
+  const pct = Math.round((totalAnswered / questions.length) * 100);
+
+  // Header score
+  document.getElementById('scoreNum').textContent = score + '/' + questions.length;
+
+  // Progress
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = 'Question ' + (current + 1) + ' of ' + questions.length;
+  document.getElementById('pctText').textContent = pct + '% complete';
+
+  // Dots
+  const dotsEl = document.getElementById('dotsContainer');
+  dotsEl.innerHTML = '';
+  questions.forEach((_, i) => {
+    const dot = document.createElement('div');
+    let cls = 'dot';
+    if (i === current) cls += ' active';
+    else if (answers[i] !== undefined) {
+      cls += answers[i] === questions[i].answer ? ' done-correct' : ' done-wrong';
+    }
+    dot.className = cls;
+    dot.textContent = i + 1;
+    dot.title = 'Question ' + (i + 1);
+    dot.onclick = () => { current = i; selected = answers[i] !== undefined ? answers[i] : null; revealed = answers[i] !== undefined; render(); };
+    dotsEl.appendChild(dot);
+  });
+
+  // Card header
+  document.getElementById('qNumber').textContent = 'Question ' + String(current + 1).padStart(2, '0');
+  const diffEl = document.getElementById('diffBadge');
+  diffEl.className = 'difficulty ' + getDiffClass(q.difficulty);
+  diffEl.textContent = getDiffLabel(q.difficulty);
+
+  // Topic + question
+  document.getElementById('qTopic').textContent = q.topic;
+  document.getElementById('qText').innerHTML = formatText(q.question);
+
+  // Options
+  const optsEl = document.getElementById('optionsEl');
+  optsEl.innerHTML = '';
+  const letters = ['A', 'B', 'C', 'D'];
+  q.options.forEach((opt, i) => {
+    const div = document.createElement('div');
+    let cls = 'option';
+    if (revealed) {
+      cls += ' disabled';
+      if (i === q.answer) cls += ' correct';
+      else if (i === selected && i !== q.answer) cls += ' wrong';
+      else cls += ' neutral';
+    } else {
+      if (i === selected) cls += ' selected';
+    }
+    div.className = cls;
+    if (!revealed) div.onclick = () => { selected = i; render(); };
+
+    const badge = document.createElement('div');
+    badge.className = 'opt-badge';
+    if (revealed && i === q.answer) badge.textContent = '✓';
+    else if (revealed && i === selected && i !== q.answer) badge.textContent = '✗';
+    else badge.textContent = letters[i];
+
+    const text = document.createElement('div');
+    text.className = 'opt-text';
+    text.innerHTML = formatText(opt);
+
+    div.appendChild(badge);
+    div.appendChild(text);
+    optsEl.appendChild(div);
+  });
+
+  // Explanation
+  const expEl = document.getElementById('explanationEl');
+  if (revealed) {
+    const isCorrect = selected === q.answer;
+    expEl.innerHTML = `
+      <div class="explanation">
+        <div class="exp-header">
+          <span class="exp-icon">💡</span>
+          <span class="exp-title">Explanation</span>
+          <span class="exp-result ${isCorrect ? 'correct' : 'wrong'}">${isCorrect ? '✓ Correct!' : '✗ Incorrect'}</span>
+        </div>
+        <div class="exp-body">
+          <div class="exp-text">${formatText(q.explanation)}</div>
+          ${q.tip ? `<div class="exp-tip">⚡ <strong>Interview Tip:</strong> ${formatText(q.tip)}</div>` : ''}
+        </div>
+      </div>`;
+  } else {
+    expEl.innerHTML = '';
+  }
+
+  // Actions
+  const actEl = document.getElementById('actionsEl');
+  actEl.innerHTML = '';
+  if (!revealed) {
+    const revBtn = document.createElement('button');
+    revBtn.className = 'btn-reveal';
+    revBtn.textContent = '✓ Reveal Answer';
+    revBtn.disabled = selected === null;
+    revBtn.onclick = () => {
+      revealed = true;
+      answers[current] = selected;
+      if (selected === q.answer && answers[current] === selected) {
+        // only count first time
+        const prevAnswers = Object.keys(answers).length;
+        score = Object.entries(answers).filter(([k, v]) => questions[parseInt(k)].answer === v).length;
+      }
+      score = Object.entries(answers).filter(([k, v]) => questions[parseInt(k)].answer === v).length;
+      render();
+    };
+    actEl.appendChild(revBtn);
+  } else {
+    if (current < questions.length - 1) {
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'btn-next';
+      nextBtn.textContent = 'Next Question →';
+      nextBtn.onclick = () => { current++; selected = answers[current] !== undefined ? answers[current] : null; revealed = answers[current] !== undefined; render(); };
+      actEl.appendChild(nextBtn);
+    }
+  }
+
+  if (Object.keys(answers).length === questions.length) {
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'btn-reset';
+    resetBtn.textContent = '↺ Restart Quiz';
+    resetBtn.onclick = () => { current = 0; selected = null; revealed = false; score = 0; answers = {}; render(); };
+    actEl.appendChild(resetBtn);
+  }
+
+  // Summary
+  const sumEl = document.getElementById('summaryEl');
+  if (Object.keys(answers).length === questions.length) {
+    const pctScore = Math.round((score / questions.length) * 100);
+    const wrong = questions.length - score;
+    let msgClass = 'msg-great', msg = '';
+    if (pctScore >= 80) { msgClass = 'msg-great'; msg = '🏆 Excellent! You have strong GCP IAM knowledge — interview-ready!'; }
+    else if (pctScore >= 60) { msgClass = 'msg-ok'; msg = '📈 Good effort! Review Deny policies, Workload Identity, and inheritance rules.'; }
+    else { msgClass = 'msg-low'; msg = '📚 Keep studying. Focus on IAM hierarchy, policy evaluation order, and service account security.'; }
+
+    sumEl.innerHTML = `
+      <div class="summary">
+        <h3>Final Results</h3>
+        <div class="summary-score">${score}<span>/${questions.length}</span></div>
+        <div class="summary-bar"><div class="summary-bar-fill" style="width:${pctScore}%"></div></div>
+        <div class="summary-stats">
+          <div class="stat-box"><div class="stat-val blue">${pctScore}%</div><div class="stat-lbl">Score</div></div>
+          <div class="stat-box"><div class="stat-val green">${score}</div><div class="stat-lbl">Correct</div></div>
+          <div class="stat-box"><div class="stat-val red">${wrong}</div><div class="stat-lbl">Incorrect</div></div>
+        </div>
+        <div class="summary-msg ${msgClass}">${msg}</div>
+      </div>`;
+  } else {
+    sumEl.innerHTML = '';
+  }
+}
+
+render();
+</script>
+</body>
+</html>

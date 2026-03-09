@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GCP BigQuery Interview MCQs</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f1e;
+    --surface: #111827;
+    --card: #1a2235;
+    --border: #1f3058;
+    --accent: #4285f4;
+    --accent2: #34a853;
+    --wrong: #ea4335;
+    --text: #e8eaf6;
+    --muted: #7986cb;
+    --gold: #fbbc04;
+    --mono: 'Space Mono', monospace;
+    --body: 'DM Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  /* ─── Header ─── */
+  header {
+    background: linear-gradient(135deg, #0d1b2a 0%, #1a2a4a 60%, #0a1628 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 20px 22px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 80% at 50% 0%, rgba(66,133,244,0.18) 0%, transparent 70%);
+  }
+  .logo-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 6px;
+    position: relative;
+  }
+  .bq-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--accent);
+    color: #fff;
+    padding: 3px 9px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+  }
+  header h1 {
+    font-family: var(--mono);
+    font-size: clamp(17px, 5vw, 26px);
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.02em;
+    position: relative;
+  }
+  header p {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+    position: relative;
+  }
+
+  /* ─── Progress bar ─── */
+  .progress-wrap {
+    background: #0d1420;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 99;
+  }
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .progress-track {
+    background: #1a2235;
+    border-radius: 99px;
+    height: 6px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--accent), #34a853);
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  /* ─── Score banner ─── */
+  .score-banner {
+    display: none;
+    margin: 16px 14px 0;
+    background: linear-gradient(135deg, #132240, #1a3a5c);
+    border: 1px solid #2a4a7a;
+    border-radius: 14px;
+    padding: 18px 20px;
+    text-align: center;
+  }
+  .score-banner.visible { display: block; }
+  .score-num {
+    font-family: var(--mono);
+    font-size: 38px;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1;
+  }
+  .score-label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .score-msg { font-size: 15px; font-weight: 600; color: var(--text); margin-top: 8px; }
+
+  /* ─── Quiz container ─── */
+  .quiz { padding: 14px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* ─── Question card ─── */
+  .q-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .q-card.answered-correct { border-color: var(--accent2); }
+  .q-card.answered-wrong   { border-color: var(--wrong); }
+
+  .q-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .q-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: rgba(66,133,244,0.15);
+    color: var(--accent);
+    border: 1px solid rgba(66,133,244,0.3);
+    border-radius: 6px;
+    padding: 3px 8px;
+    white-space: nowrap;
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+  .q-text {
+    font-size: 14.5px;
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
+  /* ─── Options ─── */
+  .options { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1.5px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 11px 13px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .opt:active { transform: scale(0.98); }
+  .opt:hover:not(.disabled) {
+    background: rgba(66,133,244,0.08);
+    border-color: rgba(66,133,244,0.3);
+  }
+  .opt.disabled { cursor: default; }
+  .opt.correct {
+    background: rgba(52,168,83,0.12);
+    border-color: var(--accent2);
+  }
+  .opt.wrong {
+    background: rgba(234,67,53,0.1);
+    border-color: var(--wrong);
+  }
+  .opt-letter {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    background: rgba(255,255,255,0.06);
+    border-radius: 5px;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: background 0.2s, color 0.2s;
+  }
+  .opt.correct .opt-letter { background: var(--accent2); color: #fff; }
+  .opt.wrong   .opt-letter { background: var(--wrong);   color: #fff; }
+  .opt-text { font-size: 13.5px; line-height: 1.45; color: var(--text); }
+
+  /* ─── Explanation ─── */
+  .explanation {
+    display: none;
+    margin: 0 14px 14px;
+    background: rgba(66,133,244,0.06);
+    border: 1px solid rgba(66,133,244,0.2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #b0bec5;
+    animation: fadeIn 0.3s ease;
+  }
+  .explanation.visible { display: block; }
+  .explanation strong { color: var(--accent); font-weight: 600; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ─── Footer ─── */
+  .quiz-footer {
+    margin: 8px 14px 0;
+    text-align: center;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: #3a4a6a;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-row">
+    <span class="bq-badge">GCP</span>
+    <span class="bq-badge" style="background:#34a853;">BigQuery</span>
+  </div>
+  <h1>Interview MCQ Quiz</h1>
+  <p>20 questions · Tap an option to answer</p>
+</header>
+
+<div class="progress-wrap">
+  <div class="progress-meta">
+    <span id="prog-label">0 / 20 answered</span>
+    <span id="score-label">Score: 0</span>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+</div>
+
+<div class="score-banner" id="score-banner">
+  <div class="score-num" id="final-score">0/20</div>
+  <div class="score-label">Final Score</div>
+  <div class="score-msg" id="final-msg"></div>
+</div>
+
+<div class="quiz" id="quiz"></div>
+<div class="quiz-footer">GCP BigQuery · Interview Prep</div>
+
+<script>
+const questions = [
+  {
+    q: "Which storage format does BigQuery use internally to store data for optimal analytical query performance?",
+    opts: ["Row-oriented (CSV-like)", "Columnar (Capacitor format)", "Document-based (JSON)", "Key-value store"],
+    ans: 1,
+    exp: "<strong>Columnar storage (Capacitor)</strong> is BigQuery's internal format. Columnar storage reads only the columns needed by a query, drastically reducing I/O and improving performance for analytical workloads that scan large datasets but touch few columns."
+  },
+  {
+    q: "What is the primary pricing model for BigQuery queries in the on-demand tier?",
+    opts: ["Per CPU hour consumed", "Per number of rows returned", "Per TB of data processed by the query", "Per query execution time in seconds"],
+    ans: 2,
+    exp: "<strong>BigQuery charges per TB of data processed</strong> (scanned) in the on-demand model. This incentivizes partitioning, clustering, and selecting only needed columns to reduce costs. The first 1 TB per month is free."
+  },
+  {
+    q: "Which BigQuery feature allows you to query data directly from Cloud Storage, Google Drive, or Cloud Bigtable without loading it?",
+    opts: ["Materialized Views", "External Tables (Federated Queries)", "BI Engine", "Authorized Views"],
+    ans: 1,
+    exp: "<strong>External Tables</strong> (also called federated queries) let BigQuery query data in place without ingesting it. Useful for ad-hoc analysis on raw files or cross-service queries, though performance is slower than native BigQuery storage."
+  },
+  {
+    q: "What is the maximum number of columns allowed in a BigQuery table?",
+    opts: ["1,000", "5,000", "10,000", "Unlimited"],
+    ans: 2,
+    exp: "<strong>BigQuery supports up to 10,000 columns</strong> per table. However, extremely wide tables can impact performance and maintainability. Best practice is to denormalize data into nested RECORD fields rather than creating thousands of flat columns."
+  },
+  {
+    q: "Which partitioning type automatically partitions a BigQuery table based on a DATE or TIMESTAMP column in the data?",
+    opts: ["Integer range partitioning", "Ingestion-time partitioning", "Column-based partitioning", "Clustered partitioning"],
+    ans: 2,
+    exp: "<strong>Column-based (date/timestamp) partitioning</strong> divides the table into segments based on values in a DATE, DATETIME, or TIMESTAMP column. Queries filtering on that column skip irrelevant partitions, reducing data scanned and cost."
+  },
+  {
+    q: "What does BigQuery Clustering do?",
+    opts: ["Distributes data across multiple regions", "Sorts table data by specified columns within each partition", "Compresses data using columnar encoding", "Automatically caches query results"],
+    ans: 1,
+    exp: "<strong>Clustering sorts rows within each partition</strong> by the values of up to 4 specified columns. When queries filter or aggregate on those columns, BigQuery reads only relevant blocks, improving performance and reducing bytes scanned."
+  },
+  {
+    q: "What is a Materialized View in BigQuery?",
+    opts: ["A read-only virtual table defined by a SELECT query", "A precomputed query result stored physically and auto-refreshed", "A view that masks columns for security", "A backup snapshot of a table"],
+    ans: 1,
+    exp: "<strong>Materialized Views</strong> store precomputed query results physically in BigQuery. They are automatically refreshed when base data changes and can be used transparently by the query optimizer to accelerate queries—even queries that don't directly reference the view."
+  },
+  {
+    q: "Which BigQuery feature allows you to grant access to a subset of data without exposing the underlying table?",
+    opts: ["Authorized Views / Row-Level Security", "External Tables", "Reservations", "BI Engine"],
+    ans: 0,
+    exp: "<strong>Authorized Views and Row-Level Security</strong> control data access. Authorized Views expose only specific columns/rows. Row-Level Security (row access policies) filters rows based on user identity, allowing fine-grained access control without duplicating data."
+  },
+  {
+    q: "What is the purpose of BigQuery Reservations (formerly Slots)?",
+    opts: ["To reserve disk space for large tables", "To purchase dedicated query processing capacity for predictable workloads", "To lock a dataset for exclusive writes", "To pre-cache frequently accessed tables"],
+    ans: 1,
+    exp: "<strong>BigQuery Slots</strong> are units of computational capacity. Reservations let you purchase and assign dedicated slots to projects/folders, providing predictable performance and cost isolation—ideal for production workloads compared to on-demand pricing."
+  },
+  {
+    q: "Which SQL feature in BigQuery allows you to work with hierarchical/repeated data without unnesting?",
+    opts: ["ARRAY_AGG and STRUCT types with dot notation", "JSON_EXTRACT functions", "PIVOT operator", "TABLESAMPLE clause"],
+    ans: 0,
+    exp: "<strong>ARRAY and STRUCT types</strong> in BigQuery natively support nested and repeated data (common in JSON/Avro sources). You can query nested fields using dot notation (e.g., <code>record.field</code>) and use UNNEST to flatten arrays when needed."
+  },
+  {
+    q: "What does the `_PARTITIONTIME` pseudo-column represent in ingestion-time partitioned tables?",
+    opts: ["The last time the partition was queried", "The UTC timestamp when the row was loaded into BigQuery", "The partition expiry timestamp", "The time the table was created"],
+    ans: 1,
+    exp: "<strong>`_PARTITIONTIME`</strong> is a system pseudo-column automatically assigned to each row as the UTC truncated timestamp (day-level) when data was ingested. Filtering on it enables partition pruning, reducing query cost significantly."
+  },
+  {
+    q: "Which BigQuery feature enables real-time analytics by allowing streaming inserts and near-immediate queryability?",
+    opts: ["BigQuery Transfer Service", "Streaming Inserts (insertAll API)", "Scheduled Queries", "BigQuery Omni"],
+    ans: 1,
+    exp: "<strong>Streaming Inserts</strong> via the `insertAll` API allow data to be available for querying within seconds of ingestion. There is an additional cost per GB streamed. For high-throughput scenarios, BigQuery Storage Write API is the modern, more efficient alternative."
+  },
+  {
+    q: "What is BigQuery Omni?",
+    opts: ["BigQuery's machine learning integrated service", "A multi-cloud analytics solution that runs BigQuery on AWS/Azure", "A real-time dashboard tool", "BigQuery's data cataloging feature"],
+    ans: 1,
+    exp: "<strong>BigQuery Omni</strong> extends BigQuery's analytics to multi-cloud environments (AWS S3, Azure Blob Storage). It lets you run BigQuery SQL on data stored in other clouds without moving data to GCP, using Anthos under the hood."
+  },
+  {
+    q: "What is the function of BigQuery BI Engine?",
+    opts: ["ETL pipeline engine for data loading", "In-memory analysis service that accelerates BI tool queries", "A distributed training engine for ML models", "A query scheduler for batch workloads"],
+    ans: 1,
+    exp: "<strong>BI Engine</strong> is an in-memory analysis service that sits between BI tools (Looker, Data Studio, Tableau) and BigQuery. It caches frequently accessed data in memory, delivering sub-second query response times for dashboards without full BigQuery query costs."
+  },
+  {
+    q: "How does BigQuery handle transactions (ACID compliance)?",
+    opts: ["No transaction support at all", "Supports multi-statement transactions with ACID guarantees as of recent versions", "Only supports row-level locking", "Transactions are only available in legacy SQL"],
+    ans: 1,
+    exp: "<strong>BigQuery supports multi-statement transactions</strong> (BEGIN TRANSACTION / COMMIT / ROLLBACK) with ACID guarantees. This allows atomically executing multiple DML statements, making it suitable for scenarios requiring data consistency across multiple table updates."
+  },
+  {
+    q: "What is the Time Travel feature in BigQuery, and how long is its default window?",
+    opts: ["Replicates data across regions; 30 days", "Allows querying historical snapshots of a table; default 7 days (configurable up to 7 days)", "Auto-archives cold data to GCS; 90 days", "Stores query execution history; 60 days"],
+    ans: 1,
+    exp: "<strong>Time Travel</strong> lets you query a table as it existed at any point in the past using `FOR SYSTEM_TIME AS OF`. The default window is <strong>7 days</strong> and is configurable from 2–7 days. It enables data recovery and auditing without backups."
+  },
+  {
+    q: "Which of the following best describes a BigQuery Dataset?",
+    opts: ["A single SQL table with rows and columns", "A logical container for tables, views, and ML models within a project", "A GCS bucket used for data staging", "A service account used for BigQuery access"],
+    ans: 1,
+    exp: "<strong>A Dataset</strong> is the top-level organizational unit in BigQuery (below a project). It acts as a namespace/container for tables, views, materialized views, and ML models. Datasets have a geographic location setting that determines where data is stored and processed."
+  },
+  {
+    q: "What is the `INFORMATION_SCHEMA` in BigQuery used for?",
+    opts: ["Storing metadata about query results", "Querying metadata about BigQuery resources like tables, jobs, views, and partitions", "A special schema for ML model definitions", "Encrypted storage for sensitive columns"],
+    ans: 1,
+    exp: "<strong>INFORMATION_SCHEMA</strong> provides system views to inspect BigQuery metadata—table schemas, partitions, jobs, reservations, routines, and more. For example, `SELECT * FROM myproject.dataset.INFORMATION_SCHEMA.TABLES` lists all tables in a dataset."
+  },
+  {
+    q: "Which service is used to automate data transfers into BigQuery from sources like Google Ads, YouTube, or Cloud Storage on a schedule?",
+    opts: ["Cloud Dataflow", "BigQuery Data Transfer Service (DTS)", "Cloud Composer", "Pub/Sub"],
+    ans: 1,
+    exp: "<strong>BigQuery Data Transfer Service (DTS)</strong> automates recurring data loads into BigQuery from Google services (Ads, Analytics, YouTube) and third-party SaaS apps. It handles scheduling, retries, and monitoring without custom pipeline code."
+  },
+  {
+    q: "What is a key advantage of using the BigQuery Storage Read API over the standard `tabledata.list` REST API?",
+    opts: ["It supports SQL query execution", "It enables high-throughput parallel reads in columnar formats like Arrow and Avro", "It provides row-level security enforcement", "It allows streaming inserts into tables"],
+    ans: 1,
+    exp: "<strong>BigQuery Storage Read API</strong> enables fast, parallel, columnar data extraction using Apache Arrow or Avro formats. It dramatically outperforms the REST `tabledata.list` API for bulk reads, making it ideal for ML training pipelines and large-scale data export use cases."
+  }
+];
+
+let answered = 0;
+let score = 0;
+const total = questions.length;
+
+function buildQuiz() {
+  const container = document.getElementById('quiz');
+  questions.forEach((q, i) => {
+    const card = document.createElement('div');
+    card.className = 'q-card';
+    card.id = `q${i}`;
+
+    const letters = ['A','B','C','D'];
+    const opts = q.opts.map((o, j) => `
+      <div class="opt" data-q="${i}" data-opt="${j}" onclick="handleAnswer(${i},${j})">
+        <span class="opt-letter">${letters[j]}</span>
+        <span class="opt-text">${o}</span>
+      </div>`).join('');
+
+    card.innerHTML = `
+      <div class="q-header">
+        <span class="q-num">Q${String(i+1).padStart(2,'0')}</span>
+        <span class="q-text">${q.q}</span>
+      </div>
+      <div class="options">${opts}</div>
+      <div class="explanation" id="exp${i}">💡 ${q.exp}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function handleAnswer(qi, oi) {
+  const card = document.getElementById(`q${qi}`);
+  if (card.classList.contains('answered-correct') || card.classList.contains('answered-wrong')) return;
+
+  const opts = card.querySelectorAll('.opt');
+  const correct = questions[qi].ans;
+  const isCorrect = oi === correct;
+
+  opts.forEach(o => o.classList.add('disabled'));
+  opts[correct].classList.add('correct');
+  if (!isCorrect) opts[oi].classList.add('wrong');
+
+  card.classList.add(isCorrect ? 'answered-correct' : 'answered-wrong');
+  document.getElementById(`exp${qi}`).classList.add('visible');
+
+  answered++;
+  if (isCorrect) score++;
+
+  updateProgress();
+  if (answered === total) showFinal();
+}
+
+function updateProgress() {
+  document.getElementById('prog-label').textContent = `${answered} / ${total} answered`;
+  document.getElementById('score-label').textContent = `Score: ${score}`;
+  document.getElementById('prog-fill').style.width = `${(answered/total)*100}%`;
+}
+
+function showFinal() {
+  const banner = document.getElementById('score-banner');
+  banner.classList.add('visible');
+  document.getElementById('final-score').textContent = `${score}/${total}`;
+  const pct = (score/total)*100;
+  let msg = '';
+  if (pct >= 90) msg = '🏆 Outstanding! You\'re BigQuery-ready!';
+  else if (pct >= 75) msg = '🎯 Great job! Solid BigQuery knowledge.';
+  else if (pct >= 55) msg = '📚 Good effort! Review the explanations.';
+  else msg = '💡 Keep studying — revisit the concepts!';
+  document.getElementById('final-msg').textContent = msg;
+  banner.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+buildQuiz();
+</script>
+</body>
+</html>

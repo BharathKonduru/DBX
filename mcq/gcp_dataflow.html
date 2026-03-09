@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GCP Dataflow – Interview MCQ</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=IBM+Plex+Mono:wght@400;600&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #060d1f;
+    --surface: #0d1a35;
+    --card: #101e3a;
+    --border: #1b3060;
+    --accent: #00c6ff;
+    --accent2: #0077ff;
+    --green: #00e5a0;
+    --red: #ff4d6d;
+    --gold: #ffd166;
+    --text: #e8f0fe;
+    --muted: #7a90b8;
+    --radius: 14px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    padding: 0 0 60px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,198,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,198,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    right: -200px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(0,119,255,0.12) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page-wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+
+  header {
+    text-align: center;
+    padding: 48px 16px 32px;
+  }
+
+  .badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #0077ff22, #00c6ff22);
+    border: 1px solid #00c6ff44;
+    color: var(--accent);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 100px;
+    margin-bottom: 20px;
+  }
+
+  header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 7vw, 52px);
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 0%, #00c6ff 60%, #0077ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+  }
+
+  header p {
+    color: var(--muted);
+    font-size: 15px;
+    max-width: 440px;
+    margin: 0 auto 28px;
+    line-height: 1.6;
+  }
+
+  .scoreboard {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+
+  .score-pill {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .score-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-total   { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .dot-correct { background: var(--green);  box-shadow: 0 0 8px var(--green); }
+  .dot-wrong   { background: var(--red);    box-shadow: 0 0 8px var(--red); }
+
+  .score-val { font-family: 'IBM Plex Mono', monospace; font-size: 16px; }
+
+  .progress-bar-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    height: 6px;
+    margin-bottom: 40px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #0077ff, #00c6ff);
+    border-radius: 100px;
+    transition: width 0.5s ease;
+    box-shadow: 0 0 12px #00c6ff88;
+  }
+
+  .q-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    margin-bottom: 20px;
+    opacity: 0;
+    transform: translateY(24px);
+    animation: fadeUp 0.5s ease forwards;
+  }
+
+  @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+  .q-card:nth-child(1)  { animation-delay: 0.05s; }
+  .q-card:nth-child(2)  { animation-delay: 0.10s; }
+  .q-card:nth-child(3)  { animation-delay: 0.15s; }
+  .q-card:nth-child(4)  { animation-delay: 0.20s; }
+  .q-card:nth-child(5)  { animation-delay: 0.25s; }
+  .q-card:nth-child(6)  { animation-delay: 0.30s; }
+  .q-card:nth-child(7)  { animation-delay: 0.35s; }
+  .q-card:nth-child(8)  { animation-delay: 0.40s; }
+  .q-card:nth-child(9)  { animation-delay: 0.45s; }
+  .q-card:nth-child(10) { animation-delay: 0.50s; }
+  .q-card:nth-child(11) { animation-delay: 0.55s; }
+  .q-card:nth-child(12) { animation-delay: 0.60s; }
+  .q-card:nth-child(13) { animation-delay: 0.65s; }
+  .q-card:nth-child(14) { animation-delay: 0.70s; }
+  .q-card:nth-child(15) { animation-delay: 0.75s; }
+  .q-card:nth-child(16) { animation-delay: 0.80s; }
+  .q-card:nth-child(17) { animation-delay: 0.85s; }
+  .q-card:nth-child(18) { animation-delay: 0.90s; }
+  .q-card:nth-child(19) { animation-delay: 0.95s; }
+  .q-card:nth-child(20) { animation-delay: 1.00s; }
+
+  .q-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .q-num {
+    flex-shrink: 0;
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, #0077ff, #00c6ff);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    box-shadow: 0 4px 14px #0077ff44;
+  }
+
+  .q-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+
+  .q-text {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
+  .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+
+  .opt {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--surface);
+    text-align: left;
+    width: 100%;
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .opt:hover:not(:disabled) {
+    border-color: #00c6ff88;
+    background: #0d2040;
+    transform: translateX(3px);
+  }
+
+  .opt-letter {
+    flex-shrink: 0;
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    background: #1b3060;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+
+  .opt.correct { border-color: var(--green); background: #00e5a012; }
+  .opt.correct .opt-letter { background: var(--green); color: #000; }
+
+  .opt.wrong { border-color: var(--red); background: #ff4d6d10; }
+  .opt.wrong .opt-letter { background: var(--red); color: #fff; }
+
+  .opt:disabled { cursor: default; }
+
+  .explanation {
+    display: none;
+    background: #0a1e38;
+    border: 1px solid #00e5a033;
+    border-left: 3px solid var(--green);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-top: 4px;
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: #aecfc0;
+    animation: fadeIn 0.3s ease;
+  }
+  .explanation.show { display: block; }
+  .explanation strong { color: var(--green); font-weight: 700; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .quiz-footer {
+    text-align: center;
+    margin-top: 48px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+  }
+
+  .final-score {
+    font-family: 'Syne', sans-serif;
+    font-size: 40px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--gold), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+
+  .final-label { color: var(--muted); font-size: 14px; margin-bottom: 28px; line-height: 1.6; }
+
+  .reset-btn {
+    background: linear-gradient(135deg, #0077ff, #00c6ff);
+    color: #fff;
+    border: none;
+    padding: 14px 36px;
+    border-radius: 100px;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 6px 24px #0077ff44;
+  }
+  .reset-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 32px #0077ff66; }
+
+  @media (max-width: 480px) {
+    .q-card { padding: 18px 14px; }
+    .score-pill { padding: 8px 14px; font-size: 12px; }
+    .q-text { font-size: 14px; }
+    .opt { font-size: 13px; padding: 11px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <header>
+    <div class="badge">Interview Prep · GCP</div>
+    <h1>GCP Dataflow<br>MCQ Quiz</h1>
+    <p>20 interview-level questions on Google Cloud Dataflow. Tap an option to reveal the answer and full explanation.</p>
+  </header>
+
+  <div class="scoreboard">
+    <div class="score-pill"><span class="score-dot dot-total"></span>Total <span class="score-val" id="totalVal">20</span></div>
+    <div class="score-pill"><span class="score-dot dot-correct"></span>Correct <span class="score-val" id="correctVal">0</span></div>
+    <div class="score-pill"><span class="score-dot dot-wrong"></span>Wrong <span class="score-val" id="wrongVal">0</span></div>
+  </div>
+
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" id="progressBar" style="width:0%"></div>
+  </div>
+
+  <div id="quiz"></div>
+
+  <div class="quiz-footer" id="quizFooter" style="display:none">
+    <div class="final-score" id="finalScore"></div>
+    <div class="final-label">Quiz complete! Review the explanations above to reinforce your knowledge before your interview.</div>
+    <button class="reset-btn" onclick="resetQuiz()">↺ &nbsp;Retake Quiz</button>
+  </div>
+
+</div>
+
+<script>
+const questions = [
+  {
+    tag: "Core Concept",
+    q: "What is Google Cloud Dataflow primarily used for?",
+    opts: [
+      "Storing large-scale structured data in a relational database",
+      "A fully managed, serverless stream and batch data processing service based on Apache Beam",
+      "A NoSQL database for real-time analytics",
+      "A data warehousing service for SQL-based analytics"
+    ],
+    ans: 1,
+    exp: "<strong>Correct: B.</strong> GCP Dataflow is a fully managed, serverless service for both stream and batch data processing. It is built on the open-source Apache Beam SDK, which provides a unified programming model for defining data processing pipelines. It eliminates infrastructure management from the developer's responsibilities."
+  },
+  {
+    tag: "Apache Beam",
+    q: "What is the relationship between Apache Beam and GCP Dataflow?",
+    opts: [
+      "Apache Beam is a GCP-exclusive tool; Dataflow is its open-source version",
+      "Dataflow is the managed runner that executes Apache Beam pipelines on Google Cloud infrastructure",
+      "They are completely independent and unrelated services",
+      "Apache Beam replaces Dataflow for batch processing only"
+    ],
+    ans: 1,
+    exp: "<strong>Correct: B.</strong> Apache Beam is an open-source, unified programming model for defining data pipelines. GCP Dataflow acts as the managed <em>runner</em> that executes those Beam pipelines on Google's infrastructure — providing autoscaling, monitoring, and fault tolerance automatically."
+  },
+  {
+    tag: "Architecture",
+    q: "Which of the following best describes a 'PCollection' in Apache Beam / Dataflow?",
+    opts: [
+      "A single element of data in a pipeline",
+      "A configuration file for the Dataflow job",
+      "A potentially distributed, immutable dataset — the primary data abstraction in Apache Beam",
+      "A connector to Google Cloud Storage only"
+    ],
+    ans: 2,
+    exp: "<strong>Correct: C.</strong> A PCollection (Parallel Collection) is the core data abstraction in Apache Beam. It represents a distributed dataset that can be bounded (batch) or unbounded (streaming). PCollections are immutable — transforms produce new PCollections rather than modifying existing ones."
+  },
+  {
+    tag: "Transforms",
+    q: "What is a 'ParDo' transform in Dataflow?",
+    opts: [
+      "A transform used only for joining two PCollections",
+      "A general-purpose parallel processing transform that applies a DoFn to each element of a PCollection",
+      "A windowing function for grouping streaming data by time",
+      "A built-in connector for reading from BigQuery"
+    ],
+    ans: 1,
+    exp: "<strong>Correct: B.</strong> ParDo (Parallel Do) is the most fundamental processing transform in Apache Beam. It applies a user-defined function called a DoFn to each element of a PCollection in parallel — similar to a Map operation. A DoFn can emit zero, one, or multiple output elements per input element."
+  },
+  {
+    tag: "Windowing",
+    q: "Which windowing strategy in Dataflow assigns each element to multiple overlapping windows based on a size and slide interval?",
+    opts: [
+      "Fixed (Tumbling) Windows",
+      "Session Windows",
+      "Sliding (Hopping) Windows",
+      "Global Windows"
+    ],
+    ans: 2,
+    exp: "<strong>Correct: C.</strong> Sliding Windows assign each element to multiple overlapping windows. Defined by a window size and a slide interval, an element can appear in multiple windows. For example, a 10-minute window sliding every 5 minutes means an element can appear in up to two concurrent windows."
+  },
+  {
+    tag: "Streaming",
+    q: "What is a 'Watermark' in the context of GCP Dataflow streaming pipelines?",
+    opts: [
+      "A security token used to authenticate Dataflow jobs",
+      "An estimate of how far behind real-time data processing is — used to decide when to close and emit a window",
+      "A special marker element injected into PCollections for debugging purposes",
+      "A quota limit set by Google Cloud for streaming job throughput"
+    ],
+    ans: 1,
+    exp: "<strong>Correct: B.</strong> A watermark is Dataflow's heuristic estimate of the point in event-time up to which all data has arrived. It tells the system when it is safe to close a window and emit results downstream. The watermark accounts for late-arriving data, network delays, and out-of-order events."
+  },
+  {
+    tag: "Triggers",
+    q: "What is the purpose of 'Triggers' in GCP Dataflow?",
+    opts: [
+      "To start and stop Dataflow jobs on a cron-like schedule",
+      "To control when aggregated results from a window are emitted downstream",
+      "To authenticate pipeline runs with Cloud IAM",
+      "To send alerts in Cloud Monitoring when a job fails"
+    ],
+    ans: 1,
+    exp: "<strong>Correct: B.</strong> Triggers determine when Dataflow emits the aggregated results of a window. By default, results fire when the watermark passes the end of the window (AfterWatermark). Custom triggers let you emit early speculative results (AfterProcessingTime) or react to data counts (AfterCount), giving fine-grained control over output latency."
+  },
+  {
+    tag: "Late Data",
+    q: "How does Dataflow handle late-arriving data in streaming pipelines?",
+    opts: [
+      "Late data is automatically and permanently discarded with no configuration option",
+      "The pipeline crashes and restarts from the last checkpoint when late data arrives",
+      "Using 'Allowed Lateness' — a configurable parameter that specifies how long after a watermark to still accept late elements",
+      "Late data is stored in Cloud Spanner until the window reprocesses"
+    ],
+    ans: 2,
+    exp: "<strong>Correct: C.</strong> Dataflow supports an 'Allowed Lateness' parameter on windows. This tells the runner how long after the watermark passes the window's end to still accept and process late elements. Depending on the accumulation mode (ACCUMULATE or DISCARD), late data can update previously emitted window results."
+  },
+  {
+    tag: "I/O Connectors",
+    q: "Which of the following has a native, built-in Apache Beam I/O connector supported in Dataflow?",
+    opts: [
+      "Google Cloud Pub/Sub",
+      "MySQL running on an on-premise server",
+      "Amazon DynamoDB",
+      "Snowflake (native Beam connector)"
+    ],
+    ans: 0,
+    exp: "<strong>Correct: A.</strong> Google Cloud Pub/Sub has a native, first-class Apache Beam I/O connector that is fully supported in Dataflow for real-time streaming use cases. BigQuery, Cloud Storage, and Bigtable also have native connectors. MySQL, DynamoDB, and Snowflake typically require JDBC or third-party connectors."
+  },
+  {
+    tag: "Autoscaling",
+    q: "What autoscaling capability does Dataflow provide that differentiates it from manual cluster management?",
+    opts: [
+      "Dataflow requires users to pre-specify the exact number of workers before launching a job",
+      "Dataflow automatically adjusts the number of worker VMs at runtime based on current backlog and throughput",
+      "Dataflow only scales vertically by upgrading CPU/RAM on existing VMs",
+      "Autoscaling in Dataflow is a paid premium add-on feature"
+    ],
+    ans: 1,
+    exp: "<strong>Correct: B.</strong> Dataflow's built-in autoscaler dynamically adjusts the number of worker VMs during job execution. It continuously monitors pipeline throughput and backlog, scaling workers up or down automatically — removing the need to predict resource needs upfront and optimizing both cost and performance."
+  },
+  {
+    tag: "Flex Templates",
+    q: "What is the key advantage of Dataflow Flex Templates over Classic Templates?",
+    opts: [
+      "Flex Templates run faster because they skip the pipeline graph construction phase",
+      "Flex Templates package the pipeline as a Docker container, enabling dynamic pipeline construction at runtime based on job parameters",
+      "Flex Templates are free to use; Classic Templates incur extra charges",
+      "Flex Templates support only batch processing, not streaming"
+    ],
+    ans: 1,
+    exp: "<strong>Correct: B.</strong> Dataflow Flex Templates package the pipeline launcher as a Docker container image stored in Artifact Registry. This allows the pipeline graph to be dynamically constructed at launch time using runtime parameters — unlike Classic Templates, which bake in a static, pre-built pipeline graph at template creation time."
+  },
+  {
+    tag: "Pricing",
+    q: "Dataflow pricing is primarily based on which of the following?",
+    opts: [
+      "Number of Dataflow jobs submitted per month regardless of size",
+      "vCPU, memory, and Persistent Disk usage per worker-hour, plus optional Streaming Engine charges",
+      "Total gigabytes of data read from Cloud Storage per job",
+      "A flat monthly subscription fee regardless of usage"
+    ],
+    ans: 1,
+    exp: "<strong>Correct: B.</strong> Dataflow is billed per resource consumed: vCPU per worker-hour, memory (GB/hour), and Persistent Disk (GB/hour). For streaming jobs using Streaming Engine (the recommended modern mode), additional per-GB charges apply for the managed streaming backend that handles state and windowing separately from workers."
+  },
+  {
+    tag: "Streaming Engine",
+    q: "What is the primary benefit of enabling 'Streaming Engine' in a Dataflow pipeline?",
+    opts: [
+      "It allows batch jobs to automatically execute as streaming jobs",
+      "It moves pipeline state management off worker VMs to a managed backend, reducing worker resource usage and improving autoscaling responsiveness",
+      "It provides a built-in visual dashboard for real-time pipeline monitoring",
+      "It enables automatic cross-region data replication for disaster recovery"
+    ],
+    ans: 1,
+    exp: "<strong>Correct: B.</strong> Streaming Engine offloads windowing state, timers, and aggregation storage from worker VMs to a Google-managed backend service. This significantly reduces the memory and disk footprint on each worker, allows for faster and more granular autoscaling, and can lower overall streaming pipeline costs."
+  },
+  {
+    tag: "Security & IAM",
+    q: "How does Dataflow integrate with Google Cloud's security model?",
+    opts: [
+      "Dataflow runs outside the VPC by default and cannot use private IP addresses",
+      "Dataflow has its own proprietary authentication system separate from Cloud IAM",
+      "Dataflow integrates with IAM for access control, supports VPC Service Controls, CMEK encryption, and Shared VPC for network isolation",
+      "Security in Dataflow is configurable only through Cloud Armor rules"
+    ],
+    ans: 2,
+    exp: "<strong>Correct: C.</strong> Dataflow integrates deeply with GCP's security model. IAM roles govern who can submit and manage jobs. VPC Service Controls restrict data exfiltration. Customer-Managed Encryption Keys (CMEK) allow you to control encryption keys. Shared VPC enables workers to run in a centrally managed, locked-down network environment."
+  },
+  {
+    tag: "Fault Tolerance",
+    q: "How does Dataflow ensure fault tolerance during pipeline execution?",
+    opts: [
+      "It requires developers to write custom retry logic inside every DoFn",
+      "Dataflow automatically retries failed work bundles and restarts failed workers using durable checkpointing, with no data loss",
+      "Fault tolerance is available only for batch jobs and not for streaming pipelines",
+      "Users must manually monitor jobs and restart failed ones via the Console"
+    ],
+    ans: 1,
+    exp: "<strong>Correct: B.</strong> Dataflow provides built-in fault tolerance automatically. Work is divided into bundles; if a worker VM fails, its bundles are automatically reassigned to healthy workers. For streaming jobs, state is durably checkpointed to ensure at-least-once or exactly-once processing semantics without any manual intervention required."
+  },
+  {
+    tag: "Side Inputs",
+    q: "What is a 'Side Input' in Dataflow / Apache Beam?",
+    opts: [
+      "A secondary Dataflow job that feeds processed data into the primary job",
+      "An additional read-only PCollection that a DoFn can access alongside its primary input — commonly used for enrichment with small reference datasets",
+      "A feature that enables writing processed output to two sinks simultaneously",
+      "An error output channel for capturing elements that fail during processing"
+    ],
+    ans: 1,
+    exp: "<strong>Correct: B.</strong> Side Inputs allow a DoFn to access an additional read-only PCollection (or view) alongside its main input PCollection. This is commonly used to enrich a streaming dataset with a small reference or lookup table broadcast to all workers — for example, joining a stream of events with a user-profile mapping."
+  },
+  {
+    tag: "Monitoring",
+    q: "Which GCP tool provides built-in monitoring, metrics, and logging for Dataflow jobs?",
+    opts: [
+      "Cloud Trace for distributed request tracing",
+      "Cloud Dataproc Job History Server",
+      "Cloud Monitoring and Cloud Logging — integrated natively with the Dataflow job UI",
+      "BigQuery INFORMATION_SCHEMA views"
+    ],
+    ans: 2,
+    exp: "<strong>Correct: C.</strong> Dataflow integrates natively with Cloud Monitoring (for real-time metrics like throughput, system lag, and data freshness) and Cloud Logging (for worker and job logs). The Dataflow Console UI also provides an interactive DAG visualization of the pipeline graph with per-step metrics and built-in job diagnostics."
+  },
+  {
+    tag: "Pub/Sub + Exactly-Once",
+    q: "When reading from Pub/Sub in a Dataflow streaming pipeline, how does Dataflow prevent duplicate message processing?",
+    opts: [
+      "By using Pub/Sub message ordering keys to guarantee delivery order",
+      "By tracking each message's unique ID (or a user-defined deduplication attribute) to provide exactly-once processing semantics",
+      "Dataflow does not support deduplication — all messages are always processed at least once only",
+      "Dataflow uses Cloud Bigtable as an external store to record all processed message IDs"
+    ],
+    ans: 1,
+    exp: "<strong>Correct: B.</strong> Dataflow supports exactly-once processing from Pub/Sub by tracking each message's unique message ID (or a user-specified attribute value) within a deduplication window. Even if Pub/Sub delivers a message more than once due to retries, Dataflow ensures the message is processed exactly once in the pipeline."
+  },
+  {
+    tag: "Dataflow vs Dataproc",
+    q: "When should you prefer GCP Dataflow over GCP Dataproc?",
+    opts: [
+      "When you need to run existing Apache Spark or Hadoop jobs with minimal code changes",
+      "When you want a fully serverless, auto-scaling pipeline without managing clusters — especially for event-driven streaming workloads using the Beam SDK",
+      "When your pipeline requires GPU-accelerated worker nodes for ML inference",
+      "When you need to run interactive SparkSQL queries against large datasets"
+    ],
+    ans: 1,
+    exp: "<strong>Correct: B.</strong> Dataflow is the best fit when you want a fully serverless experience with no cluster management — particularly for streaming pipelines using the Apache Beam SDK. Choose Dataproc when you have existing Spark or Hadoop workloads, need SparkSQL, or require full ecosystem flexibility with managed clusters."
+  },
+  {
+    tag: "Optimization",
+    q: "Which of the following is a recommended Dataflow best practice to optimize a slow batch pipeline?",
+    opts: [
+      "Increase max workers to the maximum allowed regardless of where the bottleneck is",
+      "Replace GroupByKey with CombinePerKey wherever possible to reduce data shuffling across the network",
+      "Avoid all I/O connectors and read source data fully into worker memory first",
+      "Disable autoscaling and fix worker count to eliminate scaling overhead"
+    ],
+    ans: 1,
+    exp: "<strong>Correct: B.</strong> Using CombinePerKey instead of GroupByKey is a critical Dataflow optimization. CombinePerKey performs partial (local) aggregations on each worker before the shuffle phase, dramatically reducing the volume of data moved across the network. GroupByKey forces a full shuffle of all key-value pairs, which is expensive and often the primary bottleneck in batch pipelines."
+  }
+];
+
+let correct = 0, wrong = 0, answered = 0;
+
+function buildQuiz() {
+  const container = document.getElementById('quiz');
+  container.innerHTML = '';
+  const letters = ['A','B','C','D'];
+
+  questions.forEach((item, i) => {
+    const card = document.createElement('div');
+    card.className = 'q-card';
+
+    const optsHtml = item.opts.map((opt, j) => `
+      <button class="opt" onclick="answer(${i},${j})" id="opt-${i}-${j}">
+        <span class="opt-letter">${letters[j]}</span>
+        <span>${opt}</span>
+      </button>
+    `).join('');
+
+    card.innerHTML = `
+      <div class="q-header">
+        <div class="q-num">${String(i+1).padStart(2,'0')}</div>
+        <div style="flex:1">
+          <div class="q-tag">${item.tag}</div>
+          <div class="q-text">${item.q}</div>
+        </div>
+      </div>
+      <div class="options" id="opts-${i}">${optsHtml}</div>
+      <div class="explanation" id="exp-${i}"></div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function answer(qIdx, optIdx) {
+  const item = questions[qIdx];
+  const allOpts = document.querySelectorAll(`#opts-${qIdx} .opt`);
+  allOpts.forEach(btn => btn.disabled = true);
+
+  const chosenBtn = document.getElementById(`opt-${qIdx}-${optIdx}`);
+  const correctBtn = document.getElementById(`opt-${qIdx}-${item.ans}`);
+  const expEl = document.getElementById(`exp-${qIdx}`);
+
+  if (optIdx === item.ans) {
+    chosenBtn.classList.add('correct');
+    correct++;
+    expEl.innerHTML = `✅ &nbsp;${item.exp}`;
+  } else {
+    chosenBtn.classList.add('wrong');
+    correctBtn.classList.add('correct');
+    wrong++;
+    expEl.innerHTML = `❌ &nbsp;${item.exp}`;
+  }
+
+  expEl.classList.add('show');
+  answered++;
+
+  document.getElementById('correctVal').textContent = correct;
+  document.getElementById('wrongVal').textContent = wrong;
+  document.getElementById('progressBar').style.width = (answered / questions.length * 100) + '%';
+
+  if (answered === questions.length) {
+    const footer = document.getElementById('quizFooter');
+    footer.style.display = 'block';
+    document.getElementById('finalScore').textContent = `${correct} / ${questions.length}`;
+    footer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function resetQuiz() {
+  correct = 0; wrong = 0; answered = 0;
+  document.getElementById('correctVal').textContent = 0;
+  document.getElementById('wrongVal').textContent = 0;
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('quizFooter').style.display = 'none';
+  buildQuiz();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+buildQuiz();
+</script>
+</body>
+</html>

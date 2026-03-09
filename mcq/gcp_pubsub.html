@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GCP Pub/Sub Interview MCQs</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f1e;
+    --card: #111827;
+    --card2: #1a2235;
+    --border: #1e3a5f;
+    --accent: #00d4ff;
+    --accent2: #4ade80;
+    --accent3: #f59e0b;
+    --wrong: #f87171;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --glow: 0 0 20px rgba(0,212,255,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, #0d1b35 0%, #0a1628 50%, #071020 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 20px 22px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+
+  .header-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.2);
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+  }
+
+  header h1 {
+    font-size: clamp(18px, 5vw, 26px);
+    font-weight: 700;
+    background: linear-gradient(90deg, #00d4ff, #4ade80);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.3;
+  }
+
+  header p {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* PROGRESS */
+  .progress-bar-wrap {
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    height: 4px;
+    margin: 14px 20px 0;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+
+  /* SCORE STRIP */
+  .score-strip {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    padding: 10px 20px;
+    background: rgba(0,212,255,0.04);
+    border-bottom: 1px solid rgba(30,58,95,0.5);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  .score-item { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot.correct { background: var(--accent2); }
+  .dot.wrong { background: var(--wrong); }
+  .dot.total { background: var(--accent); }
+
+  /* MAIN */
+  main { padding: 20px 16px; max-width: 760px; margin: 0 auto; }
+
+  /* QUESTION CARD */
+  .q-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px 18px;
+    margin-bottom: 18px;
+    transition: border-color 0.3s;
+    animation: slideIn 0.4s ease forwards;
+    opacity: 0;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .q-card:nth-child(1) { animation-delay: 0.05s; }
+  .q-card:nth-child(2) { animation-delay: 0.10s; }
+  .q-card:nth-child(3) { animation-delay: 0.15s; }
+  .q-card:nth-child(4) { animation-delay: 0.20s; }
+  .q-card:nth-child(5) { animation-delay: 0.25s; }
+  .q-card:nth-child(6) { animation-delay: 0.30s; }
+  .q-card:nth-child(7) { animation-delay: 0.35s; }
+  .q-card:nth-child(8) { animation-delay: 0.40s; }
+  .q-card:nth-child(9) { animation-delay: 0.45s; }
+  .q-card:nth-child(10) { animation-delay: 0.50s; }
+
+  .q-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .q-number::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+
+  .q-text {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.55;
+    margin-bottom: 16px;
+    color: #f1f5f9;
+  }
+
+  /* OPTIONS */
+  .options { display: flex; flex-direction: column; gap: 9px; }
+
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid rgba(30,58,95,0.8);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: rgba(255,255,255,0.02);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .option:active { transform: scale(0.98); }
+
+  .option:hover:not(.disabled) {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.05);
+  }
+
+  .opt-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid var(--muted);
+    color: var(--muted);
+    transition: all 0.2s;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* States */
+  .option.correct-ans {
+    border-color: var(--accent2);
+    background: rgba(74,222,128,0.08);
+  }
+  .option.correct-ans .opt-label {
+    background: var(--accent2);
+    border-color: var(--accent2);
+    color: #000;
+  }
+
+  .option.wrong-ans {
+    border-color: var(--wrong);
+    background: rgba(248,113,113,0.08);
+  }
+  .option.wrong-ans .opt-label {
+    background: var(--wrong);
+    border-color: var(--wrong);
+    color: #000;
+  }
+
+  .option.selected-correct {
+    border-color: var(--accent2);
+    background: rgba(74,222,128,0.12);
+  }
+  .option.selected-correct .opt-label {
+    background: var(--accent2);
+    border-color: var(--accent2);
+    color: #000;
+  }
+
+  .option.disabled { cursor: default; pointer-events: none; }
+
+  /* EXPLANATION */
+  .explanation {
+    display: none;
+    margin-top: 14px;
+    padding: 14px;
+    background: rgba(0,212,255,0.05);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: #cbd5e1;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .explanation.show { display: block; }
+
+  .explanation strong {
+    color: var(--accent2);
+    font-weight: 600;
+  }
+
+  .exp-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  /* RESULT TAG */
+  .result-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+  }
+  .result-tag.correct-tag { background: rgba(74,222,128,0.15); color: var(--accent2); border: 1px solid rgba(74,222,128,0.3); }
+  .result-tag.wrong-tag { background: rgba(248,113,113,0.15); color: var(--wrong); border: 1px solid rgba(248,113,113,0.3); }
+
+  /* FINAL SCORE CARD */
+  .final-score {
+    display: none;
+    background: linear-gradient(135deg, #111827, #0d1b35);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px 24px;
+    text-align: center;
+    margin: 20px 16px;
+    max-width: 760px;
+    margin: 20px auto;
+    box-shadow: var(--glow);
+  }
+
+  .final-score.show { display: block; animation: slideIn 0.5s ease; }
+
+  .score-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: conic-gradient(var(--accent2) var(--pct, 0%), rgba(255,255,255,0.05) 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    position: relative;
+  }
+
+  .score-circle::before {
+    content: '';
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #111827;
+    position: absolute;
+  }
+
+  .score-num {
+    position: relative;
+    z-index: 1;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent2);
+  }
+
+  .final-score h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .final-score p { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+
+  .restart-btn {
+    background: linear-gradient(135deg, var(--accent), #0099cc);
+    color: #000;
+    font-family: 'Sora', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 12px 28px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .restart-btn:active { transform: scale(0.97); }
+
+  /* CATEGORY TAG */
+  .category {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(245,158,11,0.1);
+    color: var(--accent3);
+    border: 1px solid rgba(245,158,11,0.2);
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-badge">INTERVIEW PREP</div>
+  <h1>GCP Pub/Sub MCQs</h1>
+  <p>20 Questions · Tap to Answer · Instant Feedback</p>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progressBar"></div>
+  </div>
+</header>
+
+<div class="score-strip">
+  <div class="score-item"><span class="dot correct"></span><span id="correctCount">0 Correct</span></div>
+  <div class="score-item"><span class="dot wrong"></span><span id="wrongCount">0 Wrong</span></div>
+  <div class="score-item"><span class="dot total"></span><span id="totalCount">0 / 20</span></div>
+</div>
+
+<main id="quizContainer"></main>
+<div class="final-score" id="finalScore">
+  <div class="score-circle" id="scoreCircle"><span class="score-num" id="scoreNum">0/20</span></div>
+  <h2 id="scoreTitle">Quiz Complete!</h2>
+  <p id="scoreMsg"></p>
+  <button class="restart-btn" onclick="restartQuiz()">↺ Restart Quiz</button>
+</div>
+
+<script>
+const questions = [
+  {
+    cat: "FUNDAMENTALS",
+    q: "What type of messaging pattern does Google Cloud Pub/Sub primarily implement?",
+    opts: ["Request/Response", "Publish/Subscribe", "Point-to-Point Queue", "RPC (Remote Procedure Call)"],
+    ans: 1,
+    exp: "<strong>Publish/Subscribe</strong> is the core pattern of GCP Pub/Sub. Publishers send messages to a <em>topic</em> without knowing who will receive them. Subscribers receive messages from <em>subscriptions</em> attached to that topic. This decouples producers from consumers, enabling async, scalable communication."
+  },
+  {
+    cat: "CORE CONCEPTS",
+    q: "In GCP Pub/Sub, what is a 'Topic'?",
+    opts: [
+      "A named queue that holds messages until consumed",
+      "A named resource to which messages are published",
+      "A filter applied to incoming messages",
+      "A connection endpoint for subscribers"
+    ],
+    ans: 1,
+    exp: "A <strong>Topic</strong> is a named resource (channel) to which publishers send messages. It acts as a logical grouping. Subscribers don't read from topics directly — they read from <em>Subscriptions</em> attached to topics. One topic can have many subscriptions."
+  },
+  {
+    cat: "CORE CONCEPTS",
+    q: "What is the maximum message size supported by GCP Pub/Sub?",
+    opts: ["1 MB", "5 MB", "10 MB", "256 KB"],
+    ans: 2,
+    exp: "<strong>10 MB</strong> is the maximum size for a single Pub/Sub message. If your payload is larger, you should store the data in GCS (Google Cloud Storage) and send only a reference/URI in the Pub/Sub message — a common pattern called 'claim check'."
+  },
+  {
+    cat: "DELIVERY",
+    q: "Which delivery guarantee does GCP Pub/Sub provide by default?",
+    opts: ["Exactly-once delivery", "At-most-once delivery", "At-least-once delivery", "Ordered delivery"],
+    ans: 2,
+    exp: "<strong>At-least-once delivery</strong> is the default guarantee. Messages may be delivered more than once (duplicates are possible). Subscribers must implement idempotent processing to handle duplicates. Exactly-once delivery is available only with specific configurations (e.g., Cloud Dataflow with Pub/Sub Lite)."
+  },
+  {
+    cat: "SUBSCRIPTIONS",
+    q: "What are the two types of subscriptions in GCP Pub/Sub?",
+    opts: [
+      "Sync and Async subscriptions",
+      "Pull and Push subscriptions",
+      "Hot and Cold subscriptions",
+      "Durable and Transient subscriptions"
+    ],
+    ans: 1,
+    exp: "<strong>Pull</strong>: The subscriber initiates a request to Pub/Sub to retrieve messages. Best for batch processing or when the subscriber controls the rate.<br><br><strong>Push</strong>: Pub/Sub sends messages to a pre-configured HTTPS endpoint (webhook). Best for serverless or event-driven architectures (e.g., Cloud Run, App Engine)."
+  },
+  {
+    cat: "ACK & NACK",
+    q: "What happens if a subscriber does NOT acknowledge a message within the acknowledgement deadline?",
+    opts: [
+      "The message is permanently deleted",
+      "The message is moved to a dead-letter topic",
+      "The message becomes available for redelivery",
+      "The subscription is paused"
+    ],
+    ans: 2,
+    exp: "If a message is not <strong>acknowledged (ACK'd)</strong> before the ack deadline expires, Pub/Sub assumes the message was not processed and makes it <em>available for redelivery</em>. The default ack deadline is 10 seconds (configurable from 10s to 600s). This ensures at-least-once delivery."
+  },
+  {
+    cat: "ORDERING",
+    q: "How does GCP Pub/Sub support ordered message delivery?",
+    opts: [
+      "Messages are always delivered in order by default",
+      "By enabling 'message ordering' on the subscription and using an ordering key",
+      "By setting a sequence number in the message attribute",
+      "Pub/Sub does not support message ordering"
+    ],
+    ans: 1,
+    exp: "<strong>Message ordering</strong> must be explicitly enabled on a subscription. Publishers must set an <em>ordering key</em> on messages. Pub/Sub guarantees ordered delivery for all messages sharing the same ordering key within a region. This is useful for event sourcing or stateful processing."
+  },
+  {
+    cat: "RETENTION",
+    q: "What is the default message retention duration in GCP Pub/Sub?",
+    opts: ["1 day", "3 days", "7 days", "30 days"],
+    ans: 2,
+    exp: "The default message retention is <strong>7 days</strong> (configurable from 10 minutes to 7 days). Undelivered messages are stored for this duration. After expiration, undelivered messages are deleted. You can configure retention per topic using the <code>message_retention_duration</code> field."
+  },
+  {
+    cat: "DEAD LETTER",
+    q: "What is the purpose of a Dead Letter Topic (DLT) in Pub/Sub?",
+    opts: [
+      "To store messages that have been successfully processed",
+      "To receive messages that exceed a maximum delivery attempt threshold",
+      "To archive all messages for audit purposes",
+      "To store messages from deleted subscriptions"
+    ],
+    ans: 1,
+    exp: "A <strong>Dead Letter Topic</strong> captures messages that could not be successfully delivered after a configured number of attempts (1–100). Instead of retrying indefinitely, failed messages are forwarded to the DLT for later inspection, debugging, or reprocessing. This prevents poison-pill messages from blocking the queue."
+  },
+  {
+    cat: "FILTERING",
+    q: "What does Pub/Sub Subscription Filtering allow you to do?",
+    opts: [
+      "Encrypt message data before delivery",
+      "Compress messages to reduce payload size",
+      "Route only messages matching attribute conditions to a subscription",
+      "Limit the rate of message delivery"
+    ],
+    ans: 2,
+    exp: "<strong>Subscription filtering</strong> lets you define a filter expression on message attributes so only matching messages are delivered to that subscription. For example: <code>attributes.region = \"us-east\"</code>. Non-matching messages are acknowledged automatically and not billed. This reduces processing overhead."
+  },
+  {
+    cat: "SCALING",
+    q: "How does GCP Pub/Sub handle scaling automatically?",
+    opts: [
+      "You must manually configure autoscaling policies",
+      "It scales by adding more topics",
+      "It is a fully managed service that scales automatically with message volume",
+      "Scaling requires upgrading to Pub/Sub Premium tier"
+    ],
+    ans: 2,
+    exp: "Pub/Sub is a <strong>fully managed, serverless</strong> service. It automatically scales to handle any volume of messages — from a few messages per second to millions per second — without any manual configuration. Google manages the infrastructure, replication, and partitioning transparently."
+  },
+  {
+    cat: "SECURITY",
+    q: "Which GCP mechanism controls who can publish to or subscribe from a Pub/Sub topic?",
+    opts: ["VPC Service Controls only", "IAM (Identity and Access Management)", "Cloud Armor policies", "API key authentication"],
+    ans: 1,
+    exp: "<strong>IAM</strong> is used to control access to Pub/Sub resources. Key predefined roles include:<br>• <code>roles/pubsub.publisher</code> — can publish messages<br>• <code>roles/pubsub.subscriber</code> — can consume messages<br>• <code>roles/pubsub.admin</code> — full control<br>VPC Service Controls add an extra perimeter layer but IAM is the primary mechanism."
+  },
+  {
+    cat: "SNAPSHOTS",
+    q: "What is the use of a Snapshot in GCP Pub/Sub?",
+    opts: [
+      "To back up topic configuration",
+      "To capture the current state of a subscription's message backlog for later seek",
+      "To create a read-only copy of a topic",
+      "To export messages to BigQuery"
+    ],
+    ans: 1,
+    exp: "A <strong>Snapshot</strong> captures the acknowledge state of a subscription at a point in time. You can use <em>Seek</em> to replay messages by seeking to a snapshot or a timestamp. This is useful for replaying messages after a bug fix or rewinding a subscription to reprocess historical data."
+  },
+  {
+    cat: "INTEGRATIONS",
+    q: "Which GCP service can directly subscribe to a Pub/Sub topic without custom code?",
+    opts: ["Cloud DNS", "BigQuery (via Pub/Sub subscription)", "Cloud CDN", "Cloud Interconnect"],
+    ans: 1,
+    exp: "<strong>BigQuery</strong> supports a native Pub/Sub subscription type that streams messages directly into a BigQuery table without needing Cloud Functions or Dataflow. Other native integrations include Cloud Storage subscriptions. This simplifies real-time data ingestion pipelines."
+  },
+  {
+    cat: "PRICING",
+    q: "How is GCP Pub/Sub pricing primarily calculated?",
+    opts: [
+      "Based on the number of topics and subscriptions",
+      "By the number of publishers and subscribers connected",
+      "By the volume of data (bytes) published, delivered, and stored",
+      "A fixed monthly fee per project"
+    ],
+    ans: 2,
+    exp: "Pub/Sub pricing is based on <strong>data volume in bytes</strong>: you are charged for data published, data delivered (per subscription), and data stored beyond the free retention window. The first 10 GB/month is free. There are no charges per topic or subscription created."
+  },
+  {
+    cat: "PUB/SUB LITE",
+    q: "What is the key difference between GCP Pub/Sub and Pub/Sub Lite?",
+    opts: [
+      "Pub/Sub Lite supports push subscriptions; standard does not",
+      "Pub/Sub Lite is zonal/regional with fixed capacity, offering lower cost but less automation",
+      "Pub/Sub Lite supports larger message sizes",
+      "Pub/Sub Lite has global replication by default"
+    ],
+    ans: 1,
+    exp: "<strong>Pub/Sub Lite</strong> is a low-cost, high-volume alternative where you pre-provision throughput and storage capacity. It is <em>zonal or regional</em> (not global), and you manage capacity manually. Standard Pub/Sub is fully managed, globally replicated, and more resilient — but costs more. Lite also supports exactly-once delivery via Dataflow."
+  },
+  {
+    cat: "FLOW CONTROL",
+    q: "What is the purpose of Flow Control in a Pub/Sub Pull subscriber?",
+    opts: [
+      "To encrypt messages in transit",
+      "To prioritize messages by attribute values",
+      "To limit the number of outstanding messages a subscriber holds at once",
+      "To throttle message publishing rate"
+    ],
+    ans: 2,
+    exp: "<strong>Flow control</strong> (configured on the client library) limits how many unacknowledged messages are held in memory by the subscriber at a time. This prevents the subscriber from being overwhelmed. You configure <code>max_messages</code> and <code>max_bytes</code>. Without flow control, a slow subscriber can run out of memory."
+  },
+  {
+    cat: "ADVANCED",
+    q: "What is 'Schema Enforcement' in GCP Pub/Sub?",
+    opts: [
+      "Encrypting messages with a custom schema key",
+      "Validating that published messages conform to a defined Avro or Protocol Buffer schema",
+      "Filtering messages based on JSON field values",
+      "Mapping message fields to BigQuery table columns"
+    ],
+    ans: 1,
+    exp: "<strong>Schema enforcement</strong> allows you to define an Avro or Protocol Buffer schema on a topic. Pub/Sub will reject any published message that does not conform to the schema. This ensures data quality and consistency for downstream consumers, especially useful in data pipeline architectures."
+  },
+  {
+    cat: "MONITORING",
+    q: "Which metric is most useful for monitoring subscriber lag in GCP Pub/Sub?",
+    opts: [
+      "subscription/num_undelivered_messages",
+      "topic/send_message_operation_count",
+      "subscription/push_request_count",
+      "topic/byte_cost"
+    ],
+    ans: 0,
+    exp: "<strong>subscription/num_undelivered_messages</strong> (also called 'backlog size') measures how many messages are waiting to be delivered. A growing backlog indicates the subscriber is falling behind. Combined with <code>subscription/oldest_unacked_message_age</code>, these are the primary metrics for subscriber health monitoring via Cloud Monitoring."
+  },
+  {
+    cat: "BEST PRACTICES",
+    q: "A downstream service is receiving duplicate Pub/Sub messages and crashing. What is the recommended solution?",
+    opts: [
+      "Switch to Pub/Sub Lite which guarantees exactly-once",
+      "Increase the ack deadline to avoid redelivery",
+      "Make the subscriber logic idempotent to safely handle duplicates",
+      "Use a Push subscription instead of Pull"
+    ],
+    ans: 2,
+    exp: "Since Pub/Sub guarantees <strong>at-least-once delivery</strong>, duplicates are expected and cannot be fully eliminated at the transport layer. The recommended approach is to make your <em>subscriber logic idempotent</em> — processing the same message multiple times should produce the same result. You can use message IDs for deduplication if needed."
+  }
+];
+
+let correct = 0, wrong = 0, answered = 0;
+
+function build() {
+  const container = document.getElementById('quizContainer');
+  container.innerHTML = '';
+  questions.forEach((q, i) => {
+    const card = document.createElement('div');
+    card.className = 'q-card';
+    card.id = `card-${i}`;
+    card.innerHTML = `
+      <div class="category">${q.cat}</div>
+      <div class="q-number">Q${String(i+1).padStart(2,'0')}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="options">
+        ${q.opts.map((opt, oi) => `
+          <div class="option" id="opt-${i}-${oi}" onclick="choose(${i}, ${oi})">
+            <span class="opt-label">${String.fromCharCode(65+oi)}</span>
+            <span>${opt}</span>
+          </div>
+        `).join('')}
+      </div>
+      <div class="explanation" id="exp-${i}">
+        <span class="exp-label">💡 EXPLANATION</span>
+        ${q.exp}
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function choose(qi, oi) {
+  const q = questions[qi];
+  // Disable all options for this question
+  q.opts.forEach((_, idx) => {
+    const el = document.getElementById(`opt-${qi}-${idx}`);
+    el.classList.add('disabled');
+  });
+
+  const chosen = document.getElementById(`opt-${qi}-${oi}`);
+  const correct_el = document.getElementById(`opt-${qi}-${q.ans}`);
+  const expEl = document.getElementById(`exp-${qi}`);
+  const card = document.getElementById(`card-${qi}`);
+
+  if (oi === q.ans) {
+    chosen.classList.add('selected-correct');
+    correct++;
+  } else {
+    chosen.classList.add('wrong-ans');
+    correct_el.classList.add('correct-ans');
+    wrong++;
+  }
+
+  expEl.classList.add('show');
+  answered++;
+  updateStats();
+
+  if (answered === questions.length) {
+    setTimeout(showFinal, 600);
+  }
+}
+
+function updateStats() {
+  document.getElementById('correctCount').textContent = `${correct} Correct`;
+  document.getElementById('wrongCount').textContent = `${wrong} Wrong`;
+  document.getElementById('totalCount').textContent = `${answered} / 20`;
+  document.getElementById('progressBar').style.width = `${(answered/20)*100}%`;
+}
+
+function showFinal() {
+  const fs = document.getElementById('finalScore');
+  fs.classList.add('show');
+  document.getElementById('scoreNum').textContent = `${correct}/20`;
+  const pct = (correct/20)*100;
+  document.getElementById('scoreCircle').style.setProperty('--pct', `${pct}%`);
+
+  let title, msg;
+  if (pct === 100) { title = "Perfect Score! 🏆"; msg = "Outstanding! You've mastered GCP Pub/Sub concepts."; }
+  else if (pct >= 80) { title = "Excellent Work! 🎯"; msg = "You're well-prepared for Pub/Sub interview questions."; }
+  else if (pct >= 60) { title = "Good Job! 📚"; msg = "Solid foundation — review the explanations to fill gaps."; }
+  else { title = "Keep Practicing! 💪"; msg = "Review the Pub/Sub documentation and retry the quiz."; }
+
+  document.getElementById('scoreTitle').textContent = title;
+  document.getElementById('scoreMsg').textContent = msg;
+  fs.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function restartQuiz() {
+  correct = 0; wrong = 0; answered = 0;
+  updateStats();
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('finalScore').classList.remove('show');
+  build();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+build();
+</script>
+</body>
+</html>

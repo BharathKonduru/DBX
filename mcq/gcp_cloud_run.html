@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GCP Cloud Run Functions — Interview MCQs</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f1e;
+    --surface: #111827;
+    --card: #161d2f;
+    --border: #1e2d4a;
+    --accent: #4285f4;
+    --accent2: #34a853;
+    --danger: #ea4335;
+    --warning: #fbbc04;
+    --text: #e8edf5;
+    --muted: #6b7fa3;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #0d1b3e 0%, #0a0f1e 60%);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 20px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+
+  .header-inner {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(66,133,244,0.12);
+    border: 1px solid rgba(66,133,244,0.3);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+
+  .badge::before { content: '◉'; font-size: 8px; }
+
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(18px, 5vw, 26px);
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 6px;
+    font-weight: 300;
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    max-width: 720px;
+    margin: 18px auto 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .progress-bar {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 4px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  .progress-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* Score bar */
+  .score-bar {
+    max-width: 720px;
+    margin: 14px auto 0;
+    display: flex;
+    gap: 16px;
+  }
+
+  .score-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-family: var(--mono);
+  }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot.correct { background: var(--accent2); }
+  .dot.wrong { background: var(--danger); }
+
+  /* Container */
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px 16px;
+  }
+
+  /* Question card */
+  .q-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    transition: border-color 0.3s;
+    animation: slideIn 0.4s ease both;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .q-card:nth-child(odd)  { animation-delay: 0.05s; }
+  .q-card:nth-child(even) { animation-delay: 0.1s; }
+
+  .q-card.answered-correct { border-color: rgba(52,168,83,0.4); }
+  .q-card.answered-wrong   { border-color: rgba(234,67,53,0.4); }
+
+  .q-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .q-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    background: rgba(66,133,244,0.1);
+    border: 1px solid rgba(66,133,244,0.2);
+    border-radius: 8px;
+    padding: 4px 10px;
+    white-space: nowrap;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .q-text {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  /* Options */
+  .options {
+    padding: 14px 20px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--surface);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .option:hover:not(.locked) {
+    border-color: rgba(66,133,244,0.5);
+    background: rgba(66,133,244,0.05);
+  }
+
+  .option:active:not(.locked) {
+    transform: scale(0.98);
+  }
+
+  .opt-key {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    background: var(--border);
+    border-radius: 6px;
+    padding: 2px 7px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.2s;
+  }
+
+  .opt-text {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
+  /* States */
+  .option.selected {
+    border-color: var(--accent);
+    background: rgba(66,133,244,0.08);
+  }
+
+  .option.selected .opt-key {
+    background: var(--accent);
+    color: white;
+  }
+
+  .option.correct-ans {
+    border-color: var(--accent2);
+    background: rgba(52,168,83,0.08);
+  }
+
+  .option.correct-ans .opt-key {
+    background: var(--accent2);
+    color: white;
+  }
+
+  .option.wrong-ans {
+    border-color: var(--danger);
+    background: rgba(234,67,53,0.08);
+  }
+
+  .option.wrong-ans .opt-key {
+    background: var(--danger);
+    color: white;
+  }
+
+  .option.locked { cursor: default; }
+
+  /* Explanation */
+  .explanation {
+    display: none;
+    margin: 0 20px 20px;
+    background: rgba(66,133,244,0.06);
+    border: 1px solid rgba(66,133,244,0.2);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px 16px;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .explanation.show { display: block; }
+
+  .exp-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .exp-label::before { content: '▶'; font-size: 8px; }
+
+  .exp-text {
+    font-size: 13px;
+    line-height: 1.7;
+    color: #b0bdd6;
+  }
+
+  .exp-text code {
+    font-family: var(--mono);
+    background: rgba(66,133,244,0.15);
+    color: var(--accent);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+
+  /* Result banner */
+  .result-banner {
+    display: none;
+    max-width: 720px;
+    margin: 0 auto 28px;
+    background: linear-gradient(135deg, #111827, #0d1b3e);
+    border: 1px solid var(--accent);
+    border-radius: 16px;
+    padding: 28px 24px;
+    text-align: center;
+    animation: fadeIn 0.5s ease;
+  }
+
+  .result-banner.show { display: block; }
+
+  .result-score {
+    font-family: var(--mono);
+    font-size: 52px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .result-label {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+
+  .result-grade {
+    display: inline-block;
+    margin-top: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  .grade-excellent { background: rgba(52,168,83,0.15); color: var(--accent2); border: 1px solid rgba(52,168,83,0.3); }
+  .grade-good { background: rgba(66,133,244,0.15); color: var(--accent); border: 1px solid rgba(66,133,244,0.3); }
+  .grade-average { background: rgba(251,188,4,0.15); color: var(--warning); border: 1px solid rgba(251,188,4,0.3); }
+  .grade-poor { background: rgba(234,67,53,0.15); color: var(--danger); border: 1px solid rgba(234,67,53,0.3); }
+
+  .restart-btn {
+    margin-top: 20px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 10px;
+    font-family: var(--mono);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-block;
+  }
+
+  .restart-btn:hover { background: #3574e0; transform: translateY(-1px); }
+
+  /* Footer tag */
+  .topic-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 6px;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--muted);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    padding: 3px 9px;
+    border-radius: 20px;
+  }
+
+  @media (max-width: 420px) {
+    .q-header { padding: 16px 14px 14px; }
+    .options { padding: 12px 14px 16px; }
+    .explanation { margin: 0 14px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="badge">GCP INTERVIEW PREP</div>
+    <h1>Cloud Run <span>Functions</span></h1>
+    <p class="subtitle">20 MCQ Questions · Tap an option to reveal the answer</p>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-label" id="progressLabel">0 / 20</div>
+    </div>
+    <div class="score-bar">
+      <div class="score-pill"><div class="dot correct"></div><span id="correctCount">0 correct</span></div>
+      <div class="score-pill"><div class="dot wrong"></div><span id="wrongCount">0 wrong</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div id="resultBanner" class="result-banner">
+    <div class="result-score" id="finalScore">0/20</div>
+    <div class="result-label">Final Score</div>
+    <div id="gradeLabel" class="result-grade grade-average">AVERAGE</div>
+    <br>
+    <button class="restart-btn" onclick="restartQuiz()">↺ Restart Quiz</button>
+  </div>
+
+  <div id="quizContainer"></div>
+</div>
+
+<script>
+const questions = [
+  {
+    q: "What is Google Cloud Run Functions (formerly Cloud Functions 2nd gen) primarily built on top of?",
+    opts: ["Google Kubernetes Engine", "Cloud Run", "App Engine", "Compute Engine"],
+    ans: 1,
+    exp: "Cloud Run Functions (2nd gen) is built on top of <code>Cloud Run</code>, giving it the same infrastructure benefits like longer timeouts, higher concurrency, and more CPU/memory options compared to 1st gen.",
+    topic: "Architecture"
+  },
+  {
+    q: "What is the maximum timeout for a Cloud Run Function (2nd gen / HTTP)?",
+    opts: ["9 minutes", "60 minutes", "24 hours", "72 hours"],
+    ans: 1,
+    exp: "Cloud Run Functions (2nd gen) supports up to <code>60 minutes</code> timeout for HTTP functions, a significant increase from the 9-minute limit in 1st gen. Event-driven functions support up to 10 minutes.",
+    topic: "Limits"
+  },
+  {
+    q: "Which trigger type allows a Cloud Run Function to respond to messages on a Pub/Sub topic?",
+    opts: ["HTTP Trigger", "Eventarc Trigger", "Scheduler Trigger", "Storage Trigger"],
+    ans: 1,
+    exp: "In Cloud Run Functions 2nd gen, event-driven triggers (including Pub/Sub) are handled via <code>Eventarc</code>, which routes events using CloudEvents format. This replaces direct Pub/Sub triggers from 1st gen.",
+    topic: "Triggers"
+  },
+  {
+    q: "What is 'cold start' in the context of Cloud Run Functions?",
+    opts: [
+      "Running a function at midnight",
+      "The latency added when a new instance must be initialized before handling a request",
+      "Starting a function in a cold region",
+      "Deploying a function with no traffic"
+    ],
+    ans: 1,
+    exp: "A <code>cold start</code> occurs when a new function instance is spun up from scratch. This adds latency because the runtime environment, dependencies, and initialization code must all load before the function logic executes.",
+    topic: "Performance"
+  },
+  {
+    q: "Which runtime is NOT supported by Cloud Run Functions?",
+    opts: ["Node.js", "Python", "Ruby", "COBOL"],
+    ans: 3,
+    exp: "Cloud Run Functions supports <code>Node.js, Python, Go, Java, .NET, Ruby, and PHP</code>. COBOL is not a supported runtime. The list of supported runtimes continues to grow with each release.",
+    topic: "Runtimes"
+  },
+  {
+    q: "How does Cloud Run Functions 2nd gen handle concurrency differently from 1st gen?",
+    opts: [
+      "It only allows 1 request per instance",
+      "It allows multiple concurrent requests per instance",
+      "It uses thread pools of 100",
+      "Concurrency is not configurable"
+    ],
+    ans: 1,
+    exp: "Cloud Run Functions 2nd gen supports <code>concurrency</code> — a single instance can handle multiple requests simultaneously (up to 1000). This reduces cold starts and improves efficiency for stateless workloads.",
+    topic: "Concurrency"
+  },
+  {
+    q: "What command deploys a Cloud Run Function using the gcloud CLI?",
+    opts: [
+      "gcloud functions deploy",
+      "gcloud run deploy",
+      "gcloud compute functions deploy",
+      "gcloud app deploy"
+    ],
+    ans: 0,
+    exp: "<code>gcloud functions deploy</code> is the correct command for deploying Cloud Run Functions. You can specify <code>--gen2</code> flag for 2nd gen. <code>gcloud run deploy</code> is used for Cloud Run services.",
+    topic: "CLI"
+  },
+  {
+    q: "What is the purpose of the `--trigger-http` flag when deploying a Cloud Run Function?",
+    opts: [
+      "It enables HTTPS only",
+      "It makes the function respond to HTTP/S requests",
+      "It sets up HTTP load balancing",
+      "It allows cross-origin requests"
+    ],
+    ans: 1,
+    exp: "The <code>--trigger-http</code> flag configures the function as an HTTP-triggered function, meaning it will respond to HTTP/S requests via a generated URL endpoint. Without this, you must specify an event trigger.",
+    topic: "Triggers"
+  },
+  {
+    q: "Which IAM role is required for a service account to invoke a Cloud Run Function with authentication?",
+    opts: [
+      "roles/run.admin",
+      "roles/cloudfunctions.invoker",
+      "roles/iam.serviceAccountUser",
+      "roles/editor"
+    ],
+    ans: 1,
+    exp: "<code>roles/cloudfunctions.invoker</code> grants the minimum permission needed to invoke a Cloud Run Function. For Cloud Run Functions 2nd gen, you can also use <code>roles/run.invoker</code> since they are backed by Cloud Run.",
+    topic: "IAM & Security"
+  },
+  {
+    q: "What environment variable automatically provides the GCP Project ID inside a Cloud Run Function?",
+    opts: ["PROJECT_ID", "GCP_PROJECT", "GCLOUD_PROJECT", "GOOGLE_CLOUD_PROJECT"],
+    ans: 3,
+    exp: "<code>GOOGLE_CLOUD_PROJECT</code> is the automatically injected environment variable that provides the current GCP project ID inside Cloud Run Functions. <code>GCLOUD_PROJECT</code> is deprecated but may still work in some runtimes.",
+    topic: "Environment"
+  },
+  {
+    q: "Which service should you use for managing secrets (like API keys) securely in Cloud Run Functions?",
+    opts: ["Cloud Storage", "Firestore", "Secret Manager", "Cloud KMS directly"],
+    ans: 2,
+    exp: "<code>Secret Manager</code> is the recommended GCP service for storing and accessing secrets in Cloud Run Functions. You can mount secrets as environment variables or volumes, and access is controlled via IAM.",
+    topic: "Security"
+  },
+  {
+    q: "What is the default memory allocation for a Cloud Run Function?",
+    opts: ["128 MB", "256 MB", "512 MB", "1 GB"],
+    ans: 1,
+    exp: "The default memory allocation is <code>256 MB</code>. Cloud Run Functions supports memory from 128 MB up to 32 GB (for 2nd gen). More memory also means proportionally more CPU.",
+    topic: "Configuration"
+  },
+  {
+    q: "Which of the following best describes an 'idempotent' Cloud Run Function?",
+    opts: [
+      "A function that runs only once",
+      "A function that produces the same result when called multiple times with the same input",
+      "A function with no side effects",
+      "A function that auto-scales to zero"
+    ],
+    ans: 1,
+    exp: "An <code>idempotent</code> function produces the same outcome regardless of how many times it's called with the same input. This is crucial for event-driven functions since GCP may deliver events <code>at-least-once</code>, meaning your function could be invoked multiple times.",
+    topic: "Best Practices"
+  },
+  {
+    q: "What is Eventarc used for in Cloud Run Functions 2nd gen?",
+    opts: [
+      "Logging function invocations",
+      "Routing events from GCP services and custom sources to functions",
+      "Scheduling periodic function runs",
+      "Managing function versions"
+    ],
+    ans: 1,
+    exp: "<code>Eventarc</code> is GCP's eventing platform that routes events from over 90 GCP services (and custom sources via Pub/Sub) to Cloud Run Functions using the <code>CloudEvents</code> specification. It replaces the direct event trigger bindings in 1st gen.",
+    topic: "Eventarc"
+  },
+  {
+    q: "Which feature allows a Cloud Run Function to connect to a VPC network to access private resources?",
+    opts: [
+      "VPC Peering",
+      "Serverless VPC Access connector",
+      "Cloud Interconnect",
+      "Private Google Access"
+    ],
+    ans: 1,
+    exp: "A <code>Serverless VPC Access connector</code> allows Cloud Run Functions to send traffic to private IP addresses within a VPC — for example, to access Cloud SQL via private IP, Memorystore (Redis), or other internal services.",
+    topic: "Networking"
+  },
+  {
+    q: "What does the `min-instances` setting accomplish in Cloud Run Functions?",
+    opts: [
+      "Sets the maximum number of concurrent users",
+      "Keeps a minimum number of warm instances to reduce cold starts",
+      "Limits the total invocations per second",
+      "Defines the minimum memory per instance"
+    ],
+    ans: 1,
+    exp: "<code>min-instances</code> keeps a specified number of instances always warm and running, effectively eliminating cold starts for that capacity. This incurs cost even when idle, so it's a tradeoff between latency and cost.",
+    topic: "Performance"
+  },
+  {
+    q: "Which HTTP status code should an event-triggered Cloud Run Function return to acknowledge successful processing?",
+    opts: ["200", "201", "204", "Any 2xx code"],
+    ans: 3,
+    exp: "For event-driven functions, returning <code>any 2xx HTTP status code</code> signals successful processing. A non-2xx response (or no response) will cause Eventarc or Pub/Sub to retry the event delivery according to the retry policy.",
+    topic: "Event Handling"
+  },
+  {
+    q: "What is the maximum number of instances a Cloud Run Function can scale to by default?",
+    opts: ["100", "1,000", "3,000", "Unlimited"],
+    ans: 2,
+    exp: "By default, Cloud Run Functions can scale up to <code>3,000 instances</code> per function. This default quota can be raised via a quota increase request. You can also set <code>max-instances</code> to cap scaling.",
+    topic: "Scaling"
+  },
+  {
+    q: "When using Cloud Run Functions with Cloud Storage triggers, which event type fires when a new object is created?",
+    opts: [
+      "google.storage.object.finalize",
+      "google.storage.object.create",
+      "google.storage.object.upload",
+      "google.cloud.storage.object.v1.created"
+    ],
+    ans: 0,
+    exp: "<code>google.storage.object.finalize</code> is the correct event type fired when a new object is successfully created or overwritten in a Cloud Storage bucket. This is the most commonly used Cloud Storage trigger event.",
+    topic: "Triggers"
+  },
+  {
+    q: "Which tool can be used to test and develop Cloud Run Functions locally before deploying?",
+    opts: [
+      "Cloud Shell only",
+      "Functions Framework",
+      "Cloud Emulator Suite",
+      "Firebase Local Emulator"
+    ],
+    ans: 1,
+    exp: "The <code>Functions Framework</code> is an open-source library from Google that lets you run Cloud Run Functions locally for testing and development. It's available for Node.js, Python, Go, Java, Ruby, and PHP. The Firebase emulator handles Firebase-specific functions.",
+    topic: "Development"
+  }
+];
+
+let answered = 0, correct = 0, wrong = 0;
+
+function buildQuiz() {
+  const container = document.getElementById('quizContainer');
+  container.innerHTML = '';
+
+  questions.forEach((q, i) => {
+    const card = document.createElement('div');
+    card.className = 'q-card';
+    card.id = `card-${i}`;
+
+    const letters = ['A', 'B', 'C', 'D'];
+
+    card.innerHTML = `
+      <div class="q-header">
+        <div class="q-num">Q${String(i+1).padStart(2,'0')}</div>
+        <div>
+          <div class="q-text">${q.q}</div>
+          <div class="topic-tag">⬡ ${q.topic}</div>
+        </div>
+      </div>
+      <div class="options" id="opts-${i}">
+        ${q.opts.map((o, j) => `
+          <div class="option" id="opt-${i}-${j}" onclick="selectOption(${i}, ${j})">
+            <div class="opt-key">${letters[j]}</div>
+            <div class="opt-text">${o}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="explanation" id="exp-${i}">
+        <div class="exp-label">EXPLANATION</div>
+        <div class="exp-text">${q.exp}</div>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+function selectOption(qIdx, optIdx) {
+  const opts = document.querySelectorAll(`#opts-${qIdx} .option`);
+  if (opts[0].classList.contains('locked')) return;
+
+  const correct_ans = questions[qIdx].ans;
+  const isCorrect = optIdx === correct_ans;
+
+  opts.forEach((o, j) => {
+    o.classList.add('locked');
+    if (j === correct_ans) o.classList.add('correct-ans');
+  });
+
+  if (!isCorrect) {
+    opts[optIdx].classList.add('wrong-ans');
+  }
+
+  opts[optIdx].classList.add('selected');
+
+  document.getElementById(`exp-${qIdx}`).classList.add('show');
+
+  const card = document.getElementById(`card-${qIdx}`);
+  card.classList.add(isCorrect ? 'answered-correct' : 'answered-wrong');
+
+  answered++;
+  if (isCorrect) correct++; else wrong++;
+
+  updateProgress();
+
+  if (answered === questions.length) {
+    setTimeout(showResult, 600);
+  }
+}
+
+function updateProgress() {
+  document.getElementById('progressFill').style.width = (answered / questions.length * 100) + '%';
+  document.getElementById('progressLabel').textContent = `${answered} / ${questions.length}`;
+  document.getElementById('correctCount').textContent = `${correct} correct`;
+  document.getElementById('wrongCount').textContent = `${wrong} wrong`;
+}
+
+function showResult() {
+  const banner = document.getElementById('resultBanner');
+  banner.classList.add('show');
+  document.getElementById('finalScore').textContent = `${correct}/20`;
+
+  const pct = correct / 20;
+  const grade = document.getElementById('gradeLabel');
+  if (pct >= 0.9) {
+    grade.textContent = '🏆 EXCELLENT'; grade.className = 'result-grade grade-excellent';
+  } else if (pct >= 0.7) {
+    grade.textContent = '✓ GOOD'; grade.className = 'result-grade grade-good';
+  } else if (pct >= 0.5) {
+    grade.textContent = '~ AVERAGE'; grade.className = 'result-grade grade-average';
+  } else {
+    grade.textContent = '✗ NEEDS WORK'; grade.className = 'result-grade grade-poor';
+  }
+
+  banner.scrollIntoView({ behavior: 'smooth' });
+}
+
+function restartQuiz() {
+  answered = 0; correct = 0; wrong = 0;
+  updateProgress();
+  document.getElementById('resultBanner').classList.remove('show');
+  buildQuiz();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+buildQuiz();
+</script>
+</body>
+</html>
