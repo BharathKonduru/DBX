@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GCP Dataproc — Interview MCQs</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,300;0,500;0,700;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #050810;
+    --surface:   #0d1424;
+    --card:      #111929;
+    --border:    #1c2d47;
+    --blue:      #4285f4;
+    --green:     #34a853;
+    --red:       #ea4335;
+    --yellow:    #fbbc04;
+    --text:      #dde5f4;
+    --muted:     #5a6e90;
+    --mono:      'Space Mono', monospace;
+    --sans:      'DM Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Animated starfield bg ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(66,133,244,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(52,168,83,0.05) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(66,133,244,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(66,133,244,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── Header ── */
+  header {
+    position: relative; z-index: 10;
+    padding: 2.2rem 1.2rem 1.8rem;
+    text-align: center;
+    background: linear-gradient(180deg, rgba(66,133,244,0.1) 0%, transparent 100%);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brand-dots {
+    display: flex; gap: 6px;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+
+  .brand-dots span {
+    display: block;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    animation: pulse 3s ease-in-out infinite;
+  }
+  .bd1 { background: var(--blue);   animation-delay: 0s; }
+  .bd2 { background: var(--red);    animation-delay: 0.4s; }
+  .bd3 { background: var(--yellow); animation-delay: 0.8s; }
+  .bd4 { background: var(--green);  animation-delay: 1.2s; }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50%       { transform: scale(1.3); opacity: 0.7; }
+  }
+
+  header h1 {
+    font-family: var(--mono);
+    font-size: clamp(1.3rem, 5.5vw, 2rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(120deg, #c8d9ff 0%, #4285f4 45%, #34a853 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+  }
+
+  .header-sub {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+  }
+
+  /* ── Sticky progress bar ── */
+  .sticky-bar {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(5, 8, 16, 0.92);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+    padding: 0.55rem 1rem;
+  }
+
+  .bar-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.35rem;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--muted);
+  }
+
+  .pills { display: flex; gap: 0.4rem; }
+
+  .pill {
+    padding: 2px 9px;
+    border-radius: 99px;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    font-weight: 700;
+    border: 1px solid;
+  }
+  .pill-c { color: var(--green);  border-color: var(--green);  background: rgba(52,168,83,0.12); }
+  .pill-w { color: var(--red);    border-color: var(--red);    background: rgba(234,67,53,0.12); }
+
+  .track {
+    height: 3px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue), var(--green));
+    border-radius: 99px;
+    transition: width 0.45s cubic-bezier(.4,0,.2,1);
+    width: 0%;
+  }
+
+  /* ── Main ── */
+  main {
+    position: relative; z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1.4rem 0.9rem 5rem;
+  }
+
+  /* ── Result card ── */
+  #result-banner {
+    display: none;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.4s ease;
+  }
+  #result-banner.show { display: block; }
+
+  .res-score {
+    font-family: var(--mono);
+    font-size: 3.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--blue), var(--green));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+  .res-label {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-top: 0.3rem;
+  }
+  .res-msg {
+    margin-top: 0.9rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: var(--text);
+  }
+  .retry-btn {
+    margin-top: 1.2rem;
+    padding: 0.65rem 2rem;
+    background: var(--blue);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: opacity .2s, transform .2s;
+  }
+  .retry-btn:hover { opacity: 0.82; transform: scale(1.04); }
+
+  /* ── Question card ── */
+  .q-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    transition: border-color 0.25s, box-shadow 0.25s;
+    animation: fadeUp 0.35s ease both;
+  }
+  .q-card:hover { border-color: rgba(66,133,244,0.35); box-shadow: 0 4px 24px rgba(66,133,244,0.08); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .q-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    padding: 1rem 1rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .q-badge {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    background: rgba(66,133,244,0.12);
+    color: var(--blue);
+    border: 1px solid rgba(66,133,244,0.25);
+    padding: 2px 7px;
+    border-radius: 5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+
+  .q-text {
+    font-weight: 500;
+    font-size: 0.93rem;
+    color: var(--text);
+    line-height: 1.55;
+  }
+
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 5px;
+    vertical-align: middle;
+  }
+  .tag-core   { background: rgba(66,133,244,0.14); color: #6aa7ff; }
+  .tag-arch   { background: rgba(52,168,83,0.14);  color: #5fd97e; }
+  .tag-sec    { background: rgba(234,67,53,0.14);  color: #ff7b6e; }
+  .tag-perf   { background: rgba(251,188,4,0.14);  color: #ffd04a; }
+  .tag-int    { background: rgba(180,90,255,0.14); color: #c87dff; }
+
+  .q-opts {
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.62rem 0.8rem;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 0.86rem;
+    line-height: 1.5;
+    transition: background 0.18s, border-color 0.18s, transform 0.18s;
+  }
+  .opt:hover:not(:disabled) {
+    background: rgba(66,133,244,0.07);
+    border-color: rgba(66,133,244,0.38);
+    transform: translateX(4px);
+  }
+  .opt:disabled { cursor: default; }
+
+  .opt-key {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    font-weight: 700;
+    width: 21px; height: 21px;
+    border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    background: var(--border);
+    color: var(--muted);
+    margin-top: 1px;
+    transition: background 0.18s, color 0.18s;
+  }
+
+  .opt.is-correct              { background: rgba(52,168,83,0.1);  border-color: var(--green); }
+  .opt.is-correct .opt-key     { background: var(--green); color: #fff; }
+  .opt.is-wrong                { background: rgba(234,67,53,0.1);  border-color: var(--red); }
+  .opt.is-wrong .opt-key       { background: var(--red);   color: #fff; }
+  .opt.show-correct            { background: rgba(52,168,83,0.05); border-color: rgba(52,168,83,0.35); }
+
+  /* ── Explanation ── */
+  .expl {
+    display: none;
+    margin: 0 1rem 0.9rem;
+    padding: 0.8rem 0.9rem;
+    background: rgba(66,133,244,0.05);
+    border: 1px solid rgba(66,133,244,0.18);
+    border-radius: 10px;
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: #97b8f0;
+    animation: slideIn 0.3s ease;
+  }
+  .expl.show { display: block; }
+
+  .expl-head {
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--blue);
+    margin-bottom: 0.35rem;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Mobile tweaks ── */
+  @media (max-width: 420px) {
+    header h1       { font-size: 1.2rem; }
+    .q-text         { font-size: 0.88rem; }
+    .opt            { font-size: 0.82rem; }
+    .expl           { font-size: 0.79rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand-dots">
+    <span class="bd1"></span><span class="bd2"></span>
+    <span class="bd3"></span><span class="bd4"></span>
+  </div>
+  <h1>GCP Dataproc<br>Interview MCQs</h1>
+  <p class="header-sub">20 questions &nbsp;·&nbsp; tap an option to answer</p>
+</header>
+
+<div class="sticky-bar">
+  <div class="bar-meta">
+    <div class="pills">
+      <span class="pill pill-c" id="c-count">&#10003; 0</span>
+      <span class="pill pill-w" id="w-count">&#10007; 0</span>
+    </div>
+    <span id="prog-label">0 / 20 answered</span>
+  </div>
+  <div class="track"><div class="fill" id="fill"></div></div>
+</div>
+
+<main>
+  <div id="result-banner">
+    <div class="res-score" id="res-score"></div>
+    <div class="res-label">Final Score</div>
+    <div class="res-msg" id="res-msg"></div>
+    <button class="retry-btn" onclick="init()">&#8635; Retry Quiz</button>
+  </div>
+  <div id="qwrap"></div>
+</main>
+
+<script>
+const QS = [
+  {
+    q: "What is Google Cloud Dataproc primarily designed for?",
+    tag: "core",
+    o: [
+      "Hosting containerised web applications at scale",
+      "Managed Apache Spark and Hadoop service for big-data processing",
+      "Real-time sub-millisecond streaming analytics",
+      "Serving a fully managed relational SQL database"
+    ],
+    a: 1,
+    e: "Dataproc is GCP's fully managed service for running Apache Spark, Hadoop, Hive, Presto, and other open-source big-data tools. It removes cluster administration overhead, handles versioning, and integrates with other GCP services out of the box."
+  },
+  {
+    q: "What is the typical cluster start-up time for a Dataproc cluster compared to on-premises Hadoop?",
+    tag: "perf",
+    o: [
+      "30 – 60 minutes, same as on-premises",
+      "5 – 10 minutes",
+      "Under 90 seconds",
+      "Around 20 minutes"
+    ],
+    a: 2,
+    e: "Dataproc clusters provision in under 90 seconds on average. Traditional on-premises Hadoop clusters can take hours or days. This speed makes ephemeral (create → run → delete) patterns economical and practical."
+  },
+  {
+    q: "Which cluster topology offers fault tolerance by running three master nodes with HDFS HA?",
+    tag: "arch",
+    o: [
+      "Single Node mode",
+      "Standard mode with one master",
+      "High Availability (HA) mode with three masters",
+      "Federated multi-region mode"
+    ],
+    a: 2,
+    e: "Dataproc High Availability mode deploys three master nodes. HDFS NameNode HA (via ZooKeeper) and YARN ResourceManager HA are enabled automatically, so the cluster survives a single master failure without losing jobs or data."
+  },
+  {
+    q: "What is the recommended primary storage strategy for Dataproc workloads to reduce cost?",
+    tag: "arch",
+    o: [
+      "Store all data on HDFS within the cluster disks",
+      "Use Filestore NFS shares for all datasets",
+      "Use Google Cloud Storage (GCS) as the data lake, bypassing HDFS",
+      "Write directly to Cloud Bigtable for all I/O"
+    ],
+    a: 2,
+    e: "Storing data in GCS instead of HDFS decouples storage from compute. Clusters become ephemeral—you spin them up for a job and delete them afterward, eliminating idle compute costs. GCS also offers high durability and easy sharing between clusters."
+  },
+  {
+    q: "Dataproc Serverless Spark Batches differs from a standard Dataproc cluster because:",
+    tag: "core",
+    o: [
+      "It only supports MapReduce, not Spark",
+      "You submit a job without provisioning or managing any cluster",
+      "It stores all intermediate data in Cloud Spanner",
+      "It requires a minimum of five worker nodes pre-allocated"
+    ],
+    a: 1,
+    e: "Dataproc Serverless handles resource provisioning, scaling, and teardown automatically. You supply the code, dependencies, and runtime config; Google runs the job. Billing is per-vCPU-second consumed by the job, with zero cluster idle cost."
+  },
+  {
+    q: "What is a Dataproc Initialization Action?",
+    tag: "core",
+    o: [
+      "An IAM policy applied when the cluster is first created",
+      "An executable script stored in GCS that runs on every node during cluster creation",
+      "A scheduled cron trigger that starts the cluster each morning",
+      "A health-check routine that validates YARN before accepting jobs"
+    ],
+    a: 1,
+    e: "Initialization Actions are shell scripts (or executables) stored in GCS. Dataproc runs them on every master and worker node right after cluster creation. They are used to install extra packages, set environment variables, or configure third-party software."
+  },
+  {
+    q: "Which YARN component runs on the master node and allocates cluster resources to applications?",
+    tag: "arch",
+    o: [
+      "HDFS DataNode",
+      "Apache ZooKeeper Quorum",
+      "YARN ResourceManager",
+      "Spark Driver process"
+    ],
+    a: 2,
+    e: "The YARN ResourceManager is the central authority for resource management. It accepts job submissions, negotiates containers with NodeManagers on worker nodes, and enforces scheduling policies. On Dataproc HA clusters, two standby ResourceManagers ensure automatic failover."
+  },
+  {
+    q: "What type of secondary worker makes Dataproc batch jobs more cost-effective by using spare GCP capacity?",
+    tag: "perf",
+    o: [
+      "Sole-tenant nodes",
+      "Preemptible VMs (Spot VMs)",
+      "Memory-optimised M2 instances",
+      "Confidential Computing N2D VMs"
+    ],
+    a: 1,
+    e: "Preemptible (now Spot) VMs cost up to 80 % less than standard VMs. Because Spark and MapReduce can retry failed tasks, losing a preemptible node only causes a partial re-run, not a job failure. Secondary workers in Dataproc run YARN NodeManager but hold no HDFS data, making preemption safe."
+  },
+  {
+    q: "Dataproc Autoscaling scales worker count based on which primary metric source?",
+    tag: "perf",
+    o: [
+      "CPU utilisation on the master node",
+      "Network egress bytes between workers and GCS",
+      "YARN pending-memory and available-vCPU metrics",
+      "Stackdriver log-error rate from Spark executors"
+    ],
+    a: 2,
+    e: "The autoscaling policy polls YARN metrics exposed via the ResourceManager REST API—specifically 'yarn.pendingMemory' and 'yarn.availableMemory'. When pending memory exceeds the scale-up threshold, nodes are added; when the cluster is underutilised beyond the cooldown window, nodes are removed."
+  },
+  {
+    q: "What happens to HDFS data stored on a Dataproc cluster when the cluster is deleted?",
+    tag: "arch",
+    o: [
+      "It is automatically archived to Cloud Storage Coldline",
+      "It is retained for 30 days in a managed snapshot",
+      "It is permanently lost because it resided on the cluster's ephemeral Persistent Disks",
+      "It is migrated to Dataproc Metastore automatically"
+    ],
+    a: 2,
+    e: "HDFS in Dataproc lives on the Persistent Disks attached to cluster nodes. Deleting the cluster deletes those disks and all HDFS data. This is the primary reason GCP recommends keeping data in GCS and using HDFS only for temporary shuffle/intermediate output."
+  },
+  {
+    q: "What is Dataproc Metastore, and what open-source service does it manage?",
+    tag: "core",
+    o: [
+      "A managed Apache Kafka broker for streaming metadata events",
+      "A fully managed Apache Hive Metastore for sharing table metadata across services",
+      "A Cloud Monitoring dashboard for Dataproc cluster telemetry",
+      "A key–value cache layer built on Apache ZooKeeper"
+    ],
+    a: 1,
+    e: "Dataproc Metastore is a serverless, fully managed Apache Hive Metastore. It stores database, table, partition, and SerDe metadata so multiple Dataproc clusters, BigQuery, and Dataflow pipelines can share the same schema without duplication."
+  },
+  {
+    q: "Which Dataproc feature lets you define an ordered graph of jobs that can optionally create and then delete a cluster automatically?",
+    tag: "core",
+    o: [
+      "Cloud Composer DAG",
+      "Dataproc Workflow Templates",
+      "Dataproc Component Gateway",
+      "Vertex AI Pipelines"
+    ],
+    a: 1,
+    e: "Dataproc Workflow Templates define an ordered set of jobs (Spark, PySpark, Hive, Pig, Hadoop, etc.) with dependency edges between them. You can embed a 'managed cluster' section so Dataproc automatically provisions the cluster, runs all jobs in dependency order, and tears the cluster down on completion."
+  },
+  {
+    q: "How does the Dataproc Component Gateway improve access to cluster UIs (Jupyter, Spark History Server)?",
+    tag: "core",
+    o: [
+      "It opens public internet-facing ports for each component",
+      "It creates a Cloud VPN tunnel from your laptop to the cluster",
+      "It provides IAM-authenticated HTTPS endpoints without requiring SSH tunnels or firewall rules",
+      "It embeds all UIs inside the Cloud Console via iframes"
+    ],
+    a: 2,
+    e: "The Component Gateway exposes cluster web UIs through an IAM-protected Cloud Identity-Aware Proxy (IAP) backed URL. Users authenticate with Google credentials; no public IP, SSH bastion, or firewall rule changes are required. Components like Jupyter, JupyterLab, YARN, and Spark History Server can all be exposed this way."
+  },
+  {
+    q: "What is 'Graceful Decommission' in the context of Dataproc autoscaling?",
+    tag: "perf",
+    o: [
+      "Encrypting all disk data before a node is removed",
+      "Waiting for all in-progress YARN tasks on a node to finish before removing it",
+      "Draining the Pub/Sub subscription before scaling down",
+      "Snapshotting HDFS data to GCS before node deletion"
+    ],
+    a: 1,
+    e: "Graceful Decommission tells YARN to stop scheduling new tasks on a worker being removed and waits for its running tasks to complete before terminating the VM. You specify a maximum grace period; after it expires, the node is forcibly removed even if tasks are still running."
+  },
+  {
+    q: "Which Kerberos feature can be enabled on Dataproc to authenticate cluster components and users?",
+    tag: "sec",
+    o: [
+      "Cloud Armor L7 WAF policy attached to the cluster",
+      "VPC firewall rules with Identity metadata tags",
+      "Dataproc Kerberos integration with a Key Distribution Center (KDC)",
+      "Binary Authorization policy for container images on workers"
+    ],
+    a: 2,
+    e: "Dataproc supports enabling Kerberos at cluster-creation time. You can use a Dataproc-managed KDC or point to an existing corporate KDC. Kerberos ensures all inter-service communication (HDFS, YARN, HiveServer2) is authenticated, which is required for many enterprise security and compliance frameworks."
+  },
+  {
+    q: "To keep a Dataproc cluster fully private with no external IP addresses, which two settings must be configured together?",
+    tag: "sec",
+    o: [
+      "Internal-IP-only flag AND Private Google Access enabled on the subnet",
+      "Cloud Armor policy AND a Cloud NAT gateway",
+      "VPC Peering AND external IP disabled on the master only",
+      "Shared VPC AND a proxy-only subnet"
+    ],
+    a: 0,
+    e: "Setting '--no-address' removes external IPs from all nodes. But without Private Google Access on the subnet, nodes cannot reach GCP APIs (GCS, Cloud Logging, etc.) because those APIs have public IP ranges. Together, internal-only IPs + Private Google Access give full private operation with zero public exposure."
+  },
+  {
+    q: "Which secondary-worker characteristic makes them unsuitable for HDFS storage in Dataproc?",
+    tag: "arch",
+    o: [
+      "They run a different Linux kernel version than primary workers",
+      "They do not run an HDFS DataNode — they are compute-only (YARN NodeManager only)",
+      "They are located in a different availability zone, causing network latency",
+      "They use local SSD instead of Persistent Disk, which HDFS cannot address"
+    ],
+    a: 1,
+    e: "Secondary workers only run YARN NodeManager. They contribute CPU and memory for task execution but do NOT participate in HDFS. This is intentional: it makes them safe to use as preemptible/Spot VMs since removing them cannot cause HDFS data loss or corruption."
+  },
+  {
+    q: "Which Dataproc job type should you submit to run a SQL query against a Hive table without writing Spark code?",
+    tag: "int",
+    o: [
+      "PySparkJob with a pandas DataFrame",
+      "HadoopJob calling the Hive CLI JAR directly",
+      "HiveJob using a HiveQL query string or script URI",
+      "PigJob with a LOAD and FILTER statement"
+    ],
+    a: 2,
+    e: "The Dataproc Jobs API accepts a HiveJob resource containing a 'queryList' or 'queryFileUri'. Dataproc executes the HiveQL against the Hive Metastore and returns results. This is the canonical, configuration-free way to run SQL on Hive data without any custom Spark code."
+  },
+  {
+    q: "When using Dataproc with VPC Service Controls, what additional protection does it provide?",
+    tag: "sec",
+    o: [
+      "It encrypts HDFS blocks with customer-managed keys automatically",
+      "It creates a security perimeter that prevents data exfiltration from GCP APIs to the public internet",
+      "It enforces multi-factor authentication on every SSH session to the cluster",
+      "It limits cluster size to prevent runaway compute spend"
+    ],
+    a: 1,
+    e: "VPC Service Controls create a logical security perimeter around GCP resources (GCS buckets, BigQuery datasets, etc.). Even if credentials are stolen, requests originating from outside the perimeter are denied. For Dataproc, this prevents data copied from GCS to an attacker-controlled bucket outside the perimeter."
+  },
+  {
+    q: "Which Cloud Monitoring metric would you alert on to detect a Dataproc cluster that is heavily over-loaded with pending work?",
+    tag: "perf",
+    o: [
+      "dataproc.googleapis.com/cluster/hdfs/storage_utilization",
+      "dataproc.googleapis.com/cluster/yarn/memory_size — specifically 'pending' vs 'available'",
+      "compute.googleapis.com/instance/disk/write_bytes_count on master",
+      "logging.googleapis.com/user/spark_gc_pause_ms"
+    ],
+    a: 1,
+    e: "The YARN memory metrics exposed via Cloud Monitoring (yarn.pendingMemory and yarn.availableMemory) directly measure whether the cluster has more work than capacity. A consistently high pending/available ratio is the canonical signal that the cluster needs more workers, and it is the same metric the autoscaler uses internally."
+  }
+];
+
+const KEYS = ['A','B','C','D'];
+let answered = 0, correct = 0, wrong = 0;
+
+function init() {
+  answered = 0; correct = 0; wrong = 0;
+  document.getElementById('result-banner').classList.remove('show');
+  updateBar();
+  const wrap = document.getElementById('qwrap');
+  wrap.innerHTML = '';
+  QS.forEach((q, qi) => {
+    const card = document.createElement('div');
+    card.className = 'q-card';
+    card.style.animationDelay = (qi * 0.04) + 's';
+    card.id = 'card' + qi;
+
+    const tagClass = 'tag-' + q.tag;
+    const tagLabels = { core:'Core', arch:'Architecture', sec:'Security', perf:'Performance', int:'Integration' };
+
+    const opts = q.o.map((o, oi) => `
+      <button class="opt" id="opt${qi}_${oi}" onclick="pick(${qi},${oi})">
+        <span class="opt-key">${KEYS[oi]}</span>
+        <span>${o}</span>
+      </button>`).join('');
+
+    card.innerHTML = `
+      <div class="q-top">
+        <span class="q-badge">Q${qi+1}</span>
+        <span class="q-text">${q.q}<span class="tag ${tagClass}">${tagLabels[q.tag]}</span></span>
+      </div>
+      <div class="q-opts">${opts}</div>
+      <div class="expl" id="expl${qi}">
+        <div class="expl-head">&#128161; Explanation</div>
+        ${q.e}
+      </div>`;
+    wrap.appendChild(card);
+  });
+}
+
+function pick(qi, oi) {
+  const q = QS[qi];
+  const allBtns = document.querySelectorAll(`#card${qi} .opt`);
+  allBtns.forEach(b => b.disabled = true);
+
+  if (oi === q.a) {
+    allBtns[oi].classList.add('is-correct');
+    correct++;
+  } else {
+    allBtns[oi].classList.add('is-wrong');
+    allBtns[q.a].classList.add('show-correct');
+    wrong++;
+  }
+
+  document.getElementById('expl' + qi).classList.add('show');
+  answered++;
+  updateBar();
+  if (answered === QS.length) showResult();
+}
+
+function updateBar() {
+  const pct = (answered / QS.length) * 100;
+  document.getElementById('fill').style.width = pct + '%';
+  document.getElementById('prog-label').textContent = answered + ' / ' + QS.length + ' answered';
+  document.getElementById('c-count').textContent = '\u2713 ' + correct;
+  document.getElementById('w-count').textContent = '\u2717 ' + wrong;
+}
+
+function showResult() {
+  const pct = Math.round((correct / QS.length) * 100);
+  let msg = pct >= 85 ? '&#127942; Excellent — you\'re interview-ready on Dataproc!'
+           : pct >= 60 ? '&#128218; Good effort — review the explanations for missed questions.'
+           : '&#128260; Keep studying — revisit the concepts and try again.';
+  document.getElementById('res-score').textContent = correct + ' / ' + QS.length;
+  document.getElementById('res-msg').innerHTML = msg;
+  const banner = document.getElementById('result-banner');
+  banner.classList.add('show');
+  banner.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+init();
+</script>
+</body>
+</html>
